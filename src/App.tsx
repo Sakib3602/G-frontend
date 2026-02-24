@@ -1,13 +1,13 @@
-
+import { Outlet } from "react-router";
+import Navbar from "./components/BasicComponents/Navbar/Navbar";
 
 function App() {
-  
-
   return (
     <>
-      <h1 className="text-3xl text-amber-400 font-bold underline">Hello World sakib</h1>
+      <Navbar></Navbar>
+      <Outlet></Outlet>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
