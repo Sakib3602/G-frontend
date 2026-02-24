@@ -20,7 +20,7 @@ const Hero: React.FC<HeroProps> = ({
   return (
     <>
     
-    <section className="relative bg-white overflow-hidden pt-10 pb-16 lg:pt-10 lg:pb-32 font-sans">
+    <section className="poppins-regular relative bg-white overflow-hidden pt-10 pb-16 lg:pt-10 lg:pb-32 font-sans">
       
       {/* Decorative Background Element (Subtle tech grid) */}
       <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 

@@ -44,7 +44,7 @@ const Services: React.FC = () => {
   ];
 
   return (
-    <section className="relative bg-white py-20 lg:py-32 font-sans overflow-hidden border-t border-gray-100">
+    <section className=" poppins-regular relative bg-white py-20 lg:py-32 font-sans overflow-hidden border-t border-gray-100">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         
         {/* Section Header */}

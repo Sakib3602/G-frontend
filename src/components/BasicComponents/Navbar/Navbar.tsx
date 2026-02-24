@@ -29,7 +29,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
         DESKTOP & MAIN NAVBAR
         ========================================
       */}
-      <nav className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 font-sans transition-all duration-300">
+      <nav className="poppins-regular sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 font-sans transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             

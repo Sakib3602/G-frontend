@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
       <div className="hidden lg:block h-dvh w-full pointer-events-none bg-transparent"></div>
 
       
-      <footer className="relative lg:fixed lg:bottom-0 lg:left-0 w-full lg:h-dvh bg-[#7FA23B] text-white flex flex-col justify-between z-0 lg:-z-10 selection:bg-white selection:text-[#7FA23B] overflow-hidden">
+      <footer className="relative lg:fixed lg:bottom-0 lg:left-0 w-full lg:h-dvh bg-[#7FA23B] text-white flex flex-col justify-between z-0 selection:bg-white selection:text-[#7FA23B] overflow-hidden">
         
         {/* TOP: Massive Call to Action */}
         <div className="w-full px-6 lg:px-12 pt-16 lg:pt-20">
@@ -24,7 +24,9 @@ const Footer: React.FC = () => {
             
             <div className="shrink-0">
               <a 
-                href="#contact" 
+                href="https://wa.me/8801928477557?text=Hello%2C%20I%20would%20like%20to%20discuss%20a%20project!"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-[#7FA23B] bg-white rounded-full overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-black/20"
               >
                 <span className="relative z-10 flex items-center gap-2">
@@ -39,13 +41,13 @@ const Footer: React.FC = () => {
         </div>
 
         {/* MIDDLE: Informative Grid */}
-        <div className="w-full flex-grow px-6 lg:px-12 py-10 lg:py-0 lg:flex lg:items-center">
+        <div className="poppins-regular w-full grow px-6 lg:px-12 py-10 lg:py-0 lg:flex lg:items-center">
           <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8">
             
             {/* Brand & Newsletter (Spans 5 cols) */}
             <div className="lg:col-span-5 flex flex-col lg:pr-12">
               <span className="text-3xl font-extrabold tracking-tight mb-6">
-                TechNova.
+                Genesys.
               </span>
               <p className="text-white/80 text-sm leading-relaxed mb-8 max-w-sm">
                 A premier IT firm specializing in robust web architecture, advanced data solutions, and high-converting info-marketing funnels.
