@@ -112,7 +112,10 @@ const Login: React.FC = () => {
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="block text-sm font-bold text-gray-700" htmlFor="password">Password</label>
-                  <a href="#" className="text-xs font-bold text-[#80A33C] hover:text-[#6b8932] transition-colors">Forgot Password?</a>
+                  <Link to="/reset/password">
+                    <p className="text-xs font-bold text-[#80A33C] hover:text-[#6b8932] transition-colors">Forgot Password?</p>
+                  </Link>
+                 
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
