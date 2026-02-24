@@ -4,15 +4,15 @@ import "./index.css";
 import App from "./App.tsx";
 import { BrowserRouter, Routes, Route } from "react-router";
 import MAIN_HOME_ROUTES from "./components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES.tsx";
-
+import Services from "./components/BasicComponents/Services/Services.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />}>
-        <Route index element={<MAIN_HOME_ROUTES />} />
-          
+          <Route index element={<MAIN_HOME_ROUTES />} />
+          <Route path="/services" element={<Services />} />
         </Route>
       </Routes>
     </BrowserRouter>
