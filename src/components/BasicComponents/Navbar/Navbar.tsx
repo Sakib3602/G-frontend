@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router';
 
 interface NavbarProps {
   companyName?: string;
@@ -35,10 +36,11 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center cursor-pointer">
-              <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
-                {companyName}
-                <span className="text-[#80A33C]">.</span>
-              </span>
+              <Link to={'/'}>
+                <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                  {companyName}<span className="text-[#80A33C]">.</span>
+                </span>
+              </Link>
             </div>
 
             {/* Desktop Links */}
@@ -55,14 +57,16 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             </div>
 
             {/* Desktop Button */}
+            <Link to={'/registration'}>
             <div className="hidden lg:flex items-center">
-              <a 
-                href="#signup" 
+              <p
+                 
                 className="inline-flex items-center justify-center px-7 py-2.5 text-sm font-semibold rounded-full text-white bg-[#80A33C] hover:bg-[#6b8932] shadow-lg shadow-[#80A33C]/20 transition-all duration-300 hover:-translate-y-0.5"
               >
                 Sign Up
-              </a>
+              </p>
             </div>
+            </Link>
 
             {/* Mobile Open Button (Hamburger) */}
             <div className="flex items-center lg:hidden">
@@ -148,13 +152,13 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             isOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
           }`}
         >
-          <a 
-            href="#signup" 
+          <Link 
+            to={'/registration'}
             onClick={() => handleMenu(false)}
             className="flex items-center justify-center w-full py-4 text-lg font-bold rounded-xl text-white bg-[#80A33C] active:bg-[#6b8932] shadow-xl shadow-[#80A33C]/30 transition-colors"
           >
             Start Your Journey
-          </a>
+          </Link>
           <p className="mt-6 text-center text-sm font-medium text-gray-500">
             hello@{companyName.toLowerCase()}.com
           </p>

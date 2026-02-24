@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useForm, type SubmitHandler } from "react-hook-form";
+import { Link } from 'react-router';
 
 type FormValues = {
   name: string;
@@ -246,7 +247,7 @@ const Registration: React.FC = () => {
 
             {/* Login Link */}
             <p className="mt-8 text-center text-sm text-gray-500">
-              Already have an account? <a href="#" className="font-bold text-[#80A33C] hover:text-[#6b8932] transition-colors">Sign in here</a>
+              Already have an account? <a href="#" className="font-bold text-[#80A33C] hover:text-[#6b8932] transition-colors"><Link to={'/login'}>Sign in here</Link></a>
             </p>
 
           </div>
