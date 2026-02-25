@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState } from 'react';
 import { Link } from 'react-router';
 
 interface NavbarProps {
@@ -6,6 +6,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
+ 
   const [isOpen, setIsOpen] = useState(false);
 
   // Handle opening and closing, plus locking the body scroll without useEffect
