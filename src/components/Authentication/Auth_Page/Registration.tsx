@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link } from 'react-router';
+import { AuthContext } from '../AuthProvider/AuthProvider';
+import { sendEmailVerification } from 'firebase/auth';
 
 type FormValues = {
   name: string;
@@ -14,6 +16,9 @@ const Registration: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const {person , createUser, logOut} = useContext(AuthContext)
+  console.log(person, "from registation page");
+
   const {
     register,
     handleSubmit,
@@ -21,7 +26,19 @@ const Registration: React.FC = () => {
     formState: { errors },
   } = useForm<FormValues>({ mode: "onTouched" });
 
-  const onSubmit: SubmitHandler<FormValues> = (data) => console.log(data);
+  const onSubmit: SubmitHandler<FormValues> = async(data) => {
+    await createUser(data.email, data.password)
+    .then(async (result) => {
+      const user = result.user;
+      console.log(user,"current user");
+      await sendEmailVerification(user)
+      .then(()=>{
+        alert("Verification email sent. Please check your inbox.");
+      })
+      // await logOut();
+    })
+    .catch(error => console.log(error))
+  };
 
   return (
     <div className="poppins-regular min-h-screen flex items-center justify-center bg-[#f4f6f8] font-sans p-4 sm:p-8">

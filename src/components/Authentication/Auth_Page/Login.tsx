@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { AuthContext } from '../AuthProvider/AuthProvider';
+import { sendEmailVerification, type User } from 'firebase/auth';
 
 // 1. Updated FormValues for Login only
 type FormValues = {
@@ -10,6 +12,25 @@ type FormValues = {
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+
+  const { person, signIn, logOut } = useContext(AuthContext)!;
+  console.log(person, "from login page");
+
+
+
+  const sendVarificationCodeUser = async () => {
+    if (!unverifiedUser) return;
+    try {
+      await sendEmailVerification(unverifiedUser);
+      alert("Verification email sent. Please check your inbox.");
+    } catch (error) {
+      alert("Error sending verification email: " + error);
+    }
+  };
+
 
   const {
     register,
@@ -18,9 +39,23 @@ const Login: React.FC = () => {
   } = useForm<FormValues>({ mode: "onTouched" });
 
   // 2. Submit handler
-  const onSubmit: SubmitHandler<FormValues> = (data) => {
-    // You can add your login logic here
-    console.log("Login data:", data);
+  const onSubmit: SubmitHandler<FormValues> = async (data) => {
+    setUnverifiedUser(null);
+    setLoginError(null);
+    try {
+      const result = await signIn(data.email, data.password);
+      if (!result.user.emailVerified) {
+        setUnverifiedUser(result.user);
+        await logOut();
+        setLoginError("Your email is not verified. Please check your inbox and verify your email before logging in.");
+        return;
+      }
+      console.log("Login successful:", result.user);
+      navigate("/");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setLoginError(error?.message ?? "Login failed. Please check your credentials.");
+    }
   };
 
   return (
@@ -152,6 +187,22 @@ const Login: React.FC = () => {
                 </div>
                 {errors.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password.message}</p>}
               </div>
+
+              {/* Email Verification / Login Error */}
+              {loginError && (
+                <div>
+                  <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                  <p className="text-xs text-red-600 font-medium">{loginError}</p>
+                  {unverifiedUser && (
+                    <button type="button" onClick={() => sendVarificationCodeUser()} className="underline ml-auto text-xs text-red-500 hover:text-red-700 whitespace-nowrap">Resend Email</button>
+                  )}
+                </div>
+                
+                </div>
+              )}
 
               {/* Submit Button */}
               <button

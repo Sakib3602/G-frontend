@@ -1,5 +1,6 @@
-import React, {useState } from 'react';
+import React, {useContext, useState } from 'react';
 import { Link } from 'react-router';
+import { AuthContext } from '../../Authentication/AuthProvider/AuthProvider';
 
 interface NavbarProps {
   companyName?: string;
@@ -8,6 +9,14 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
  
   const [isOpen, setIsOpen] = useState(false);
+
+  const { person, logOut } = useContext(AuthContext)!;
+
+  const handleLogOut = () => {
+    logOut().then(() => {
+      alert("You have been signed out successfully.");
+    });
+  };
 
   // Handle opening and closing, plus locking the body scroll without useEffect
   const handleMenu = (open: boolean) => {
@@ -58,16 +67,22 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             </div>
 
             {/* Desktop Button */}
-            <Link to={'/registration'}>
             <div className="hidden lg:flex items-center">
-              <p
-                 
-                className="inline-flex items-center justify-center px-7 py-2.5 text-sm font-semibold rounded-full text-white bg-[#80A33C] hover:bg-[#6b8932] shadow-lg shadow-[#80A33C]/20 transition-all duration-300 hover:-translate-y-0.5"
-              >
-                Sign Up
-              </p>
+              {person ? (
+                <button
+                  onClick={handleLogOut}
+                  className="inline-flex items-center justify-center px-7 py-2.5 text-sm font-semibold rounded-full text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <Link to={'/registration'}>
+                  <p className="inline-flex items-center justify-center px-7 py-2.5 text-sm font-semibold rounded-full text-white bg-[#80A33C] hover:bg-[#6b8932] shadow-lg shadow-[#80A33C]/20 transition-all duration-300 hover:-translate-y-0.5">
+                    Sign Up
+                  </p>
+                </Link>
+              )}
             </div>
-            </Link>
 
             {/* Mobile Open Button (Hamburger) */}
             <div className="flex items-center lg:hidden">
@@ -153,13 +168,22 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             isOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
           }`}
         >
-          <Link 
-            to={'/registration'}
-            onClick={() => handleMenu(false)}
-            className="flex items-center justify-center w-full py-4 text-lg font-bold rounded-xl text-white bg-[#80A33C] active:bg-[#6b8932] shadow-xl shadow-[#80A33C]/30 transition-colors"
-          >
-            Start Your Journey
-          </Link>
+          {person ? (
+            <button
+              onClick={() => { handleMenu(false); handleLogOut(); }}
+              className="flex items-center justify-center w-full py-4 text-lg font-bold rounded-xl text-white bg-red-500 active:bg-red-600 shadow-xl shadow-red-500/30 transition-colors"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <Link
+              to={'/registration'}
+              onClick={() => handleMenu(false)}
+              className="flex items-center justify-center w-full py-4 text-lg font-bold rounded-xl text-white bg-[#80A33C] active:bg-[#6b8932] shadow-xl shadow-[#80A33C]/30 transition-colors"
+            >
+              Start Your Journey
+            </Link>
+          )}
           <p className="mt-6 text-center text-sm font-medium text-gray-500">
             hello@{companyName.toLowerCase()}.com
           </p>
