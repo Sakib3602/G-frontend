@@ -21,8 +21,10 @@ const Login: React.FC = () => {
 
 
 
+
   const sendVarificationCodeUser = async () => {
     if (!unverifiedUser) return;
+
     try {
       await sendEmailVerification(unverifiedUser);
       alert("Verification email sent. Please check your inbox.");
@@ -52,9 +54,10 @@ const Login: React.FC = () => {
       }
       console.log("Login successful:", result.user);
       navigate("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
-      setLoginError(error?.message ?? "Login failed. Please check your credentials.");
+      const message = error instanceof Error ? error.message : "Login failed. Please check your credentials.";
+      setLoginError(message);
     }
   };
 
@@ -219,9 +222,9 @@ const Login: React.FC = () => {
             
             {/* Divider */}
             <div className="relative flex items-center my-8">
-              <div className="flex-grow border-t border-gray-200"></div>
-              <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium uppercase tracking-wider">Or continue with</span>
-              <div className="flex-grow border-t border-gray-200"></div>
+              <div className="grow border-t border-gray-200"></div>
+              <span className="shrink-0 mx-4 text-gray-400 text-xs font-medium uppercase tracking-wider">Or continue with</span>
+              <div className="grow border-t border-gray-200"></div>
             </div>
 
             {/* Social Buttons */}
