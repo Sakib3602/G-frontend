@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm, type SubmitHandler } from "react-hook-form";
+import { auth } from '../firebase.init';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import Notification from '@/components/ui/toast';
 
-// 1. Form Values for Forgot Password
 type FormValues = {
   email: string;
 };
@@ -12,14 +14,42 @@ const Reset: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>({ mode: "onTouched" });
+  const [showNotification, setShowNotification] = useState(false);
 
-  // 2. Submit handler
-  const onSubmit: SubmitHandler<FormValues> = (data) => {
-    // Add your API call to send the reset link here
+  
+  const onSubmit: SubmitHandler<FormValues> = async(data) => {
     console.log("Password reset requested for:", data.email);
+
+    await sendPasswordResetEmail(auth, data.email)
+    .then(()=>{
+      setShowNotification(true);
+    })
+    .catch((error: unknown) => {
+      console.error("Error sending password reset email:", error);
+      // alert("Failed to send password reset email. Please check the email address and try again.");
+    });
+    
   };
 
   return (
+    <>
+    <div className="fixed top-4 right-4 z-50">
+      
+          {showNotification && (
+            <Notification
+              type="success"
+              title="Password Reset Email Sent!"
+              message="Please check your inbox for the password reset instructions."
+              showIcon={true}
+              duration={3000}
+              onClose={() => {
+                setShowNotification(false);
+                
+              }}
+            />
+          )}
+        
+      </div>
     <div className="poppins-regular min-h-screen flex items-center justify-center bg-[#f4f6f8] font-sans p-4 sm:p-8">
       
       {/* Main Container */}
@@ -138,6 +168,7 @@ const Reset: React.FC = () => {
         
       </div>
     </div>
+    </>
   );
 };
 
