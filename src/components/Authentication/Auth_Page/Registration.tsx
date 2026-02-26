@@ -55,7 +55,7 @@ const Registration: React.FC = () => {
   `,
 
   confirmButtonText: "Go to login page",
-  confirmButtonColor: "#6B8932", // Applies your custom green color
+  confirmButtonColor: "#6B8932",
 
   showClass: {
     popup: `
