@@ -1,9 +1,29 @@
 import { useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { Save, X } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import useAxiosSales from '@/uri/useAxiosSales';
+import Notification from '../ui/toast';
+
+type LeadFormData = {
+  leadName: string;
+  owner: string;
+  status: string;
+  indications: string;
+  companyName: string;
+  leadScore: string;
+  email: string;
+  phone: string;
+  title: string;
+  specificRole: string;
+  region: string;
+  profileUrl: string;
+};
 
 const Sales_Create_leads = () => {
+  const [showNotification, setShowNotification] = useState(false);
   // Form state holding all fields from the image + additional necessary fields
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LeadFormData>({
     leadName: '',
     owner: 'Sakib Sarkar', 
     status: 'New Lead',
@@ -15,10 +35,10 @@ const Sales_Create_leads = () => {
     title: '',
     specificRole: '',
     region: 'US',
-    linkedin: '', 
+    profileUrl: '', 
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -26,12 +46,25 @@ const Sales_Create_leads = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log('New Lead Data:', formData);
-    // Here you would typically send the data to your backend/API
-    alert('Lead created successfully!'); 
+    MutationCreateLead.mutate(formData);
+   
+   
   };
+
+  const axiosSales = useAxiosSales()
+
+  const MutationCreateLead = useMutation<unknown, Error, LeadFormData>({
+    mutationFn: async (newLeadData: LeadFormData) => {
+      const res = await axiosSales.post('api/v1/sales/create-lead', newLeadData);
+      return res.data;
+    },
+    onSuccess: ()=>{
+      setShowNotification(true);
+    }
+  })
 
   // Dropdown Options
   const statusOptions = [
@@ -60,6 +93,23 @@ const Sales_Create_leads = () => {
   const scoreOptions = ['1', '2', '3', '4', '5'];
 
   return (
+    <>
+    <div className="fixed top-4 right-4 z-50">
+      
+          {showNotification && (
+            <Notification
+              type="success"
+              title="Lead Created Successfully!"
+              message="The new lead has been added to your pipeline."
+              showIcon={true}
+              duration={3000}
+              onClose={() => {
+                setShowNotification(false);
+              }}
+            />
+          )}
+        
+      </div>
     <div className="max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-6">
@@ -119,8 +169,8 @@ const Sales_Create_leads = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Any Profile</label>
               <input
                 type="url"
-                name="linkedin"
-                value={formData.linkedin}
+                name="profileUrl"
+                value={formData.profileUrl}
                 onChange={handleChange}
                 placeholder="https://XXXX.com/in/username"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7FA23B]/50 focus:border-[#7FA23B] outline-none transition-colors"
@@ -266,6 +316,7 @@ const Sales_Create_leads = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 

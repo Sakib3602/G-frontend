@@ -28,7 +28,7 @@ const Sales_Home = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard/sales', icon: LayoutDashboard },
     { name: 'Create Leads', path: '/dashboard/sales/create-leads', icon: LayersPlus },
-    { name: 'My Leads', path: '/dashboard/leads', icon: Users },
+    { name: 'My Leads', path: '/dashboard/sales/all-leads', icon: Users },
     { name: 'Proposals', path: '/dashboard/deals', icon: Briefcase },
     { name: 'Tasks & Meetings', path: '/dashboard/tasks', icon: Calendar },
     { name: 'Closed Deals', path: '/dashboard/settings', icon: Settings },
