@@ -18,7 +18,7 @@ const Reset: React.FC = () => {
 
   
   const onSubmit: SubmitHandler<FormValues> = async(data) => {
-    console.log("Password reset requested for:", data.email);
+   
 
     await sendPasswordResetEmail(auth, data.email)
     .then(()=>{

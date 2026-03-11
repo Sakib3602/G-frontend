@@ -28,11 +28,10 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
   };
 
   const navLinks = [
-    { name: "Services", href: "#services", number: "01" },
     { name: "About Us", href: "#about", number: "02" },
-    { name: "Portfolio", href: "#portfolio", number: "03" },
     { name: "Blog", href: "#blog", number: "04" },
     { name: "Contact", href: "#contact", number: "05" },
+    { name: "Sales Dashboard", href: "/dashboard/sales", number: "06" },
   ];
 
   return (
@@ -55,14 +54,14 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
-            <div className="flex-shrink-0 flex items-center cursor-pointer">
               <Link to={"/"}>
+            <div className="shrink-0 flex items-center cursor-pointer">
                 <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
                   {companyName}
                   <span className="text-[#80A33C]">.</span>
                 </span>
-              </Link>
             </div>
+              </Link>
 
             {/* Desktop Links */}
             <div className="hidden lg:flex space-x-10">
@@ -82,16 +81,29 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
               {person ? (
                 <button
                   onClick={handleLogOut}
-                  className="inline-flex items-center justify-center px-7 py-2.5 text-sm font-semibold rounded-full text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all duration-300 hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-lg text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-red-500/40 border border-red-400/30"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
                   Sign Out
                 </button>
               ) : (
-                <Link to={"/registration"}>
-                  <p className="inline-flex items-center justify-center px-7 py-2.5 text-sm font-semibold rounded-full text-white bg-[#80A33C] hover:bg-[#6b8932] shadow-lg shadow-[#80A33C]/20 transition-all duration-300 hover:-translate-y-0.5">
-                    Sign Up
-                  </p>
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link to={"/login"}>
+                    <button className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-bold rounded-lg text-[#80A33C] bg-transparent border-2 border-[#80A33C] hover:bg-[#80A33C] hover:text-white transition-all duration-300 hover:-translate-y-0.5">
+                      Sign In
+                    </button>
+                  </Link>
+                  <Link to={"/registration"}>
+                    <button className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg text-white bg-gradient-to-r from-[#80A33C] to-[#5a7a28] hover:from-[#6b8932] hover:to-[#4a6820] shadow-lg shadow-[#80A33C]/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#80A33C]/40">
+                      Sign Up
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </button>
+                  </Link>
+                </div>
               )}
             </div>
 
@@ -122,10 +134,12 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
       >
         {/* Mobile Menu Header (Logo + Close Button) */}
         <div className="flex justify-between items-center h-20 px-6 lg:px-8 border-b border-gray-200/50">
+        <Link to={"/"}>
           <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
             {companyName}
             <span className="text-[#80A33C]">.</span>
           </span>
+          </Link>
 
           <button
             onClick={() => handleMenu(false)}
@@ -200,18 +214,33 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
                 handleMenu(false);
                 handleLogOut();
               }}
-              className="flex items-center justify-center w-full py-4 text-lg font-bold rounded-xl text-white bg-red-500 active:bg-red-600 shadow-xl shadow-red-500/30 transition-colors"
+              className="flex items-center justify-center gap-3 w-full py-4 text-lg font-bold rounded-2xl text-white bg-gradient-to-r from-red-500 to-rose-600 active:from-red-600 active:to-rose-700 shadow-xl shadow-red-500/30 transition-colors"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
               Sign Out
             </button>
           ) : (
-            <Link
-              to={"/registration"}
-              onClick={() => handleMenu(false)}
-              className="flex items-center justify-center w-full py-4 text-lg font-bold rounded-xl text-white bg-[#80A33C] active:bg-[#6b8932] shadow-xl shadow-[#80A33C]/30 transition-colors"
-            >
-              Start Your Journey
-            </Link>
+            <div className="flex flex-col gap-3">
+              <Link
+                to={"/login"}
+                onClick={() => handleMenu(false)}
+                className="flex items-center justify-center w-full py-4 text-lg font-bold rounded-2xl text-[#80A33C] bg-transparent border-2 border-[#80A33C] active:bg-[#80A33C] active:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to={"/registration"}
+                onClick={() => handleMenu(false)}
+                className="flex items-center justify-center gap-2 w-full py-4 text-lg font-bold rounded-2xl text-white bg-gradient-to-r from-[#80A33C] to-[#5a7a28] active:from-[#6b8932] active:to-[#4a6820] shadow-xl shadow-[#80A33C]/30 transition-colors"
+              >
+                Sign Up
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
           )}
           <p className="mt-6 text-center text-sm font-medium text-gray-500">
             hello@{companyName.toLowerCase()}.com

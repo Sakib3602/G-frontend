@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router";
 import { AuthContext } from "../AuthProvider/AuthProvider";
 import { sendEmailVerification, type UserCredential } from "firebase/auth";
 import Swal from "sweetalert2";
+import { useMutation } from "@tanstack/react-query";
+import useAxiosPrivate from "@/uri/useAxiosPrivate";
 
 type FormValues = {
   name: string;
@@ -28,58 +30,81 @@ const Registration: React.FC = () => {
   } = useForm<FormValues>({ mode: "onTouched" });
 
   const navigate = useNavigate();
+  const axiosPrivate = useAxiosPrivate();
+
+  const userRegisterMutation = useMutation({
+    mutationFn: async (formData: FormValues) => {
+      const res = await axiosPrivate.post("/api/v1/users", {
+        name: formData.name,
+        email: formData.email,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      Swal.fire({
+        icon: "success",
+        title: "Registration Successful!",
+        html: `
+  <p style="font-size: 16px; margin-bottom: 8px;">
+    Check your email to verify your account before logging in.
+  </p>
+  <p style="font-size: 14px; color: #666; margin-bottom: 16px;">
+    <i>(Check your spam folder if you don't see it in your inbox)</i>
+  </p>
+  <strong style="font-size: 16px; color: #6B8932;">
+    Thank you for joining us!
+  </strong>
+`,
+        confirmButtonText: "Go to login page",
+        confirmButtonColor: "#6B8932",
+        showClass: {
+          popup: `
+    animate__animated
+    animate__fadeInUp
+    animate__faster
+  `,
+        },
+        hideClass: {
+          popup: `
+    animate__animated
+    animate__fadeOutDown
+    animate__faster
+  `,
+        },
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/login");
+        }
+      });
+    },
+    onError: (error: unknown) => {
+      // console.error("DB save error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Registration Failed",
+        text: "Your account was created but we couldn't save your profile. Please contact support.",
+        confirmButtonColor: "#6B8932",
+      });
+    },
+  });
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
-    await createUser(data.email, data.password)
-      .then(async (result: UserCredential) => {
-        const user = result.user;
-        console.log(user, "current user");
-        await sendEmailVerification(user)
-        .then(async () => {
-          await logOut();
-          Swal.fire({
-  icon: "success",
-  title: "Registration Successful!",
-  
-  // Using 'html' instead of 'text' lets us format the message beautifully
-  html: `
-    <p style="font-size: 16px; margin-bottom: 8px;">
-      Check your email to verify your account before logging in.
-    </p>
-    <p style="font-size: 14px; color: #666; margin-bottom: 16px;">
-      <i>(Check your spam folder if you don't see it in your inbox)</i>
-    </p>
-    <strong style="font-size: 16px; color: #6B8932;">
-      Thank you for joining us!
-    </strong>
-  `,
-
-  confirmButtonText: "Go to login page",
-  confirmButtonColor: "#6B8932",
-
-  showClass: {
-    popup: `
-      animate__animated
-      animate__fadeInUp
-      animate__faster
-    `,
-  },
-  hideClass: {
-    popup: `
-      animate__animated
-      animate__fadeOutDown
-      animate__faster
-    `,
-  },
-}).then((result) => {
-  if (result.isConfirmed) {
-    navigate("/login");
-  }
-});
-          
-      })
-      })
-      .catch((error: unknown) => console.log(error));
+    try {
+      const result: UserCredential = await createUser(data.email, data.password);
+      const user = result.user;
+      console.log(user, "current user");
+      await sendEmailVerification(user);
+      await logOut();
+      userRegisterMutation.mutate(data);
+    } catch (error: unknown) {
+      // console.error("Registration error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Registration Failed",
+        text: "Something went wrong. Please try again.",
+        confirmButtonColor: "#6B8932",
+      });
+    }
   };
 
   return (
@@ -460,22 +485,50 @@ const Registration: React.FC = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full mt-8 bg-[#80A33C] text-white font-bold text-sm sm:text-base py-4 rounded-xl shadow-lg shadow-[#80A33C]/25 hover:bg-[#6b8932] hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#80A33C]/40 transition-all duration-300 flex justify-center items-center gap-2"
+                disabled={userRegisterMutation.isPending}
+                className="w-full mt-8 bg-[#80A33C] text-white font-bold text-sm sm:text-base py-4 rounded-xl shadow-lg shadow-[#80A33C]/25 hover:bg-[#6b8932] hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#80A33C]/40 transition-all duration-300 flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
-                Create Account
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M14 5l7 7m0 0l-7 7m7-7H3"
-                  />
-                </svg>
+                {userRegisterMutation.isPending ? (
+                  <>
+                    <svg
+                      className="w-5 h-5 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      />
+                    </svg>
+                    Creating Account...
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      />
+                    </svg>
+                  </>
+                )}
               </button>
             </form>
 
