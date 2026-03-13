@@ -13,7 +13,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Sales_Home from "./components/SalesDashboard/Sales_Home.tsx";
 import Sales_Index_Element from "./components/SalesDashboard/Sales_Index_Element.tsx";
 import Sales_Create_Leads from "./components/SalesDashboard/Sales_Create_Leads.tsx";
-import Sales_All_Leads from "./components/SalesDashboard/Sales_All_Leads.tsx";
+import Sales_My_Leads from "./components/SalesDashboard/Sales_My_Leads.tsx";
 
 
 
@@ -37,7 +37,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/dashboard/sales" element={<Sales_Home />} >
           <Route index element={<Sales_Index_Element />} />
           <Route path="/dashboard/sales/create-leads" element={<Sales_Create_Leads />} />
-          <Route path="/dashboard/sales/all-leads" element={<Sales_All_Leads />} />
+          <Route path="/dashboard/sales/all-leads" element={<Sales_My_Leads />} />
           
           
           </Route>

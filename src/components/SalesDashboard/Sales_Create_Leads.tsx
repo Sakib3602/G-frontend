@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Save, X } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import useAxiosSales from '@/uri/useAxiosSales';
 import Notification from '../ui/toast';
 
@@ -55,6 +55,7 @@ const Sales_Create_leads = () => {
   };
 
   const axiosSales = useAxiosSales()
+  const queryClient = useQueryClient();
 
   const MutationCreateLead = useMutation<unknown, Error, LeadFormData>({
     mutationFn: async (newLeadData: LeadFormData) => {
@@ -63,6 +64,7 @@ const Sales_Create_leads = () => {
     },
     onSuccess: ()=>{
       setShowNotification(true);
+      queryClient.invalidateQueries({ queryKey: ['all-sales-leads'] });
     }
   })
 

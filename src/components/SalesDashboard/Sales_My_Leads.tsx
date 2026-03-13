@@ -59,7 +59,7 @@ const getScoreColor = (score: string) => {
   }
 };
 
-export default function Sales_All_Leads() {
+export default function Sales_My_Leads() {
     
   const axiosSales = useAxiosSales();
 
@@ -72,7 +72,7 @@ export default function Sales_All_Leads() {
   const { data = [], isLoading, isError } = useQuery<LeadData[]>({
     queryKey: ['all-sales-leads'],
     queryFn: async () => {
-      const res = await axiosSales.get('/api/v1/sales/get-all-leads');
+      const res = await axiosSales.get('/api/v1/sales/get-my-leads');
       return res.data.leads as LeadData[];
     }
   });
@@ -220,10 +220,10 @@ const downloadCSV = () => {
               <option value="All">All Statuses</option>
               <option value="New Lead">New Lead</option>
               <option value="Attempted to contact">Attempted to contact</option>
-              <option value="Contacted">Contacted</option>
+              {/* <option value="Contacted">Contacted</option>
               <option value="In Progress">In Progress</option>
               <option value="Qualified">Qualified</option>
-              <option value="Unqualified">Unqualified</option>
+              <option value="Unqualified">Unqualified</option> */}
             </select>
           </div>
 
@@ -235,7 +235,7 @@ const downloadCSV = () => {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
-              <option value="Newest">Newest First</option>
+              <option value="Newest">All</option>
               <option value="Name (A-Z)">Name (A-Z)</option>
               <option value="Name (Z-A)">Name (Z-A)</option>
               <option value="Score (High to Low)">Score (High to Low)</option>
