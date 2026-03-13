@@ -29,6 +29,7 @@ const Sales_Home = () => {
     { name: 'Dashboard', path: '/dashboard/sales', icon: LayoutDashboard },
     { name: 'Create Leads', path: '/dashboard/sales/create-leads', icon: LayersPlus },
     { name: 'My Leads', path: '/dashboard/sales/all-leads', icon: Users },
+    { name: 'Meetings', path: '/dashboard/sales/meetings', icon: Calendar },
     { name: 'Proposals', path: '/dashboard/deals', icon: Briefcase },
     { name: 'Tasks & Meetings', path: '/dashboard/tasks', icon: Calendar },
     { name: 'Closed Deals', path: '/dashboard/settings', icon: Settings },
@@ -154,7 +155,7 @@ const Sales_Home = () => {
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 overflow-y-auto bg-[#F8FAFC] p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-[#F8FAFC] p-6 lg:p-4">
           <Outlet /> 
         </main>
         
