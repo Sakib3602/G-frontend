@@ -9,6 +9,7 @@ export interface MeetingData {
   guestName: string;
   meetingType: 'Video Call' | 'In-Person' | 'Phone Call';
   locationOrLink: string;
+  note: string;
   status: 'Scheduled' | 'Completed' | 'Canceled';
 }
 
@@ -21,6 +22,7 @@ const initialMeetings: MeetingData[] = [
     guestName: 'Liam Smith',
     meetingType: 'Video Call',
     locationOrLink: 'https://zoom.us/j/123456789',
+    note: 'Focus on pricing tiers and expected rollout timeline.',
     status: 'Scheduled',
   },
   {
@@ -31,6 +33,7 @@ const initialMeetings: MeetingData[] = [
     guestName: 'Sarah Jenkins',
     meetingType: 'Phone Call',
     locationOrLink: '+1 (555) 987-6543',
+    note: 'Capture current pain points before proposing solution.',
     status: 'Scheduled',
   },
   {
@@ -41,6 +44,7 @@ const initialMeetings: MeetingData[] = [
     guestName: 'David Johnson',
     meetingType: 'Video Call',
     locationOrLink: 'https://meet.google.com/abc-defg-hij',
+    note: 'Legal review completed, pending final budget approval.',
     status: 'Completed',
   }
 ];
@@ -56,9 +60,10 @@ export default function Sales_Meetings() {
     guestName: '',
     meetingType: 'Video Call' as MeetingData['meetingType'],
     locationOrLink: '',
+    note: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -71,7 +76,24 @@ export default function Sales_Meetings() {
       status: 'Scheduled',
     };
     setMeetings([newMeeting, ...meetings]);
-    setFormData({ title: '', date: '', time: '', guestName: '', meetingType: 'Video Call', locationOrLink: '' });
+    setFormData({ title: '', date: '', time: '', guestName: '', meetingType: 'Video Call', locationOrLink: '', note: '' });
+  };
+
+  const handleSuccessMeeting = (meeting: MeetingData) => {
+    console.log('Success Meeting:', { id: meeting.id, meeting });
+  };
+
+  const handleFailMeeting = (meeting: MeetingData) => {
+    console.log('Fail Meeting:', { id: meeting.id, meeting });
+  };
+
+  const handleNeedAnotherMeeting = (meeting: MeetingData) => {
+    console.log('Need Another Meeting:', { id: meeting.id, meeting });
+  };
+
+  const handleDeleteMeeting = (meeting: MeetingData) => {
+    console.log('Delete Meeting:', { id: meeting.id, meeting });
+    setMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
   };
 
   // KPI Calculations
@@ -172,6 +194,18 @@ export default function Sales_Meetings() {
                   <input type="text" name="locationOrLink" value={formData.locationOrLink} onChange={handleChange} placeholder={formData.meetingType === 'Video Call' ? 'https://zoom.us/...' : 'Enter address or phone'} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
                 </div>
 
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">Note</label>
+                  <textarea
+                    name="note"
+                    value={formData.note}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Add meeting notes..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
+                  />
+                </div>
+
                 <div className="pt-4 mt-2 border-t border-gray-100">
                   <button type="submit" className="w-full bg-[#99B562] hover:bg-[#8da857] text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm">
                     Save Meeting
@@ -223,6 +257,9 @@ export default function Sales_Meetings() {
                             <span className="text-gray-900">{meeting.guestName}</span>
                           </p>
                         </div>
+                        {meeting.note && (
+                          <p className="text-sm text-gray-600 mt-2 max-w-2xl">{meeting.note}</p>
+                        )}
                       </div>
 
                       {/* Date Block */}
@@ -249,12 +286,37 @@ export default function Sales_Meetings() {
                         )}
                       </div>
                       
-                      {/* Hidden action buttons that appear on hover */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                        <button className="p-1.5 text-gray-400 hover:text-[#99B562] rounded-md hover:bg-[#99B562]/10 transition-colors">
-                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDeleteMeeting(meeting)}
+                          className="p-1.5 text-rose-500 hover:text-rose-700 rounded-md hover:bg-rose-50 transition-colors"
+                          aria-label="Delete meeting"
+                          title="Delete meeting"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"></path></svg>
                         </button>
                       </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-gray-100 pl-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleSuccessMeeting(meeting)}
+                        className="text-xs px-3 py-1.5 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors font-medium"
+                      >
+                        Success Meeting
+                      </button>
+                      <button
+                        onClick={() => handleFailMeeting(meeting)}
+                        className="text-xs px-3 py-1.5 rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors font-medium"
+                      >
+                        Fail Meeting
+                      </button>
+                      <button
+                        onClick={() => handleNeedAnotherMeeting(meeting)}
+                        className="text-xs px-3 py-1.5 rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors font-medium"
+                      >
+                        Need Another Meeting
+                      </button>
                     </div>
 
                   </div>
