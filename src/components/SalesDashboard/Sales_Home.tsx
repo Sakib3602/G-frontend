@@ -9,7 +9,8 @@ import {
   Menu, 
   Bell, 
   LayersPlus,
-  WorkflowIcon
+  WorkflowIcon,
+  Timer
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
 
@@ -29,9 +30,9 @@ const Sales_Home = () => {
     { name: 'Dashboard', path: '/dashboard/sales', icon: LayoutDashboard },
     { name: 'Create Leads', path: '/dashboard/sales/create-leads', icon: LayersPlus },
     { name: 'My Leads', path: '/dashboard/sales/all-leads', icon: Users },
-    { name: 'Meetings', path: '/dashboard/sales/meetings', icon: Calendar },
+    { name: 'My Meetings', path: '/dashboard/sales/meetings', icon: Calendar },
     { name: 'Proposals', path: '/dashboard/deals', icon: Briefcase },
-    { name: 'Tasks & Meetings', path: '/dashboard/tasks', icon: Calendar },
+    { name: 'Reminder Proposals', path: '/dashboard/deals/remainder', icon: Timer },  
     { name: 'Closed Deals', path: '/dashboard/settings', icon: Settings },
     { name: 'Won Deals', path: '/dashboard/settings', icon: WorkflowIcon },
   ];

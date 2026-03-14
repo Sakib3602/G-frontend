@@ -21,6 +21,34 @@ export interface LeadData {
   profileUrl: string;
 }
 
+export interface IMeeting {
+  title: string;
+  leadId?: string;
+  clientName: string;
+  clientEmail: string;
+  meetingDate: string;
+  meetingTime: string;
+  meetingType: "online" | "offline";
+  meetingLink?: string;
+  agenda?: string;
+  notes?: string;
+  status?: "scheduled" | "completed" | "cancelled";
+}
+
+const createMeetingForm = (lead?: LeadData | null): IMeeting => ({
+  title: "",
+  leadId: lead?._id || lead?.id,
+  clientName: lead?.leadName || "",
+  clientEmail: lead?.email || "",
+  meetingDate: "",
+  meetingTime: "",
+  meetingType: "online",
+  meetingLink: "",
+  agenda: "",
+  notes: "",
+  status: "scheduled",
+});
+
 // Utility functions for dynamic cell colors
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -66,7 +94,8 @@ export default function Sales_My_Leads() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [sortBy, setSortBy] = useState("Newest");
   const [meetingLead, setMeetingLead] = useState<LeadData | null>(null);
-  const [meetingForm, setMeetingForm] = useState({ date: "", time: "", note: "", meetingWay: "Zoom" });
+  const [meetingForm, setMeetingForm] = useState<IMeeting>(createMeetingForm());
+  const [meetingError, setMeetingError] = useState<string | null>(null);
 
   // --- Data Fetching ---
   const { data: leadsData = [], isLoading, isError } = useQuery<LeadData[]>({
@@ -153,22 +182,76 @@ export default function Sales_My_Leads() {
   // --- Handle Meeting Submit ---
   const handleMeetingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Meeting scheduled:", {
-      lead: meetingLead,
-      leadId: meetingLead?._id || meetingLead?.id,
+
+    if (
+      !meetingForm.title.trim() ||
+      !meetingForm.clientName.trim() ||
+      !meetingForm.clientEmail.trim() ||
+      !meetingForm.meetingDate ||
+      !meetingForm.meetingTime
+    ) {
+      setMeetingError("Please complete the required fields before submitting the meeting.");
+      return;
+    }
+
+    const resolvedLeadId = meetingLead?._id || meetingLead?.id;
+    const payload: IMeeting = {
       ...meetingForm,
-    });
+      leadId: resolvedLeadId,
+      meetingLink: meetingForm.meetingType === "online" ? meetingForm.meetingLink?.trim() || undefined : undefined,
+      agenda: meetingForm.agenda?.trim() || undefined,
+      notes: meetingForm.notes?.trim() || undefined,
+      status: meetingForm.status || "scheduled",
+    };
+
+    setMeetingError(null);
+
+  
+    console.log("Meeting scheduled:", payload);
+
     // TODO: API call to save meeting
     setMeetingLead(null);
-    setMeetingForm({ date: "", time: "", note: "", meetingWay: "Zoom" });
+    setMeetingForm(createMeetingForm());
    
     setShowNoti(true)
   };
 
+  
+
+  const handleMeetingFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+
+    setMeetingForm((prev) => {
+      if (name === "meetingType") {
+        return {
+          ...prev,
+          meetingType: value as IMeeting["meetingType"],
+          meetingLink: value === "online" ? prev.meetingLink : "",
+        };
+      }
+
+      if (name === "status") {
+        return {
+          ...prev,
+          status: value as IMeeting["status"],
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
+  };
+
   const openMeetingPopup = (lead: LeadData, source: "fix" | "confirm") => {
     console.log("Meeting popup opened:", { source, lead });
+    console.log("Selected lead ID:", lead._id || lead.id);
+    setMeetingError(null);
     setMeetingLead(lead);
-    setMeetingForm({ date: "", time: "", note: "", meetingWay: "Zoom" });
+    setMeetingForm(createMeetingForm(lead));
   };
 
 
@@ -413,110 +496,204 @@ export default function Sales_My_Leads() {
       {/* --- FIX MEETING MODAL --- */}
       {meetingLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
-            <div className="px-6 pt-6 pb-4 flex justify-between items-start">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl relative overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
+            <div className="absolute top-0 left-0 w-full h-1 bg-[#99B562]"></div>
+            <div className="px-6 sm:px-8 pt-6 pb-4 flex justify-between items-start border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Fix Meeting</h2>
-                <p className="text-sm text-gray-500 mt-0.5">Schedule a meeting with <span className="font-medium text-gray-800">{meetingLead.leadName}</span></p>
+                <h2 className="text-2xl font-bold text-slate-900">Schedule Meeting</h2>
+                <p className="text-sm text-slate-500 mt-1">Create a meeting record for <span className="font-semibold text-slate-800">{meetingLead.leadName}</span> with a clearer, wider form layout.</p>
               </div>
               <button
                 onClick={() => {
+                  setMeetingError(null);
                   setMeetingLead(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-100"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleMeetingSubmit} className="px-6 pb-6 space-y-4">
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Important Lead Data</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Company:</span> {meetingLead.companyName}</p>
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Owner:</span> {meetingLead.owner || "N/A"}</p>
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Status:</span> {meetingLead.status}</p>
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Score:</span> {meetingLead.leadScore}</p>
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Region:</span> {meetingLead.region}</p>
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Title:</span> {meetingLead.title}</p>
-                </div>
-                <div className="mt-2 text-sm">
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Email:</span> {meetingLead.email}</p>
-                  <p className="text-gray-600"><span className="font-medium text-gray-800">Phone:</span> {meetingLead.phone}</p>
+            <form onSubmit={handleMeetingSubmit} className="flex-1 overflow-y-auto" noValidate>
+              <div className="px-6 sm:px-8 py-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <aside className="xl:col-span-4 space-y-4">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Lead Summary</h3>
+                      <span className="rounded-full bg-[#99B562]/15 px-3 py-1 text-xs font-semibold text-[#6f8348]">{meetingLead.status}</span>
+                    </div>
+                    <div className="space-y-3 text-sm text-slate-600">
+                      <p><span className="font-semibold text-slate-900">Company:</span> {meetingLead.companyName}</p>
+                      <p><span className="font-semibold text-slate-900">Owner:</span> {meetingLead.owner || "N/A"}</p>
+                      <p><span className="font-semibold text-slate-900">Region:</span> {meetingLead.region}</p>
+                      <p><span className="font-semibold text-slate-900">Score:</span> {meetingLead.leadScore}</p>
+                      <p><span className="font-semibold text-slate-900">Role:</span> {meetingLead.title}</p>
+                      <p><span className="font-semibold text-slate-900">Phone:</span> {meetingLead.phone}</p>
+                      <p className="break-all"><span className="font-semibold text-slate-900">Email:</span> {meetingLead.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#99B562]/30 bg-[#99B562]/10 p-5">
+                    <h3 className="text-sm font-bold text-[#587132] uppercase tracking-wide">Attached Lead ID</h3>
+                    <p className="mt-2 break-all text-sm font-medium text-[#587132]">{meetingLead._id || meetingLead.id}</p>
+                    <p className="mt-2 text-xs text-[#6f8348]">This is linked automatically and logged in the console when you confirm the meeting.</p>
+                  </div>
+                </aside>
+
+                <div className="xl:col-span-8 space-y-5">
+                  {meetingError && (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                      {meetingError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Meeting Title</label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={meetingForm.title}
+                        onChange={handleMeetingFormChange}
+                        placeholder="Example: Discovery call and pricing review"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Client Name</label>
+                      <input
+                        type="text"
+                        name="clientName"
+                        value={meetingForm.clientName}
+                        onChange={handleMeetingFormChange}
+                        placeholder="Client name"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Client Email</label>
+                      <input
+                        type="text"
+                        name="clientEmail"
+                        value={meetingForm.clientEmail}
+                        onChange={handleMeetingFormChange}
+                        placeholder="Client email"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Meeting Date</label>
+                      <input
+                        type="date"
+                        name="meetingDate"
+                        value={meetingForm.meetingDate}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Meeting Time</label>
+                      <input
+                        type="time"
+                        name="meetingTime"
+                        value={meetingForm.meetingTime}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Meeting Type</label>
+                      <select
+                        name="meetingType"
+                        value={meetingForm.meetingType}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white cursor-pointer"
+                      >
+                        <option value="online">Online</option>
+                        <option value="offline">Offline</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Status</label>
+                      <select
+                        name="status"
+                        value={meetingForm.status || "scheduled"}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white cursor-pointer"
+                      >
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+
+                    {meetingForm.meetingType === "online" && (
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Meeting Link</label>
+                        <input
+                          type="text"
+                          name="meetingLink"
+                          value={meetingForm.meetingLink || ""}
+                          onChange={handleMeetingFormChange}
+                          placeholder="https://meet.google.com/..."
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
+                        />
+                      </div>
+                    )}
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Agenda</label>
+                      <textarea
+                        name="agenda"
+                        rows={4}
+                        placeholder="Outline what will be covered in this meeting."
+                        value={meetingForm.agenda || ""}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] resize-none bg-white"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Notes</label>
+                      <textarea
+                        name="notes"
+                        rows={4}
+                        placeholder="Add internal notes, action items, or follow-up context."
+                        value={meetingForm.notes || ""}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] resize-none bg-white"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Lead ID</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={meetingLead._id || meetingLead.id}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 cursor-not-allowed"
-                />
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={meetingForm.date}
-                    onChange={(e) => setMeetingForm(f => ({ ...f, date: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Time</label>
-                  <input
-                    type="time"
-                    required
-                    value={meetingForm.time}
-                    onChange={(e) => setMeetingForm(f => ({ ...f, time: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Meeting Way</label>
-                <select
-                  value={meetingForm.meetingWay}
-                  onChange={(e) => setMeetingForm(f => ({ ...f, meetingWay: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer"
-                >
-                  <option value="Zoom">Zoom</option>
-                  <option value="Meet">Meet</option>
-                  <option value="Face to Face">Face to Face</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Note</label>
-                <textarea
-                  rows={3}
-                  placeholder="Add any notes about this meeting..."
-                  value={meetingForm.note}
-                  onChange={(e) => setMeetingForm(f => ({ ...f, note: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
+              <div className="px-6 sm:px-8 py-5 border-t border-slate-100 bg-white sticky bottom-0">
+                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                 <button
                   type="button"
                   onClick={() => {
+                    setMeetingError(null);
                     setMeetingLead(null);
                   }}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-5 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-blue-600 rounded-xl text-sm font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm"
+                  className="px-6 py-3 bg-[#99B562] rounded-xl text-sm font-semibold text-white hover:bg-[#88a154] transition-colors shadow-sm"
                 >
                   Confirm Meeting
                 </button>
+                </div>
               </div>
             </form>
           </div>
