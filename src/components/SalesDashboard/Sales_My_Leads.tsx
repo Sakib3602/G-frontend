@@ -1,8 +1,9 @@
-import  { useState, useMemo } from "react";
+import  { useState, useMemo, useContext } from "react";
 import useAxiosSales from "@/uri/useAxiosSales";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import Notification from "../ui/toast";
+import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 
 export interface LeadData {
   id: string;
@@ -33,21 +34,10 @@ export interface IMeeting {
   agenda?: string;
   notes?: string;
   status?: "scheduled" | "completed" | "cancelled";
+  schedulerId: string;
 }
 
-const createMeetingForm = (lead?: LeadData | null): IMeeting => ({
-  title: "",
-  leadId: lead?._id || lead?.id,
-  clientName: lead?.leadName || "",
-  clientEmail: lead?.email || "",
-  meetingDate: "",
-  meetingTime: "",
-  meetingType: "online",
-  meetingLink: "",
-  agenda: "",
-  notes: "",
-  status: "scheduled",
-});
+
 
 // Utility functions for dynamic cell colors
 const getStatusColor = (status: string) => {
@@ -84,9 +74,25 @@ const statusOptions = [
   "Qualified",
   "Unqualified",
 ];
+  // form
+  const createMeetingForm = (lead?: LeadData | null): IMeeting => ({
+  title: "",
+  leadId: lead?._id || lead?.id,
+  clientName: lead?.leadName || "",
+  clientEmail: lead?.email || "",
+  meetingDate: "",
+  meetingTime: "",
+  meetingType: "online",
+  meetingLink: "",
+  agenda: "",
+  notes: "",
+  status: "scheduled",
+  schedulerId: "",
+});
 
 export default function Sales_My_Leads() {
   const axiosSales = useAxiosSales();
+  
 
   // --- UI Control States ---
   const [showNoti, setShowNoti] = useState(false);
@@ -96,6 +102,7 @@ export default function Sales_My_Leads() {
   const [meetingLead, setMeetingLead] = useState<LeadData | null>(null);
   const [meetingForm, setMeetingForm] = useState<IMeeting>(createMeetingForm());
   const [meetingError, setMeetingError] = useState<string | null>(null);
+  const [isMeetingConflict, setIsMeetingConflict] = useState(false);
 
   // --- Data Fetching ---
   const { data: leadsData = [], isLoading, isError } = useQuery<LeadData[]>({
@@ -105,6 +112,21 @@ export default function Sales_My_Leads() {
       return res.data.leads as LeadData[];
     }
   });
+  const auth = useContext(AuthContext);
+  const person = auth?.person;
+  // console.log("my lead ", person?.email)
+
+  const {data : userData} = useQuery({
+    queryKey: ['user-data', person?.email],
+    enabled: Boolean(person?.email),
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
+      return res.data.data;
+    }
+  })
+
+
+
 
   // --- Search, Filter, and Sort Logic ---
   const processedLeads = useMemo(() => {
@@ -179,6 +201,8 @@ export default function Sales_My_Leads() {
     document.body.removeChild(link);
   };
 
+ 
+
   // --- Handle Meeting Submit ---
   const handleMeetingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,21 +226,33 @@ export default function Sales_My_Leads() {
       agenda: meetingForm.agenda?.trim() || undefined,
       notes: meetingForm.notes?.trim() || undefined,
       status: meetingForm.status || "scheduled",
+      schedulerId: userData?._id || "unknown", 
     };
 
     setMeetingError(null);
 
   
-    console.log("Meeting scheduled:", payload);
+    // console.log("Meeting scheduled:", payload);
+    mutationUpformeeting.mutate(payload)
 
     // TODO: API call to save meeting
     setMeetingLead(null);
     setMeetingForm(createMeetingForm());
    
-    setShowNoti(true)
+    
   };
 
-  
+  const mutationUpformeeting = useMutation({
+    mutationFn: async (meetingData: IMeeting) => {
+      const res = await axiosSales.post('/api/v1/sales/meetings/create-meeting', meetingData);
+      return res.data;
+    },
+    onSuccess : ()=>{
+      setShowNoti(true)
+    }
+  })
+
+
 
   const handleMeetingFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -249,10 +285,28 @@ export default function Sales_My_Leads() {
   const openMeetingPopup = (lead: LeadData, source: "fix" | "confirm") => {
     console.log("Meeting popup opened:", { source, lead });
     console.log("Selected lead ID:", lead._id || lead.id);
+    MutationForCkMeeting.mutate(lead._id || lead.id);
     setMeetingError(null);
     setMeetingLead(lead);
     setMeetingForm(createMeetingForm(lead));
   };
+
+
+
+
+
+
+  const MutationForCkMeeting = useMutation({
+  mutationFn: async (leadId: string) => {
+    const res = await axiosSales.get(`/api/v1/sales/meetings/check-meeting/${leadId}`);
+    return res.data;
+  },
+  onSuccess: (data)=>{
+    console.log("Check meeting response:", data.meeting);
+    setIsMeetingConflict(data.meeting);
+  }
+
+  })
 
 
   const handleInlineStatusChange = (leadId: string, newStatus: string) => {
@@ -431,11 +485,11 @@ export default function Sales_My_Leads() {
                 </td>
                 
                 {/* --- CHANGED: Status is now an invisible dropdown filling the colored cell --- */}
-                <td className={`p-0 border-r border-gray-200 w-40 min-w-[10rem] max-w-[10rem] ${getStatusColor(lead.status)} relative`}>
+                <td className={`p-0 border-r border-gray-200 w-40 min-w-40 max-w-40 ${getStatusColor(lead.status)} relative`}>
                   <select
                     value={lead.status}
                     onChange={(e) => handleInlineStatusChange(lead._id, e.target.value)}
-                    className={`w-full h-full min-h-[40px] appearance-none bg-transparent outline-none cursor-pointer text-center font-medium pr-6 px-2 ${getStatusColor(lead.status)}`}
+                    className={`w-full h-full min-h-10 appearance-none bg-transparent outline-none cursor-pointer text-center font-medium pr-6 px-2 ${getStatusColor(lead.status)}`}
                   >
                     {statusOptions.map((opt) => (
                       <option key={opt} value={opt} className="bg-white text-gray-800 text-left">
@@ -498,7 +552,7 @@ export default function Sales_My_Leads() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl relative overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 w-full h-1 bg-[#99B562]"></div>
-            <div className="px-6 sm:px-8 pt-6 pb-4 flex justify-between items-start border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
+            <div className="px-6 sm:px-8 pt-6 pb-4 flex justify-between items-start border-b border-slate-100 bg-linear-to-br from-slate-50 to-white">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">Schedule Meeting</h2>
                 <p className="text-sm text-slate-500 mt-1">Create a meeting record for <span className="font-semibold text-slate-800">{meetingLead.leadName}</span> with a clearer, wider form layout.</p>
@@ -537,7 +591,10 @@ export default function Sales_My_Leads() {
                   <div className="rounded-2xl border border-[#99B562]/30 bg-[#99B562]/10 p-5">
                     <h3 className="text-sm font-bold text-[#587132] uppercase tracking-wide">Attached Lead ID</h3>
                     <p className="mt-2 break-all text-sm font-medium text-[#587132]">{meetingLead._id || meetingLead.id}</p>
-                    <p className="mt-2 text-xs text-[#6f8348]">This is linked automatically and logged in the console when you confirm the meeting.</p>
+                    {/* <p className="mt-2 text-xs text-[#6f8348]">This is linked automatically and logged in the console when you confirm the meeting.</p> */}
+                  </div>
+                  <div className="rounded-2xl border border-red/30 bg-red-400 p-5">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wide">ALLREADY FIX A SCHEDULE.</h3>
                   </div>
                 </aside>
 
