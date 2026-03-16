@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -13,17 +13,32 @@ import {
   Timer
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
+import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
+import { useQuery } from '@tanstack/react-query';
+import useAxiosSales from '@/uri/useAxiosSales';
 
 const Sales_Home = () => {
+  const axiosSales = useAxiosSales()
+  const auth = useContext(AuthContext);
+  const person = auth?.person;
+  const { data: userData } = useQuery({
+    queryKey: ["user-data", person?.email],
+    enabled: Boolean(person?.email),
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
+      return res.data.data;
+    },
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
 
   // Mock user data
   const user = {
-    name: "Sakib Sarkar",
-    email: "sakib@example.com",
+    name: userData?.name || "UnKnown User",
+    email: userData?.email || "",
     
-    avatar: "https://ui-avatars.com/api/?name=Sakib+Sarkar&background=7FA23B&color=fff"
+    // avatar: "https://ui-avatars.com/api/?name=Sakib+Sarkar&background=7FA23B&color=fff"
+    avatar: userData?.avatar || "https://ui-avatars.com/api/?name=User&background=7FA23B&color=fff"
   };
 
   const navItems = [
