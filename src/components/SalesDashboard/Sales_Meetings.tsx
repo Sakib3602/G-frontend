@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import useAxiosSales from "@/uri/useAxiosSales";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import Notification from "../ui/toast";
+import Swal from "sweetalert2";
 
 // --- 1. TYPES ---
 export interface MeetingData extends IMeeting {
@@ -69,6 +70,9 @@ const normalizeMeetingsResponse = (response: unknown): MeetingData[] => {
 
 export default function Sales_Meetings() {
   const [showNoti, setShowNoti] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<
+    "scheduled" | "completed" | "cancelled"
+  >("scheduled");
   const axiosSales = useAxiosSales();
   const auth = useContext(AuthContext);
   const person = auth?.person;
@@ -99,7 +103,6 @@ export default function Sales_Meetings() {
       return normalizeMeetingsResponse(res.data);
     },
   });
-
   // Form State
   const [formData, setFormData] = useState<IMeeting>(createEmptyForm());
 
@@ -149,21 +152,52 @@ export default function Sales_Meetings() {
     },
   });
 
-  const handleSuccessMeeting = (meeting: MeetingData) => {
-    console.log("Success Meeting:", { id: meeting.id, meeting });
+  const handleCompleteMeeting = (meeting: MeetingData) => {
+    console.log("Complete Meeting:", { id: meeting.id, meeting });
   };
 
-  const handleFailMeeting = (meeting: MeetingData) => {
-    console.log("Fail Meeting:", { id: meeting.id, meeting });
+  const handleCancelMeeting = (meeting: MeetingData) => {
+    console.log("Cancel Meeting:", { id: meeting.id, meeting });
   };
 
-  const handleNeedAnotherMeeting = (meeting: MeetingData) => {
-    console.log("Need Another Meeting:", { id: meeting.id, meeting });
+  const handleUpdateMeeting = (meeting: MeetingData) => {
+    console.log("Update Meeting:", { id: meeting.id, meeting });
   };
 
   const handleDeleteMeeting = (meeting: MeetingData) => {
-    console.log("Delete Meeting:", { id: meeting._id ?? meeting.id, meeting });
+    console.log("Delete Meeting:", meeting._id);
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        mutationUpdelete.mutate(meeting?._id as string);
+        Swal.fire({
+          title: "Deleted!",
+          text: "Your file has been deleted.",
+          icon: "success",
+        });
+      }
+    });
+    
   };
+
+  const mutationUpdelete = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await axiosSales.delete(
+        `/api/v1/sales/meetings/delete-meeting/${id}`,
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
   // KPI Calculations
   const totalMeetings = meetings.length;
@@ -173,6 +207,10 @@ export default function Sales_Meetings() {
   const completedMeetings = meetings.filter(
     (m) => m.status === "completed",
   ).length;
+  const cancelledMeetings = meetings.filter(
+    (m) => m.status === "cancelled",
+  ).length;
+  const filteredMeetings = meetings.filter((m) => m.status === selectedStatus);
 
   return (
     <>
@@ -204,7 +242,7 @@ export default function Sales_Meetings() {
           </div>
 
           {/* --- KPI WIDGETS --- */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-full bg-[#99B562]/10 flex items-center justify-center text-[#99B562]">
@@ -280,6 +318,32 @@ export default function Sales_Meetings() {
               </div>
               <p className="text-3xl font-bold text-gray-900">
                 {completedMeetings}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Cancelled
+                </h3>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">
+                {cancelledMeetings}
               </p>
             </div>
           </div>
@@ -411,7 +475,6 @@ export default function Sales_Meetings() {
                         <option value="scheduled">Scheduled</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
-                        <option value="one-more">One More</option>
                       </select>
                     </div>
                   </div>
@@ -479,11 +542,23 @@ export default function Sales_Meetings() {
                   Meeting Timeline
                 </h3>
                 <div className="flex gap-2">
-                  <button className="text-sm px-3 py-1.5 border border-gray-200 bg-white rounded-md font-medium text-gray-600 hover:bg-gray-50">
-                    Filter
+                  <button
+                    onClick={() => setSelectedStatus("scheduled")}
+                    className={`text-sm px-3 py-1.5 border rounded-md font-medium transition-colors ${selectedStatus === "scheduled" ? "border-[#99B562] bg-[#99B562] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Scheduled
                   </button>
-                  <button className="text-sm px-3 py-1.5 border border-gray-200 bg-white rounded-md font-medium text-gray-600 hover:bg-gray-50">
-                    Sort
+                  <button
+                    onClick={() => setSelectedStatus("completed")}
+                    className={`text-sm px-3 py-1.5 border rounded-md font-medium transition-colors ${selectedStatus === "completed" ? "border-[#99B562] bg-[#99B562] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Completed
+                  </button>
+                  <button
+                    onClick={() => setSelectedStatus("cancelled")}
+                    className={`text-sm px-3 py-1.5 border rounded-md font-medium transition-colors ${selectedStatus === "cancelled" ? "border-[#99B562] bg-[#99B562] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Cancelled
                   </button>
                 </div>
               </div>
@@ -503,12 +578,14 @@ export default function Sales_Meetings() {
                   </div>
                 )}
 
-                {!isLoading && !isError && meetings.length === 0 ? (
+                {!isLoading && !isError && filteredMeetings.length === 0 ? (
                   <div className="text-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
-                    <p className="text-gray-500">No meetings scheduled yet.</p>
+                    <p className="text-gray-500">
+                      No {selectedStatus} meetings found.
+                    </p>
                   </div>
                 ) : !isLoading && !isError ? (
-                  meetings.map((meeting) => (
+                  filteredMeetings.map((meeting) => (
                     <div
                       key={meeting._id ?? meeting.id}
                       className={`bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group ${meeting.status === "completed" ? "border-gray-200 bg-gray-50/50" : "border-gray-200"}`}
@@ -640,26 +717,28 @@ export default function Sales_Meetings() {
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-gray-100 pl-2 flex flex-wrap gap-2">
-                        <button
-                          onClick={() => handleSuccessMeeting(meeting)}
-                          className="text-xs px-3 py-1.5 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors font-medium"
-                        >
-                          Success Meeting
-                        </button>
-                        <button
-                          onClick={() => handleFailMeeting(meeting)}
-                          className="text-xs px-3 py-1.5 rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors font-medium"
-                        >
-                          Fail Meeting
-                        </button>
-                        <button
-                          onClick={() => handleNeedAnotherMeeting(meeting)}
-                          className="text-xs px-3 py-1.5 rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors font-medium"
-                        >
-                          Need Another Meeting
-                        </button>
-                      </div>
+                      {meeting.status === "scheduled" && (
+                        <div className="mt-4 pt-3 border-t border-gray-100 pl-2 flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleCompleteMeeting(meeting)}
+                            className="text-xs px-3 py-1.5 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors font-medium"
+                          >
+                            Complete
+                          </button>
+                          <button
+                            onClick={() => handleCancelMeeting(meeting)}
+                            className="text-xs px-3 py-1.5 rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors font-medium"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleUpdateMeeting(meeting)}
+                            className="text-xs px-3 py-1.5 rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors font-medium"
+                          >
+                            Update Meeting
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : null}

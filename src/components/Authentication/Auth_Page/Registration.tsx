@@ -77,7 +77,7 @@ const Registration: React.FC = () => {
         }
       });
     },
-    onError: (_error: unknown) => {
+    onError: () => {
       // console.error("DB save error:", error);
       Swal.fire({
         icon: "error",

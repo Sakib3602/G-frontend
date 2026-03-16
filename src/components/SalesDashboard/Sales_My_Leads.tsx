@@ -112,18 +112,6 @@ export default function Sales_My_Leads() {
 
   const queryClient = useQueryClient();
 
-  // --- Data Fetching ---
-  const {
-    data: leadsData = [],
-    isLoading,
-    isError,
-  } = useQuery<LeadData[]>({
-    queryKey: ["all-sales-leads"],
-    queryFn: async () => {
-      const res = await axiosSales.get("/api/v1/sales/get-my-leads");
-      return res.data.leads as LeadData[];
-    },
-  });
   const auth = useContext(AuthContext);
   const person = auth?.person;
   // console.log("my lead ", person?.email)
@@ -136,6 +124,24 @@ export default function Sales_My_Leads() {
       return res.data.data;
     },
   });
+
+
+
+  
+
+  // --- Data Fetching ---
+  const {
+    data: leadsData = [],
+    isLoading,
+    isError,
+  } = useQuery<LeadData[]>({
+    queryKey: ["all-sales-leads"],
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/sales/get-my-leads/${userData._id}`);
+      return res.data.leads as LeadData[];
+    },
+  });
+  
 
   // --- Search, Filter, and Sort Logic ---
   const processedLeads = useMemo(() => {
@@ -883,7 +889,7 @@ export default function Sales_My_Leads() {
                         <option value="scheduled">Scheduled</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
-                        <option value="one-more">One More</option>
+                        
                       </select>
                     </div>
 

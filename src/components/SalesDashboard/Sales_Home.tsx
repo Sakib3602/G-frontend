@@ -62,6 +62,7 @@ const Sales_Home = () => {
         } bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col z-20`}
       >
         {/* Brand Area */}
+        <Link to={"/"}>
         <div className="h-16 flex items-center justify-center border-b border-gray-100">
           <span className={`font-bold text-gray-900 text-xl tracking-wide ${!isSidebarOpen && 'hidden'}`}>
             Gene<span className="text-[#7FA23B]">sys</span> CRM
@@ -72,6 +73,7 @@ const Sales_Home = () => {
             </div>
           )}
         </div>
+        </Link>
 
         {/* Navigation Area */}
         <div className="flex-1 py-6 flex flex-col overflow-y-auto px-3">
