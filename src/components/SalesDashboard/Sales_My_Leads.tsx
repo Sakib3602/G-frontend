@@ -33,7 +33,7 @@ export interface IMeeting {
   meetingLink?: string;
   agenda?: string;
   notes?: string;
-  status?: "scheduled" | "completed" | "cancelled";
+  status?: "scheduled" | "completed" | "cancelled" | "one-more";
   schedulerId: string;
 }
 
@@ -883,6 +883,7 @@ export default function Sales_My_Leads() {
                         <option value="scheduled">Scheduled</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
+                        <option value="one-more">One More</option>
                       </select>
                     </div>
 
@@ -945,12 +946,20 @@ export default function Sales_My_Leads() {
                   >
                     Cancel
                   </button>
-                  <button
+                  {
+                    isMeetingConflict ?  <button
+                    type="submit"
+                    className="px-6 py-3 bg-red-400 rounded-xl text-sm font-semibold text-white hover:bg-[#88a154] transition-colors shadow-sm"
+                  >
+                    Make Another Meeting
+                  </button> :  <button
                     type="submit"
                     className="px-6 py-3 bg-[#99B562] rounded-xl text-sm font-semibold text-white hover:bg-[#88a154] transition-colors shadow-sm"
                   >
                     Confirm Meeting
                   </button>
+                  }
+                 
                 </div>
               </div>
             </form>

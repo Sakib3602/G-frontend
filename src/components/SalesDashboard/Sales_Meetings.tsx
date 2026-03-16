@@ -1,82 +1,111 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import type { IMeeting } from './Sales_My_Leads';
+import { useQuery } from '@tanstack/react-query';
+import useAxiosSales from '@/uri/useAxiosSales';
+import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
 
-// --- 1. MOCK DATA & TYPES ---
-export interface MeetingData {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  guestName: string;
-  meetingType: 'Video Call' | 'In-Person' | 'Phone Call';
-  locationOrLink: string;
-  note: string;
-  status: 'Scheduled' | 'Completed' | 'Canceled';
+// --- 1. TYPES ---
+export interface MeetingData extends IMeeting {
+  _id?: string;
+  id?: string;
 }
 
-const initialMeetings: MeetingData[] = [
-  {
-    id: '1',
-    title: 'Product Demo & Pricing',
-    date: '2026-03-15',
-    time: '10:00 AM',
-    guestName: 'Liam Smith',
-    meetingType: 'Video Call',
-    locationOrLink: 'https://zoom.us/j/123456789',
-    note: 'Focus on pricing tiers and expected rollout timeline.',
-    status: 'Scheduled',
-  },
-  {
-    id: '2',
-    title: 'Initial Discovery Call',
-    date: '2026-03-16',
-    time: '02:30 PM',
-    guestName: 'Sarah Jenkins',
-    meetingType: 'Phone Call',
-    locationOrLink: '+1 (555) 987-6543',
-    note: 'Capture current pain points before proposing solution.',
-    status: 'Scheduled',
-  },
-  {
-    id: '3',
-    title: 'Contract Negotiation',
-    date: '2026-03-12',
-    time: '11:00 AM',
-    guestName: 'David Johnson',
-    meetingType: 'Video Call',
-    locationOrLink: 'https://meet.google.com/abc-defg-hij',
-    note: 'Legal review completed, pending final budget approval.',
-    status: 'Completed',
+const createEmptyForm = (): IMeeting => ({
+  title: '',
+  clientName: '',
+  clientEmail: '',
+  meetingDate: '',
+  meetingTime: '',
+  meetingType: 'online',
+  meetingLink: '',
+  agenda: '',
+  notes: '',
+  status: 'scheduled',
+  schedulerId: '',
+});
+
+const normalizeMeetingStatus = (status?: string): MeetingData['status'] => {
+  const normalized = status?.toLowerCase();
+
+  if (normalized === 'completed' || normalized === 'cancelled' || normalized === 'one-more') {
+    return normalized;
   }
-];
+
+  return 'scheduled';
+};
+
+const normalizeMeetingsResponse = (response: unknown): MeetingData[] => {
+  const payload = response as
+    | MeetingData[]
+    | { data?: MeetingData[]; meetings?: MeetingData[]; allMeetings?: MeetingData[] };
+
+  const meetings = Array.isArray(payload)
+    ? payload
+    : payload?.data ?? payload?.meetings ?? payload?.allMeetings ?? [];
+
+  if (!Array.isArray(meetings)) {
+    return [];
+  }
+
+  return meetings.map((meeting, index) => ({
+    ...meeting,
+    id: meeting.id ?? meeting._id ?? `${meeting.clientEmail}-${meeting.meetingDate}-${meeting.meetingTime}-${index}`,
+    status: normalizeMeetingStatus(meeting.status),
+  }));
+};
 
 export default function Sales_Meetings() {
-  const [meetings, setMeetings] = useState<MeetingData[]>(initialMeetings);
-  
-  // Form State
-  const [formData, setFormData] = useState({
-    title: '',
-    date: '',
-    time: '',
-    guestName: '',
-    meetingType: 'Video Call' as MeetingData['meetingType'],
-    locationOrLink: '',
-    note: '',
+  const axiosSales = useAxiosSales();
+  const auth = useContext(AuthContext);
+  const person = auth?.person;
+
+  // fetch user data
+  const { data: userData } = useQuery({
+    queryKey: ["user-data", person?.email],
+    enabled: Boolean(person?.email),
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
+      return res.data.data;
+    },
   });
+  console.log('Fetched user data:', userData);
+
+  // meetings data fetch
+  const {
+    data: meetings = [],
+    isLoading,
+    isError,
+  } = useQuery<MeetingData[]>({
+    queryKey: ['meetings-single-sales', userData?._id],
+    enabled: Boolean(userData?._id),
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/sales/meetings/meetings/${userData?._id}`);
+      return normalizeMeetingsResponse(res.data);
+    },
+  });
+
+  // Form State
+  const [formData, setFormData] = useState<IMeeting>(createEmptyForm());
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      if (name === 'meetingType') {
+        return { ...prev, meetingType: value as IMeeting['meetingType'], meetingLink: value === 'online' ? prev.meetingLink : '' };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newMeeting: MeetingData = {
-      id: Date.now().toString(),
+ 
       ...formData,
-      status: 'Scheduled',
     };
-    setMeetings([newMeeting, ...meetings]);
-    setFormData({ title: '', date: '', time: '', guestName: '', meetingType: 'Video Call', locationOrLink: '', note: '' });
+    console.log('Meeting Submitted:', newMeeting);
+   
+    setFormData(createEmptyForm());
   };
 
   const handleSuccessMeeting = (meeting: MeetingData) => {
@@ -92,14 +121,14 @@ export default function Sales_Meetings() {
   };
 
   const handleDeleteMeeting = (meeting: MeetingData) => {
-    console.log('Delete Meeting:', { id: meeting.id, meeting });
-    setMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+    console.log('Delete Meeting:', { id: meeting._id ?? meeting.id, meeting });
+   
   };
 
   // KPI Calculations
   const totalMeetings = meetings.length;
-  const upcomingMeetings = meetings.filter(m => m.status === 'Scheduled').length;
-  const completedMeetings = meetings.filter(m => m.status === 'Completed').length;
+  const upcomingMeetings = meetings.filter(m => m.status === 'scheduled').length;
+  const completedMeetings = meetings.filter(m => m.status === 'completed').length;
 
   return (
     <div className=" poppins-regular w-full bg-gray-50/50 p-4 sm:p-6 lg:p-8 font-sans min-h-screen">
@@ -165,43 +194,72 @@ export default function Sales_Meetings() {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-1">Lead / Guest Name *</label>
-                  <input type="text" name="guestName" required value={formData.guestName} onChange={handleChange} placeholder="e.g. Liam Smith" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
+                  <label className="block font-medium text-gray-700 mb-1">Client Name *</label>
+                  <input type="text" name="clientName" required value={formData.clientName} onChange={handleChange} placeholder="e.g. Liam Smith" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
+                </div>
+
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">Client Email *</label>
+                  <input type="email" name="clientEmail" required value={formData.clientEmail} onChange={handleChange} placeholder="e.g. client@example.com" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block font-medium text-gray-700 mb-1">Date *</label>
-                    <input type="date" name="date" required value={formData.date} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
+                    <input type="date" name="meetingDate" required value={formData.meetingDate} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
                   </div>
                   <div>
                     <label className="block font-medium text-gray-700 mb-1">Time *</label>
-                    <input type="time" name="time" required value={formData.time} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
+                    <input type="time" name="meetingTime" required value={formData.meetingTime} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-medium text-gray-700 mb-1">Meeting Type</label>
-                  <select name="meetingType" value={formData.meetingType} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors">
-                    <option value="Video Call">Video Call</option>
-                    <option value="Phone Call">Phone Call</option>
-                    <option value="In-Person">In-Person</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-medium text-gray-700 mb-1">Meeting Type</label>
+                    <select name="meetingType" value={formData.meetingType} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors">
+                      <option value="online">Online</option>
+                      <option value="offline">Offline</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" value={formData.status || 'scheduled'} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors">
+                      <option value="scheduled">Scheduled</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="one-more">One More</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block font-medium text-gray-700 mb-1">Location or Link</label>
-                  <input type="text" name="locationOrLink" value={formData.locationOrLink} onChange={handleChange} placeholder={formData.meetingType === 'Video Call' ? 'https://zoom.us/...' : 'Enter address or phone'} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
-                </div>
+                {formData.meetingType === 'online' && (
+                  <div>
+                    <label className="block font-medium text-gray-700 mb-1">Meeting Link</label>
+                    <input type="text" name="meetingLink" value={formData.meetingLink || ''} onChange={handleChange} placeholder="https://meet.google.com/..." className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors" />
+                  </div>
+                )}
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-1">Note</label>
+                  <label className="block font-medium text-gray-700 mb-1">Agenda</label>
                   <textarea
-                    name="note"
-                    value={formData.note}
+                    name="agenda"
+                    value={formData.agenda || ''}
+                    onChange={handleChange}
+                    rows={2}
+                    placeholder="Outline what will be covered in this meeting."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes || ''}
                     onChange={handleChange}
                     rows={3}
-                    placeholder="Add meeting notes..."
+                    placeholder="Add internal notes or follow-up context."
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
                   />
                 </div>
@@ -226,21 +284,33 @@ export default function Sales_Meetings() {
             </div>
             
             <div className="space-y-4">
-              {meetings.length === 0 ? (
+              {isLoading && (
+                <div className="text-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
+                  <p className="text-gray-500">Loading meetings...</p>
+                </div>
+              )}
+
+              {isError && !isLoading && (
+                <div className="text-center p-12 bg-white rounded-xl border border-dashed border-rose-300">
+                  <p className="text-rose-500">Unable to load meetings from the database.</p>
+                </div>
+              )}
+
+              {!isLoading && !isError && meetings.length === 0 ? (
                 <div className="text-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
                   <p className="text-gray-500">No meetings scheduled yet.</p>
                 </div>
-              ) : (
+              ) : !isLoading && !isError ? (
                 meetings.map((meeting) => (
-                  <div key={meeting.id} className={`bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group ${meeting.status === 'Completed' ? 'border-gray-200 bg-gray-50/50' : 'border-gray-200'}`}>
+                  <div key={meeting._id ?? meeting.id} className={`bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group ${meeting.status === 'completed' ? 'border-gray-200 bg-gray-50/50' : 'border-gray-200'}`}>
                     
                     {/* Dynamic Accent Line */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${meeting.status === 'Scheduled' ? 'bg-[#99B562]' : 'bg-slate-300'}`}></div>
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${meeting.status === 'scheduled' ? 'bg-[#99B562]' : 'bg-slate-300'}`}></div>
 
                     <div className="flex flex-col sm:flex-row justify-between sm:items-start pl-2 gap-4">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${meeting.status === 'Scheduled' ? 'bg-[#99B562]/10 text-[#7a914e] border-[#99B562]/20' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${meeting.status === 'scheduled' ? 'bg-[#99B562]/10 text-[#7a914e] border-[#99B562]/20' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                             {meeting.status}
                           </span>
                           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
@@ -251,38 +321,46 @@ export default function Sales_Meetings() {
                         <h4 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-[#99B562] transition-colors cursor-pointer">{meeting.title}</h4>
                         <div className="flex items-center gap-2 mt-2">
                           <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                             {meeting.guestName.substring(0,2).toUpperCase()}
+                             {(meeting.clientName || 'NA').substring(0,2).toUpperCase()}
                           </div>
                           <p className="text-sm font-medium text-gray-600">
-                            <span className="text-gray-900">{meeting.guestName}</span>
+                            <span className="text-gray-900">{meeting.clientName}</span>
+                            {meeting.clientEmail && <span className="text-gray-400 ml-2 text-xs">{meeting.clientEmail}</span>}
                           </p>
                         </div>
-                        {meeting.note && (
-                          <p className="text-sm text-gray-600 mt-2 max-w-2xl">{meeting.note}</p>
+                        {meeting.agenda && (
+                          <p className="text-xs text-gray-500 mt-1 max-w-2xl"><span className="font-semibold">Agenda:</span> {meeting.agenda}</p>
+                        )}
+                        {meeting.notes && (
+                          <p className="text-sm text-gray-600 mt-1 max-w-2xl">{meeting.notes}</p>
                         )}
                       </div>
 
                       {/* Date Block */}
                       <div className="bg-white border border-gray-100 shadow-sm rounded-lg p-3 text-center min-w-[90px] shrink-0">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          {new Date(meeting.date).toLocaleString('default', { month: 'short' })}
+                          {new Date(meeting.meetingDate).toLocaleString('default', { month: 'short' })}
                         </p>
                         <p className="text-2xl font-black text-gray-800 leading-none my-1">
-                          {new Date(meeting.date).getDate()}
+                          {new Date(meeting.meetingDate).getDate()}
                         </p>
-                        <p className="text-[11px] font-bold text-gray-500">{meeting.time}</p>
+                        <p className="text-[11px] font-bold text-gray-500">{meeting.meetingTime}</p>
                       </div>
                     </div>
 
                     <div className="mt-5 pt-3 border-t border-gray-50 pl-2 flex justify-between items-center">
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        {meeting.locationOrLink.startsWith('http') ? (
-                          <a href={meeting.locationOrLink} target="_blank" rel="noopener noreferrer" className="text-[#99B562] hover:underline font-medium truncate max-w-[200px] sm:max-w-xs block">
-                            {meeting.locationOrLink}
-                          </a>
+                        {meeting.meetingLink ? (
+                          meeting.meetingLink.startsWith('http') ? (
+                            <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer" className="text-[#99B562] hover:underline font-medium truncate max-w-[200px] sm:max-w-xs block">
+                              {meeting.meetingLink}
+                            </a>
+                          ) : (
+                            <span>{meeting.meetingLink}</span>
+                          )
                         ) : (
-                          <span>{meeting.locationOrLink}</span>
+                          <span className="text-gray-400 italic">No link — offline meeting</span>
                         )}
                       </div>
                       
@@ -321,7 +399,7 @@ export default function Sales_Meetings() {
 
                   </div>
                 ))
-              )}
+              ) : null}
             </div>
           </div>
 

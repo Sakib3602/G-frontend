@@ -31,8 +31,8 @@ const Sales_Home = () => {
     { name: 'Create Leads', path: '/dashboard/sales/create-leads', icon: LayersPlus },
     { name: 'My Leads', path: '/dashboard/sales/all-leads', icon: Users },
     { name: 'My Meetings', path: '/dashboard/sales/meetings', icon: Calendar },
-    { name: 'Proposals', path: '/dashboard/deals', icon: Briefcase },
-    { name: 'Reminder Proposals', path: '/dashboard/deals/remainder', icon: Timer },  
+    { name: 'In Progress', path: '/dashboard/deals', icon: Briefcase },
+    { name: 'Reminders', path: '/dashboard/deals/remainder', icon: Timer },  
     { name: 'Closed Deals', path: '/dashboard/settings', icon: Settings },
     { name: 'Won Deals', path: '/dashboard/settings', icon: WorkflowIcon },
   ];

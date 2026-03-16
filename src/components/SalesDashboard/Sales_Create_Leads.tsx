@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { Save, X } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosSales from "@/uri/useAxiosSales";
 import Notification from "../ui/toast";
+import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 
 type LeadFormData = {
   leadName: string;
@@ -18,14 +19,28 @@ type LeadFormData = {
   specificRole: string;
   region: string;
   profileUrl: string;
+  leadCreatedBy: string;
 };
 
 const Sales_Create_leads = () => {
+  // leadCreatedBy
+  const auth = useContext(AuthContext);
+  const person = auth?.person;
+  const { data: userData } = useQuery({
+    queryKey: ["user-data", person?.email],
+    enabled: Boolean(person?.email),
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
+      return res.data.data;
+    },
+  });
+
+
   const [showNotification, setShowNotification] = useState(false);
   // Form state holding all fields from the image + additional necessary fields
   const [formData, setFormData] = useState<LeadFormData>({
     leadName: "",
-    owner: "Sakib Sarkar",
+    owner: userData?.name || "UnKnown User",
     status: "New Lead",
     indications: "",
     companyName: "",
@@ -36,6 +51,7 @@ const Sales_Create_leads = () => {
     specificRole: "",
     region: "US",
     profileUrl: "",
+    leadCreatedBy: userData?._id || "",
   });
 
   const handleChange = (
@@ -55,7 +71,7 @@ const Sales_Create_leads = () => {
 
     setFormData({
       leadName: "",
-      owner: "Sakib Sarkar",
+      owner: userData?.name || "UnKnown User",
       status: "New Lead",
       indications: "",
       companyName: "",
@@ -66,6 +82,7 @@ const Sales_Create_leads = () => {
       specificRole: "",
       region: "US",
       profileUrl: "",
+      leadCreatedBy: userData?._id || "",
     });
   };
 
@@ -115,7 +132,7 @@ const Sales_Create_leads = () => {
   const CancelAll = () => {
     setFormData({
       leadName: "",
-      owner: "Sakib Sarkar",
+      owner: userData?.name || "UnKnown User",
       status: "New Lead",
       indications: "",
       companyName: "",
@@ -126,6 +143,7 @@ const Sales_Create_leads = () => {
       specificRole: "",
       region: "US",
       profileUrl: "",
+      leadCreatedBy: userData?._id || "",
     });
   };
 
