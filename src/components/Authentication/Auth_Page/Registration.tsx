@@ -96,7 +96,7 @@ const Registration: React.FC = () => {
       await sendEmailVerification(user);
       await logOut();
       userRegisterMutation.mutate(data);
-    } catch (error: unknown) {
+    } catch {
       // console.error("Registration error:", error);
       Swal.fire({
         icon: "error",

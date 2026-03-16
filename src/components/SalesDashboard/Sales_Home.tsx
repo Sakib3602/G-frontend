@@ -102,7 +102,7 @@ const Sales_Home = () => {
                   title={!isSidebarOpen ? item.name : undefined}
                 >
                   <Icon 
-                    className={`w-5 h-5 flex-shrink-0 transition-colors ${
+                    className={`w-5 h-5 shrink-0 transition-colors ${
                       isActive 
                         ? 'text-[#7FA23B]' 
                         : 'text-gray-400 group-hover:text-gray-600'
@@ -127,7 +127,7 @@ const Sales_Home = () => {
             className="group flex items-center px-3 py-2.5 rounded-md text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 w-full"
             title={!isSidebarOpen ? "Sign Out" : undefined}
           >
-            <LogOut className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-red-500 transition-colors" />
+            <LogOut className="w-5 h-5 shrink-0 text-gray-400 group-hover:text-red-500 transition-colors" />
             <span className={`ml-3 text-sm font-medium ${!isSidebarOpen && 'hidden'}`}>
               Sign Out
             </span>

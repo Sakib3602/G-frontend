@@ -153,19 +153,64 @@ export default function Sales_Meetings() {
   });
 
   const handleCompleteMeeting = (meeting: MeetingData) => {
-    console.log("Complete Meeting:", { id: meeting.id, meeting });
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Update it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        mutationUpStatusCNG.mutate({ id: meeting._id as string, status: "completed" });
+        Swal.fire({
+          title: "Completed!",
+          text: "Your meeting status has been completed.",
+          icon: "success",
+        });
+      }
+    });
   };
 
   const handleCancelMeeting = (meeting: MeetingData) => {
-    console.log("Cancel Meeting:", { id: meeting.id, meeting });
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      cancelButtonText: "No, keep it!",
+      confirmButtonText: "Yes, Cancel Meeting!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        mutationUpStatusCNG.mutate({ id: meeting._id as string, status: "cancelled" });
+        Swal.fire({
+          title: "Cancelled!",
+          text: "Your meeting status has been cancelled.",
+          icon: "success",
+        });
+      }
+    });
   };
 
   const handleUpdateMeeting = (meeting: MeetingData) => {
     console.log("Update Meeting:", { id: meeting.id, meeting });
   };
 
+  const mutationUpStatusCNG = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await axiosSales.patch(`/api/v1/sales/meetings/update-meeting-status/${id}`, { status });
+      return res.data;
+    },
+    onSuccess: () => {
+      refetch();
+    },
+  })
+
   const handleDeleteMeeting = (meeting: MeetingData) => {
-    console.log("Delete Meeting:", meeting._id);
+    // console.log("Delete Meeting:", meeting._id);
     Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -642,7 +687,7 @@ export default function Sales_Meetings() {
                         </div>
 
                         {/* Date Block */}
-                        <div className="bg-white border border-gray-100 shadow-sm rounded-lg p-3 text-center min-w-[90px] shrink-0">
+                        <div className="bg-white border border-gray-100 shadow-sm rounded-lg p-3 text-center min-w-22.5 shrink-0">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                             {new Date(meeting.meetingDate).toLocaleString(
                               "default",
@@ -679,7 +724,7 @@ export default function Sales_Meetings() {
                                 href={meeting.meetingLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#99B562] hover:underline font-medium truncate max-w-[200px] sm:max-w-xs block"
+                                className="text-[#99B562] hover:underline font-medium truncate max-w-50 sm:max-w-xs block"
                               >
                                 {meeting.meetingLink}
                               </a>
