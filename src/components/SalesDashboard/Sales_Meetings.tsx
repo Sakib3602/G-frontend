@@ -70,9 +70,13 @@ const normalizeMeetingsResponse = (response: unknown): MeetingData[] => {
 
 export default function Sales_Meetings() {
   const [showNoti, setShowNoti] = useState(false);
+  const [showNotiUpdate, setShowNotiUpdate] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<
     "scheduled" | "completed" | "cancelled"
   >("scheduled");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingMeetingId, setEditingMeetingId] = useState<string>("");
+  const [editFormData, setEditFormData] = useState<IMeeting>(createEmptyForm());
   const axiosSales = useAxiosSales();
   const auth = useContext(AuthContext);
   const person = auth?.person;
@@ -149,6 +153,7 @@ export default function Sales_Meetings() {
       refetch();
       setShowNoti(true);
       // alert("Meeting saved successfully!");
+      
     },
   });
 
@@ -196,8 +201,68 @@ export default function Sales_Meetings() {
   };
 
   const handleUpdateMeeting = (meeting: MeetingData) => {
-    console.log("Update Meeting:", { id: meeting.id, meeting });
+    setEditingMeetingId(meeting._id ?? meeting.id ?? "");
+    setEditFormData({
+      title: meeting.title || "",
+      clientName: meeting.clientName || "",
+      clientEmail: meeting.clientEmail || "",
+      meetingDate: meeting.meetingDate || "",
+      meetingTime: meeting.meetingTime || "",
+      meetingType: meeting.meetingType || "online",
+      meetingLink: meeting.meetingLink || "",
+      agenda: meeting.agenda || "",
+      notes: meeting.notes || "",
+      status: normalizeMeetingStatus(meeting.status),
+      schedulerId: meeting.schedulerId || userData?._id || "",
+    });
+    setIsEditModalOpen(true);
   };
+
+  const handleEditChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => {
+      if (name === "meetingType") {
+        return {
+          ...prev,
+          meetingType: value as IMeeting["meetingType"],
+          meetingLink: value === "online" ? prev.meetingLink : "",
+        };
+      }
+      return { ...prev, [name]: value };
+    });
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingMeetingId("");
+    setEditFormData(createEmptyForm());
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Updated Meeting Payload:", editFormData);
+    mutatuionUpdatemeeting.mutate({ id: editingMeetingId, updatedData: editFormData });
+    closeEditModal();
+  };
+
+  // update full meeting
+
+  const mutatuionUpdatemeeting = useMutation({
+    mutationFn : async ({ id, updatedData }: { id: string; updatedData: IMeeting }) => {
+      const res = await axiosSales.put(`/api/v1/sales/meetings/update-full-meeting/${id}`, updatedData);
+      return res.data;
+    },
+
+    onSuccess: ()=>{
+      refetch();
+      setShowNotiUpdate(true);
+    }
+
+  })
 
   const mutationUpStatusCNG = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -269,6 +334,18 @@ export default function Sales_Meetings() {
             duration={3000}
             onClose={() => {
               setShowNoti(false);
+            }}
+          />
+        )}
+        {showNotiUpdate && (
+          <Notification
+            type="success"
+            title="Meeting Updated!"
+            message="Your meeting has been updated successfully."
+            showIcon={true}
+            duration={3000}
+            onClose={() => {
+              setShowNotiUpdate(false);
             }}
           />
         )}
@@ -792,6 +869,182 @@ export default function Sales_Meetings() {
           </div>
         </div>
       </div>
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4">
+          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Update Meeting</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Edit details and confirm to update this meeting.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label="Close update meeting modal"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Meeting Title *</label>
+                <input
+                  type="text"
+                  name="title"
+                  required
+                  value={editFormData.title}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Client Name *</label>
+                <input
+                  type="text"
+                  name="clientName"
+                  required
+                  value={editFormData.clientName}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Client Email *</label>
+                <input
+                  type="email"
+                  name="clientEmail"
+                  required
+                  value={editFormData.clientEmail}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">Date *</label>
+                  <input
+                    type="date"
+                    name="meetingDate"
+                    required
+                    value={editFormData.meetingDate}
+                    onChange={handleEditChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">Time *</label>
+                  <input
+                    type="time"
+                    name="meetingTime"
+                    required
+                    value={editFormData.meetingTime}
+                    onChange={handleEditChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Meeting Type</label>
+                <select
+                  name="meetingType"
+                  value={editFormData.meetingType}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors"
+                >
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  name="status"
+                  value={editFormData.status || "scheduled"}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors"
+                >
+                  <option value="scheduled">Scheduled</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              {editFormData.meetingType === "online" && (
+                <div className="md:col-span-2">
+                  <label className="block font-medium text-gray-700 mb-1">Meeting Link</label>
+                  <input
+                    type="text"
+                    name="meetingLink"
+                    value={editFormData.meetingLink || ""}
+                    onChange={handleEditChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
+                  />
+                </div>
+              )}
+
+              <div className="md:col-span-2">
+                <label className="block font-medium text-gray-700 mb-1">Agenda</label>
+                <textarea
+                  name="agenda"
+                  rows={2}
+                  value={editFormData.agenda || ""}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  value={editFormData.notes || ""}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
+                />
+              </div>
+
+              <div className="md:col-span-2 pt-4 mt-2 border-t border-gray-100 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-[#99B562] hover:bg-[#8da857] text-white font-medium transition-colors shadow-sm"
+                >
+                  Update Meeting
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
