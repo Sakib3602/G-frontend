@@ -2,6 +2,8 @@ import React, { useContext, useState } from "react";
 import { Link } from "react-router";
 import { AuthContext } from "../../Authentication/AuthProvider/AuthProvider";
 import Notification from "@/components/ui/toast";
+import { useQuery } from "@tanstack/react-query";
+import useAxiosPublic from "@/uri/useAxiosPublic";
 
 interface NavbarProps {
   companyName?: string;
@@ -26,12 +28,24 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
       document.body.style.overflow = open ? "hidden" : "unset";
     }
   };
+  const axiosPub = useAxiosPublic();
+
+  const { data: userData } = useQuery({
+      queryKey: ["user-data", person?.email],
+      queryFn: async () => {
+        const res = await axiosPub.get(`/api/v1/user/${person?.email}`);
+        return res.data.data;
+      },
+    });
+
+    console.log(userData?.role)
+  
 
   const navLinks = [
     { name: "About Us", href: "#about", number: "02" },
     { name: "Blog", href: "#blog", number: "04" },
     { name: "Contact", href: "#contact", number: "05" },
-    { name: "Sales Dashboard", href: "/dashboard/sales", number: "06" },
+    ...(userData?.role === "sales" ? [{ name: "Sales Dashboard", href: "/dashboard/sales", number: "06" }] : []),
   ];
 
   return (
@@ -66,13 +80,13 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             {/* Desktop Links */}
             <div className="hidden lg:flex space-x-10">
               {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
+                <Link key={link.name} to={link.href}>
+                <p
                   className="text-gray-900 hover:text-[#80A33C] text-[15px] font-semibold transition-colors duration-300"
                 >
                   {link.name}
-                </a>
+                </p>
+                </Link>
               ))}
             </div>
 

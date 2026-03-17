@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { AuthContext } from "../AuthProvider/AuthProvider";
 import { sendEmailVerification, type User } from "firebase/auth";
 import Notification from "@/components/ui/toast";
@@ -18,9 +18,14 @@ const Login: React.FC = () => {
   const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
   const [showNotification, setShowNotification] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const { person, signIn, logOut } = useContext(AuthContext)!;
-  console.log(person, "from login page");
+  const from = location.state?.from?.pathname || "/";
+
+
+
+  const { signIn, logOut } = useContext(AuthContext)!;
+  
 
   const sendVarificationCodeUser = async () => {
     if (!unverifiedUser) return;
@@ -78,7 +83,7 @@ const Login: React.FC = () => {
               duration={3000}
               onClose={() => {
                 setShowNotification(false);
-                navigate("/");
+                navigate(from, { replace: true });
               }}
             />
           )}

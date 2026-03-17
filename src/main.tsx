@@ -16,7 +16,7 @@ import Sales_Create_Leads from "./components/SalesDashboard/Sales_Create_Leads.t
 import Sales_My_Leads from "./components/SalesDashboard/Sales_My_Leads.tsx";
 import Sales_Meetings from "./components/SalesDashboard/Sales_Meetings.tsx";
 import Sales_In_Progress from "./components/SalesDashboard/Sales_In_Progress.tsx";
-
+import SalesPrivateRoute from "./../src/components/SalesDashboard/SalesPrivateRoute.tsx"
 
 
 
@@ -37,7 +37,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/reset/password" element={<Reset />} />
           </Route>
           {/* sales dashboard start */}
-          <Route path="/dashboard/sales" element={<Sales_Home />} >
+          <Route path="/dashboard/sales" element={<SalesPrivateRoute><Sales_Home></Sales_Home></SalesPrivateRoute>} >
           <Route index element={<Sales_Index_Element />} />
           <Route path="/dashboard/sales/create-leads" element={<Sales_Create_Leads />} />
           <Route path="/dashboard/sales/all-leads" element={<Sales_My_Leads />} />

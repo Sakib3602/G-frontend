@@ -23,66 +23,7 @@ export interface LeadData {
   proposalSent?: boolean;
 }
 
-// --- 2. Mock Data ---
-// const initialLeads: LeadData[] = [
-//   {
-//     id: '1',
-//     leadName: 'David Johnson',
-//     owner: 'Sakib Sarkar',
-//     status: 'In Progress',
-//     companyName: 'Nita Tech',
-//     title: 'Manager',
-//     specificRole: 'Senior Design Manager',
-//     email: 'david@nitatech.com',
-//     phone: '+1 555-0101',
-//     leadScore: 2,
-//     region: 'US',
-//     linkedin: 'linkedin.com/in/davidj',
-//     leadCreatedBy: 'user_992',
-//     proposalSent: false,
-//   },
-//   {
-//     id: '2',
-//     leadName: 'Emma Watson',
-//     owner: 'Sakib Sarkar',
-//     status: 'In Progress',
-//     indications: 'High Priority',
-//     companyName: 'CloudSync',
-//     title: 'VP',
-//     email: 'emma@cloudsync.io',
-//     leadScore: 4,
-//     leadCreatedBy: 'user_992',
-//     proposalSent: false,
-//   },
-//   {
-//     id: '3',
-//     leadName: 'Liam Smith',
-//     owner: 'Sakib Sarkar',
-//     status: 'In Progress',
-//     companyName: 'Moon',
-//     title: 'Director',
-//     specificRole: 'Sales Director',
-//     email: 'liam@moon.com',
-//     phone: '+1 555-0100',
-//     leadScore: 5,
-//     region: 'ANZ',
-//     profileUrl: 'moon.com/team/liam',
-//     leadCreatedBy: 'user_992',
-//     proposalSent: true,
-//   },
-//   {
-//     id: '4',
-//     leadName: 'Donna Sege',
-//     owner: 'Sakib Sarkar',
-//     status: 'In Progress',
-//     companyName: 'Solutions Craft',
-//     title: 'Team Member',
-//     email: 'donna@solutionscraft.com',
-//     leadScore: 1,
-//     leadCreatedBy: 'user_992',
-//     proposalSent: true,
-//   }
-// ];
+
 
 export default function Sales_In_Progress() {
     const auth = useContext(AuthContext);
@@ -103,27 +44,29 @@ export default function Sales_In_Progress() {
           isLoading,
           isError,
         } = useQuery<LeadData[]>({
-          queryKey: ["all-in-progress-leads"],
+          queryKey: ["all-in-progress-leads", userData?._id],
+          enabled: Boolean(userData?._id),
           queryFn: async () => {
-            const res = await axiosSales.get(`/api/v1/sales/get-in-progress-leads/${userData._id}`);
+            const res = await axiosSales.get(`/api/v1/sales/get-in-progress-leads/${userData?._id}`);
             return res.data.leads as LeadData[];
           },
         });
-    
-  const [leads, setLeads] = useState<LeadData[]>(leadsData);
+
+  const leads = leadsData;
   
   // Modal State
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
   const [isComposing, setIsComposing] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const isSending = false;
 
   // Email Form State
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [proposalLink, setProposalLink] = useState("");
 
   // Split leads
-  const needsProposal = leads.filter(lead => !lead.proposalSent);
-  const proposalSent = leads.filter(lead => lead.proposalSent);
+  const needsProposal = leads.filter((lead) => !lead.proposalSent);
+  const proposalSent = leads.filter((lead) => lead.proposalSent);
 
   // Open Modal Handler
   const openModal = (lead: LeadData) => {
@@ -131,6 +74,7 @@ export default function Sales_In_Progress() {
     setIsComposing(false);
     setEmailSubject(`Proposal for ${lead.companyName || lead.leadName}`);
     setEmailBody(`Hi ${lead.leadName.split(' ')[0]},\n\nFollowing up on our recent conversation...`);
+    setProposalLink("");
   };
 
   // Close Modal Handler
@@ -142,17 +86,51 @@ export default function Sales_In_Progress() {
   // Handle Send Proposal
   const handleSendProposal = () => {
     if (!selectedLead) return;
-    setIsSending(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      setLeads(prevLeads => 
-        prevLeads.map(l => l.id === selectedLead.id ? { ...l, proposalSent: true } : l)
-      );
-      setIsSending(false);
-      closeModal();
-    }, 1200);
+    // Console log all proposal data
+    const proposalData = {
+      to: selectedLead.email,
+      subject: emailSubject,
+      message: emailBody,
+      proposalLink: proposalLink,
+      leadInfo: {
+        leadId: selectedLead.id,
+        name: selectedLead.leadName,
+        company: selectedLead.companyName,
+        email: selectedLead.email,
+        phone: selectedLead.phone,
+        title: selectedLead.title,
+        region: selectedLead.region,
+        leadScore: selectedLead.leadScore,
+        status: selectedLead.status,
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log("Sending Proposal:", proposalData);
   };
+
+
+   // --- Loading / Error States ---
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600 font-medium">Loading leads...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6 mt-10 max-w-lg mx-auto bg-red-50 border border-red-200 rounded-lg text-center text-red-600">
+        <p className="font-semibold">Error fetching leads data.</p>
+        <p className="text-sm mt-1">
+          Please check your connection and try again.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-slate-50 p-4 sm:p-6 lg:p-10 font-sans min-h-screen relative text-slate-900">
@@ -415,11 +393,23 @@ export default function Sales_In_Progress() {
                         />
                       </div>
 
+                      {/* Proposal Link Field */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Proposal Link</label>
+                        <input 
+                          type="url" 
+                          value={proposalLink}
+                          onChange={(e) => setProposalLink(e.target.value)}
+                          placeholder="https://example.com/proposal-doc"
+                          className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#99B562] focus:ring-2 focus:ring-[#99B562]/20 transition-all"
+                        />
+                      </div>
+
                       {/* Body Textarea */}
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Message</label>
                         <textarea 
-                          rows={8}
+                          rows={6}
                           value={emailBody}
                           onChange={(e) => setEmailBody(e.target.value)}
                           className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-3 text-sm focus:outline-none focus:border-[#99B562] focus:ring-2 focus:ring-[#99B562]/20 transition-all resize-none"
