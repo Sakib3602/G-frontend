@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import  { useContext, useState } from 'react';
+import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
+import { useQuery } from '@tanstack/react-query';
+import useAxiosSales from '@/uri/useAxiosSales';
 
 // --- 1. Interface ---
 export interface LeadData {
@@ -21,68 +24,93 @@ export interface LeadData {
 }
 
 // --- 2. Mock Data ---
-const initialLeads: LeadData[] = [
-  {
-    id: '1',
-    leadName: 'David Johnson',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    companyName: 'Nita Tech',
-    title: 'Manager',
-    specificRole: 'Senior Design Manager',
-    email: 'david@nitatech.com',
-    phone: '+1 555-0101',
-    leadScore: 2,
-    region: 'US',
-    linkedin: 'linkedin.com/in/davidj',
-    leadCreatedBy: 'user_992',
-    proposalSent: false,
-  },
-  {
-    id: '2',
-    leadName: 'Emma Watson',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    indications: 'High Priority',
-    companyName: 'CloudSync',
-    title: 'VP',
-    email: 'emma@cloudsync.io',
-    leadScore: 4,
-    leadCreatedBy: 'user_992',
-    proposalSent: false,
-  },
-  {
-    id: '3',
-    leadName: 'Liam Smith',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    companyName: 'Moon',
-    title: 'Director',
-    specificRole: 'Sales Director',
-    email: 'liam@moon.com',
-    phone: '+1 555-0100',
-    leadScore: 5,
-    region: 'ANZ',
-    profileUrl: 'moon.com/team/liam',
-    leadCreatedBy: 'user_992',
-    proposalSent: true,
-  },
-  {
-    id: '4',
-    leadName: 'Donna Sege',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    companyName: 'Solutions Craft',
-    title: 'Team Member',
-    email: 'donna@solutionscraft.com',
-    leadScore: 1,
-    leadCreatedBy: 'user_992',
-    proposalSent: true,
-  }
-];
+// const initialLeads: LeadData[] = [
+//   {
+//     id: '1',
+//     leadName: 'David Johnson',
+//     owner: 'Sakib Sarkar',
+//     status: 'In Progress',
+//     companyName: 'Nita Tech',
+//     title: 'Manager',
+//     specificRole: 'Senior Design Manager',
+//     email: 'david@nitatech.com',
+//     phone: '+1 555-0101',
+//     leadScore: 2,
+//     region: 'US',
+//     linkedin: 'linkedin.com/in/davidj',
+//     leadCreatedBy: 'user_992',
+//     proposalSent: false,
+//   },
+//   {
+//     id: '2',
+//     leadName: 'Emma Watson',
+//     owner: 'Sakib Sarkar',
+//     status: 'In Progress',
+//     indications: 'High Priority',
+//     companyName: 'CloudSync',
+//     title: 'VP',
+//     email: 'emma@cloudsync.io',
+//     leadScore: 4,
+//     leadCreatedBy: 'user_992',
+//     proposalSent: false,
+//   },
+//   {
+//     id: '3',
+//     leadName: 'Liam Smith',
+//     owner: 'Sakib Sarkar',
+//     status: 'In Progress',
+//     companyName: 'Moon',
+//     title: 'Director',
+//     specificRole: 'Sales Director',
+//     email: 'liam@moon.com',
+//     phone: '+1 555-0100',
+//     leadScore: 5,
+//     region: 'ANZ',
+//     profileUrl: 'moon.com/team/liam',
+//     leadCreatedBy: 'user_992',
+//     proposalSent: true,
+//   },
+//   {
+//     id: '4',
+//     leadName: 'Donna Sege',
+//     owner: 'Sakib Sarkar',
+//     status: 'In Progress',
+//     companyName: 'Solutions Craft',
+//     title: 'Team Member',
+//     email: 'donna@solutionscraft.com',
+//     leadScore: 1,
+//     leadCreatedBy: 'user_992',
+//     proposalSent: true,
+//   }
+// ];
 
 export default function Sales_In_Progress() {
-  const [leads, setLeads] = useState<LeadData[]>(initialLeads);
+    const auth = useContext(AuthContext);
+      const person = auth?.person;
+      const axiosSales = useAxiosSales();
+    
+      const { data: userData } = useQuery({
+        queryKey: ["user-data", person?.email],
+        enabled: Boolean(person?.email),
+        queryFn: async () => {
+          const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
+          return res.data.data;
+        },
+      });
+
+      const {
+          data: leadsData = [],
+          isLoading,
+          isError,
+        } = useQuery<LeadData[]>({
+          queryKey: ["all-in-progress-leads"],
+          queryFn: async () => {
+            const res = await axiosSales.get(`/api/v1/sales/get-in-progress-leads/${userData._id}`);
+            return res.data.leads as LeadData[];
+          },
+        });
+    
+  const [leads, setLeads] = useState<LeadData[]>(leadsData);
   
   // Modal State
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
