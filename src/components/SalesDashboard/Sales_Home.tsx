@@ -37,7 +37,7 @@ const Sales_Home = () => {
     name: userData?.name || "UnKnown User",
     email: userData?.email || "",
     
-    // avatar: "https://ui-avatars.com/api/?name=Sakib+Sarkar&background=7FA23B&color=fff"
+  
     avatar: userData?.avatar || "https://ui-avatars.com/api/?name=User&background=7FA23B&color=fff"
   };
 
@@ -46,10 +46,10 @@ const Sales_Home = () => {
     { name: 'Create Leads', path: '/dashboard/sales/create-leads', icon: LayersPlus },
     { name: 'My Leads', path: '/dashboard/sales/all-leads', icon: Users },
     { name: 'My Meetings', path: '/dashboard/sales/meetings', icon: Calendar },
-    { name: 'In Progress', path: '/dashboard/deals', icon: Briefcase },
-    { name: 'Reminders', path: '/dashboard/deals/remainder', icon: Timer },  
-    { name: 'Closed Deals', path: '/dashboard/settings', icon: Settings },
-    { name: 'Won Deals', path: '/dashboard/settings', icon: WorkflowIcon },
+    { name: 'In Progress', path: '/dashboard/sales/in-progress', icon: Briefcase },
+    { name: 'Reminders', path: '/dashboard/sales/remainder', icon: Timer },  
+    { name: 'Closed Deals', path: '/dashboard/sales/settings', icon: Settings },
+    { name: 'Won Deals', path: '/dashboard/sales/settings', icon: WorkflowIcon },
   ];
 
   return (

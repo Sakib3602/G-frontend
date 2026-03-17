@@ -100,6 +100,7 @@ export default function Sales_My_Leads() {
 
   // --- UI Control States ---
   const [showNoti, setShowNoti] = useState(false);
+  const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [sortBy, setSortBy] = useState("Newest");
@@ -339,7 +340,7 @@ export default function Sales_My_Leads() {
       return res.data;
     },
     onSuccess: ()=>{
-      alert("Status updated successfully!");
+      setShowNotiStatusUpdate(true);
       queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
     }
   });
@@ -380,17 +381,32 @@ export default function Sales_My_Leads() {
             }}
           />
         )}
+        {showNotiStatusUpdate && (
+          <Notification
+            type="success"
+            title="Status Updated!"
+            message="Lead status has been updated successfully."
+            showIcon={true}
+            duration={3000}
+            onClose={() => {
+              setShowNotiStatusUpdate(false);
+            }}
+          />
+        )}
       </div>
 
-      <div className="w-full min-h-screen bg-gray-50/50 p-6 font-sans">
+      <div className="poppins-regular w-full min-h-screen bg-gray-50/50 p-6 font-sans">
         {/* --- HEADER SECTION --- */}
         <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              Sales Leads
+              My Leads
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Manage, filter, and track your potential clients.
+              Review your assigned leads, update status, and schedule follow-ups.
+            </p>
+            <p className="text-xs font-medium text-gray-600 mt-2">
+              Total Leads: <span className="text-gray-900">{leadsData.length}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
