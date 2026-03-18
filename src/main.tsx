@@ -17,6 +17,7 @@ import Sales_My_Leads from "./components/SalesDashboard/Sales_My_Leads.tsx";
 import Sales_Meetings from "./components/SalesDashboard/Sales_Meetings.tsx";
 import Sales_In_Progress from "./components/SalesDashboard/Sales_In_Progress.tsx";
 import SalesPrivateRoute from "./../src/components/SalesDashboard/SalesPrivateRoute.tsx"
+import Sales_Remainder from "./components/SalesDashboard/Sales_Remainder.tsx";
 
 
 
@@ -43,6 +44,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/dashboard/sales/all-leads" element={<Sales_My_Leads />} />
           <Route path="/dashboard/sales/meetings" element={<Sales_Meetings />} />
           <Route path="/dashboard/sales/in-progress" element={<Sales_In_Progress />} />
+          <Route path="/dashboard/sales/remainder" element={<Sales_Remainder />} />
           
           
           </Route>

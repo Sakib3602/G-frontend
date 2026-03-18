@@ -2,6 +2,7 @@ import  { useContext, useState } from 'react';
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import useAxiosSales from '@/uri/useAxiosSales';
+import Notification from '../ui/toast';
 
 // --- 1. Interface ---
 export interface LeadData {
@@ -27,6 +28,7 @@ export interface LeadData {
 
 
 export default function Sales_In_Progress() {
+  const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
     const auth = useContext(AuthContext);
       const person = auth?.person;
       const axiosSales = useAxiosSales();
@@ -66,6 +68,9 @@ export default function Sales_In_Progress() {
   const [emailBody, setEmailBody] = useState("");
   const [proposalLink, setProposalLink] = useState("");
 
+  // Awaiting Response Status State
+  const [responseStatus, setResponseStatus] = useState<string | null>(null);
+
   // Split leads
   const needsProposal = leads.filter((lead) => !lead.proposalSent);
   const proposalSent = leads.filter((lead) => lead.proposalSent);
@@ -85,6 +90,7 @@ export default function Sales_In_Progress() {
   const closeModal = () => {
     setSelectedLead(null);
     setIsComposing(false);
+    setResponseStatus(null);
   };
 
   const handleMarkProposalSend = () => {
@@ -139,6 +145,30 @@ export default function Sales_In_Progress() {
     mutationForEmail.mutate(proposalData);
   };
 
+  // Handle Qualified/Unqualified Response
+  const handleQualificationResponse = (qualification: "Qualified" | "Unqualified") => {
+    if (!selectedLead) return;
+
+    const leadId = getLeadId(selectedLead);
+ 
+    MutationUpForStatusUpdate.mutate({ leadId, status: qualification });
+
+    setResponseStatus(qualification);
+  };
+  const MutationUpForStatusUpdate = useMutation({
+      mutationFn: async ({ leadId, status }: { leadId: string; status: string }) => {
+        const res = await axiosSales.put(`/api/v1/sales/update-lead-status/${leadId}`, { status });
+        return res.data;
+      },
+      onSuccess: ()=>{
+        refetch();
+        setShowNotiStatusUpdate(true);
+        setSelectedLead(null);
+    setIsComposing(false);
+        
+      }
+    });
+
   const mutationForEmail = useMutation({
     mutationFn : async (proposalData: any) => {
       const res = await axiosSales.post('/api/v1/sales/emailservice/send-proposal-email', proposalData);
@@ -169,6 +199,22 @@ export default function Sales_In_Progress() {
   }
 
   return (
+    <><div className="fixed top-4 right-4 z-50">
+            {showNotiStatusUpdate && (
+              <Notification
+                type="success"
+                title="Status Updated!"
+                message="Lead status has been updated successfully."
+                showIcon={true}
+                duration={3000}
+                onClose={() => {
+                  setShowNotiStatusUpdate(false);
+                }}
+              />
+            )}
+            
+          </div>
+    
     <div className="w-full bg-slate-50 p-4 sm:p-6 lg:p-10 font-sans min-h-screen relative text-slate-900">
       <div className="max-w-7xl mx-auto">
         
@@ -341,13 +387,41 @@ export default function Sales_In_Progress() {
                       </div>
                     </div>
                   ) : (
-                    <div className="mb-8 bg-[#99B562]/10 border border-[#99B562]/20 rounded-xl p-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#99B562] text-white flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                    <div className="mb-8 bg-[#99B562]/10 border border-[#99B562]/20 rounded-xl p-4 flex flex-col gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#99B562] text-white flex items-center justify-center shrink-0">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-[#7a914e]">Proposal Sent Successfully</h4>
+                          <p className="text-xs text-[#99B562] mt-0.5">Awaiting response from the client.</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[#7a914e]">Proposal Sent Successfully</h4>
-                        <p className="text-xs text-[#99B562] mt-0.5">Awaiting response from the client.</p>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-[#99B562]/20">
+                        <button
+                          onClick={() => handleQualificationResponse("Qualified")}
+                          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
+                            responseStatus === "Qualified"
+                              ? "bg-green-500 text-white shadow-md"
+                              : "bg-green-50 hover:bg-green-100 text-green-700 border border-green-300"
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                          Qualified
+                        </button>
+                        <button
+                          onClick={() => handleQualificationResponse("Unqualified")}
+                          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
+                            responseStatus === "Unqualified"
+                              ? "bg-red-500 text-white shadow-md"
+                              : "bg-red-50 hover:bg-red-100 text-red-700 border border-red-300"
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                          Unqualified
+                        </button>
                       </div>
                     </div>
                   )}
@@ -500,5 +574,6 @@ export default function Sales_In_Progress() {
       )}
 
     </div>
+    </>
   );
 }
