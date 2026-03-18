@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import useAxiosSales from '@/uri/useAxiosSales';
+
+import  { useContext } from 'react';
+import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
+import { useQuery } from '@tanstack/react-query';
 
 // --- 1. Your Lead Data Interface ---
 export interface LeadData {
@@ -20,67 +24,42 @@ export interface LeadData {
   proposalSent?: boolean;
 }
 
-// --- 2. Mock Data ---
-// Mixing leads to show the filtering logic in action
-const allLeads: LeadData[] = [
-  {
-    id: '1',
-    leadName: 'David Johnson',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    companyName: 'Nita Tech',
-    title: 'Manager',
-    email: 'david@nitatech.com',
-    leadScore: 2,
-    leadCreatedBy: 'user_992',
-    proposalSent: false, // Will NOT show up here
-  },
-  {
-    id: '2',
-    leadName: 'Liam Smith',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    companyName: 'Moon',
-    title: 'Director',
-    specificRole: 'Sales Director',
-    email: 'liam@moon.com',
-    phone: '+1 555-0100',
-    leadScore: 5,
-    leadCreatedBy: 'user_992',
-    proposalSent: true, // WILL show up here
-  },
-  {
-    id: '3',
-    leadName: 'Donna Sege',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    companyName: 'Solutions Craft',
-    title: 'Team Member',
-    email: 'donna@solutionscraft.com',
-    leadScore: 1,
-    leadCreatedBy: 'user_992',
-    proposalSent: true, // WILL show up here
-  },
-  {
-    id: '4',
-    leadName: 'Sarah Jenkins',
-    owner: 'Sakib Sarkar',
-    status: 'In Progress',
-    companyName: 'CloudSync',
-    title: 'VP of Operations',
-    email: 'sarah@cloudsync.io',
-    phone: '+1 555-0199',
-    leadScore: 4,
-    leadCreatedBy: 'user_992',
-    proposalSent: true, // WILL show up here
-  }
-];
-
 export default function Sales_Remainder() {
-  const [leads] = useState<LeadData[]>(allLeads);
+  
 
-  // Filter ONLY leads that have their proposal sent
-  const reminderLeads = leads.filter(lead => lead.proposalSent);
+  const axiosSales = useAxiosSales();
+  const auth = useContext(AuthContext);
+  const person = auth?.person;
+  // console.log("my lead ", person?.email)
+
+  const { data: userData } = useQuery({
+    queryKey: ["user-data", person?.email],
+    enabled: Boolean(person?.email),
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
+      return res.data.data;
+    },
+  });
+
+
+  const {
+    data: reminderLeads = [],
+    isLoading: isReminderLoading,
+    isError: isReminderError,
+  } = useQuery<LeadData[]>({
+    queryKey: ["rem", userData?._id],
+    enabled: Boolean(userData?._id),
+    queryFn : async() => {
+      const res = await axiosSales.get(`/api/v1/sales/rem/${userData?._id}`);
+      return res.data.data;
+    }
+  });
+
+  console.log("Reminder Leads:", reminderLeads);
+
+
+
+
 
   // --- Console Log Function ---
   const handleFollowUpClick = (leadName: string, email?: string) => {
@@ -90,6 +69,24 @@ export default function Sales_Remainder() {
       console.log(`Follow-up initiated for: ${leadName} | No email on file.`);
     }
   };
+
+  if (isReminderLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600 font-medium">Loading reminders...</span>
+      </div>
+    );
+  }
+
+  if (isReminderError) {
+    return (
+      <div className="p-6 mt-10 max-w-lg mx-auto bg-red-50 border border-red-200 rounded-lg text-center text-red-600">
+        <p className="font-semibold">Error fetching reminder leads.</p>
+        <p className="text-sm mt-1">Please check your connection and try again.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="poppins-regular w-full bg-slate-50 p-4 sm:p-6 lg:p-10 font-sans min-h-screen text-slate-900">
