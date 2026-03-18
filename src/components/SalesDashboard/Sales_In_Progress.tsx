@@ -1,11 +1,12 @@
 import  { useContext, useState } from 'react';
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import useAxiosSales from '@/uri/useAxiosSales';
 
 // --- 1. Interface ---
 export interface LeadData {
-  id: string;
+  id?: string;
+  _id?: string;
   leadName: string;
   owner: string;
   status: string;
@@ -43,6 +44,7 @@ export default function Sales_In_Progress() {
           data: leadsData = [],
           isLoading,
           isError,
+          refetch
         } = useQuery<LeadData[]>({
           queryKey: ["all-in-progress-leads", userData?._id],
           enabled: Boolean(userData?._id),
@@ -68,6 +70,8 @@ export default function Sales_In_Progress() {
   const needsProposal = leads.filter((lead) => !lead.proposalSent);
   const proposalSent = leads.filter((lead) => lead.proposalSent);
 
+  const getLeadId = (lead: LeadData | null) => lead?.id || lead?._id || "";
+
   // Open Modal Handler
   const openModal = (lead: LeadData) => {
     setSelectedLead(lead);
@@ -83,6 +87,30 @@ export default function Sales_In_Progress() {
     setIsComposing(false);
   };
 
+  const handleMarkProposalSend = () => {
+    if (!selectedLead) return;
+ 
+    mutationUPProposalSent.mutate(getLeadId(selectedLead));
+  };
+
+  const mutationUPProposalSent = useMutation({
+    mutationFn : async (leadId: string) => {
+      const res = await axiosSales.put(`/api/v1/sales/mark-proposal-sent/${leadId}`);
+      return res.data;
+    },
+    onSuccess: ()=>{
+      refetch();
+      setSelectedLead(null);
+    setIsComposing(false);
+      alert("Lead marked as proposal sent.");
+    },
+    onError: (e)=>{
+      console.error("Error marking proposal sent:", e);
+    }
+  })
+
+
+
   // Handle Send Proposal
   const handleSendProposal = () => {
     if (!selectedLead) return;
@@ -94,7 +122,7 @@ export default function Sales_In_Progress() {
       message: emailBody,
       proposalLink: proposalLink,
       leadInfo: {
-        leadId: selectedLead.id,
+        leadId: getLeadId(selectedLead),
         name: selectedLead.leadName,
         company: selectedLead.companyName,
         email: selectedLead.email,
@@ -107,8 +135,16 @@ export default function Sales_In_Progress() {
       timestamp: new Date().toISOString(),
     };
 
-    console.log("Sending Proposal:", proposalData);
+    // console.log("Sending Proposal:", proposalData);
+    mutationForEmail.mutate(proposalData);
   };
+
+  const mutationForEmail = useMutation({
+    mutationFn : async (proposalData: any) => {
+      const res = await axiosSales.post('/api/v1/sales/emailservice/send-proposal-email', proposalData);
+      return res.data;
+    }
+  })
 
 
    // --- Loading / Error States ---
@@ -170,7 +206,7 @@ export default function Sales_In_Progress() {
               ) : (
                 needsProposal.map(lead => (
                   <div 
-                    key={lead.id} 
+                    key={getLeadId(lead) || `${lead.leadName}-${lead.email || 'no-email'}`} 
                     onClick={() => openModal(lead)}
                     className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 hover:border-[#99B562]/50 hover:shadow-md transition-all relative overflow-hidden group cursor-pointer"
                   >
@@ -215,7 +251,7 @@ export default function Sales_In_Progress() {
               ) : (
                 proposalSent.map(lead => (
                   <div 
-                    key={lead.id} 
+                    key={getLeadId(lead) || `${lead.leadName}-${lead.email || 'no-email'}`} 
                     onClick={() => openModal(lead)}
                     className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 hover:border-[#99B562]/50 hover:shadow-md transition-all relative overflow-hidden group cursor-pointer"
                   >
@@ -286,13 +322,23 @@ export default function Sales_In_Progress() {
                         </h4>
                         <p className="text-xs text-amber-700 mt-1">This lead is currently waiting for a formal proposal document.</p>
                       </div>
-                      <button 
-                        onClick={() => setIsComposing(true)}
-                        className="bg-[#99B562] hover:bg-[#85a052] text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                        Draft Proposal
-                      </button>
+                      <div className="flex flex-col gap-2 w-full sm:w-auto">
+                        <button 
+                          onClick={() => setIsComposing(true)}
+                          className="bg-[#99B562] hover:bg-[#85a052] text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors whitespace-nowrap flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                          Draft Proposal
+                        </button>
+
+                        <button
+                          onClick={handleMarkProposalSend}
+                          className="bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 px-5 py-2.5 rounded-lg text-sm font-bold transition-colors whitespace-nowrap flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                          Mark Proposal Send
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="mb-8 bg-[#99B562]/10 border border-[#99B562]/20 rounded-xl p-4 flex items-center gap-3">
