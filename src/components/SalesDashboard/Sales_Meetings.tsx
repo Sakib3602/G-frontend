@@ -5,6 +5,7 @@ import useAxiosSales from "@/uri/useAxiosSales";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import Notification from "../ui/toast";
 import Swal from "sweetalert2";
+import { useUserData } from "./Sales_Hook/User_Data";
 
 // --- 1. TYPES ---
 export interface MeetingData extends IMeeting {
@@ -78,18 +79,7 @@ export default function Sales_Meetings() {
   const [editingMeetingId, setEditingMeetingId] = useState<string>("");
   const [editFormData, setEditFormData] = useState<IMeeting>(createEmptyForm());
   const axiosSales = useAxiosSales();
-  const auth = useContext(AuthContext);
-  const person = auth?.person;
-
-  // fetch user data
-  const { data: userData } = useQuery({
-    queryKey: ["user-data", person?.email],
-    enabled: Boolean(person?.email),
-    queryFn: async () => {
-      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
-      return res.data.data;
-    },
-  });
+  const {userData} = useUserData()
 
   // meetings data fetch
   const {

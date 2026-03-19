@@ -2,20 +2,17 @@ import React, { useContext, useState } from 'react';
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
 import useAxiosSales from '@/uri/useAxiosSales';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router';
+import { useUserData } from './Sales_Hook/User_Data';
 
 export default function Sales_Index_Element() {
-  const auth = useContext(AuthContext);
-  const person = auth?.person;
+
   const axiosSales = useAxiosSales();
 
-  const { data: userData } = useQuery({
-    queryKey: ["user-data", person?.email],
-    enabled: Boolean(person?.email),
-    queryFn: async () => {
-      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
-      return res.data.data;
-    },
-  });
+
+
+  const {userData} = useUserData()
+  console.log("Fetched User Data from index:", userData);
 
   const { data: m, isLoading } = useQuery({
     queryKey: ["dashboard_data", userData?._id],
@@ -49,7 +46,7 @@ export default function Sales_Index_Element() {
   // --- Profile State ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: person?.name || 'Loading...',
+    name: 'Loading...',
     role: 'Sales Representative',
     phone: '',
     address: '',
@@ -150,10 +147,12 @@ export default function Sales_Index_Element() {
             <p className="text-sm text-slate-500 mt-1">Real-time metrics for your active pipeline and team performance.</p>
           </div>
           <div className="flex gap-3">
+            <Link to={'/dashboard/sales/create-leads'}>
             <button className="bg-[#99B562] hover:bg-[#85a052] text-white font-medium py-2.5 px-4 rounded-xl transition-all text-sm shadow-sm flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
               Add New Lead
             </button>
+            </Link>
           </div>
         </div>
 

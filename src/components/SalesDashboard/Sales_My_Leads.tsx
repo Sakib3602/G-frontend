@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import Notification from "../ui/toast";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
+import { useUserData } from "./Sales_Hook/User_Data";
 
 export interface LeadData {
   id: string;
@@ -113,18 +114,7 @@ export default function Sales_My_Leads() {
 
   const queryClient = useQueryClient();
 
-  const auth = useContext(AuthContext);
-  const person = auth?.person;
-  // console.log("my lead ", person?.email)
-
-  const { data: userData } = useQuery({
-    queryKey: ["user-data", person?.email],
-    enabled: Boolean(person?.email),
-    queryFn: async () => {
-      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
-      return res.data.data;
-    },
-  });
+  const {userData} = useUserData()
 
 
 

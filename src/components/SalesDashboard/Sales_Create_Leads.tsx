@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosSales from "@/uri/useAxiosSales";
 import Notification from "../ui/toast";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
+import { useUserData } from "./Sales_Hook/User_Data";
 
 type LeadFormData = {
   leadName: string;
@@ -23,17 +24,10 @@ type LeadFormData = {
 };
 
 const Sales_Create_leads = () => {
-  // leadCreatedBy
-  const auth = useContext(AuthContext);
-  const person = auth?.person;
-  const { data: userData } = useQuery({
-    queryKey: ["user-data", person?.email],
-    enabled: Boolean(person?.email),
-    queryFn: async () => {
-      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
-      return res.data.data;
-    },
-  });
+
+  // get user data from custom hook
+  const {userData} = useUserData()
+
 
 
   const [showNotification, setShowNotification] = useState(false);

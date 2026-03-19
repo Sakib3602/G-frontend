@@ -4,6 +4,7 @@ import  { useContext, useState } from 'react';
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Notification from '../ui/toast';
+import { useUserData } from './Sales_Hook/User_Data';
 
 // --- 1. Your Lead Data Interface ---
 export interface LeadData {
@@ -30,18 +31,7 @@ export default function Sales_Remainder() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
 
   const axiosSales = useAxiosSales();
-  const auth = useContext(AuthContext);
-  const person = auth?.person;
-  // console.log("my lead ", person?.email)
-
-  const { data: userData } = useQuery({
-    queryKey: ["user-data", person?.email],
-    enabled: Boolean(person?.email),
-    queryFn: async () => {
-      const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
-      return res.data.data;
-    },
-  });
+  const {userData} = useUserData()
 
 
   const {
@@ -112,8 +102,8 @@ export default function Sales_Remainder() {
             {showNotiStatusUpdate && (
               <Notification
                 type="success"
-                title="Status Updated!"
-                message="Lead status has been updated successfully."
+                title="Marked as Followed Up!"
+                message="This lead has been marked as followed up successfully."
                 showIcon={true}
                 duration={3000}
                 onClose={() => {

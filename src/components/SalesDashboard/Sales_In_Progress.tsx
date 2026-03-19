@@ -3,6 +3,7 @@ import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import useAxiosSales from '@/uri/useAxiosSales';
 import Notification from '../ui/toast';
+import { useUserData } from './Sales_Hook/User_Data';
 
 // --- 1. Interface ---
 export interface LeadData {
@@ -30,18 +31,9 @@ export interface LeadData {
 export default function Sales_In_Progress() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [showNotiStatusUpdateYo, setShowNotiStatusUpdateYo] = useState(false);
-    const auth = useContext(AuthContext);
-      const person = auth?.person;
-      const axiosSales = useAxiosSales();
-    
-      const { data: userData } = useQuery({
-        queryKey: ["user-data", person?.email],
-        enabled: Boolean(person?.email),
-        queryFn: async () => {
-          const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
-          return res.data.data;
-        },
-      });
+  const axiosSales = useAxiosSales();
+    const {userData} = useUserData()
+      console.log("Fetched User Data from index:", userData);
 
       const {
           data: leadsData = [],
