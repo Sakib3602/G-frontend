@@ -1,9 +1,10 @@
 
 import { useContext } from "react";
 import { Navigate, useLocation } from "react-router";
-import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
+
 import { useQuery } from "@tanstack/react-query";
 import useAxiosPublic from "@/uri/useAxiosPublic";
+import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 
 const PrivateInstractorRoute = ({ children }: { children: React.ReactNode }) => {
   const auth = useContext(AuthContext);

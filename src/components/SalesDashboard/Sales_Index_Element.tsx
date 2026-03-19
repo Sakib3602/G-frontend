@@ -1,5 +1,5 @@
-import React, { useContext, useState } from 'react';
-import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
+import React, {  useState } from 'react';
+
 import useAxiosSales from '@/uri/useAxiosSales';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
@@ -86,7 +86,7 @@ export default function Sales_Index_Element() {
   if (isLoading || !userData) {
     return (
       <div className="w-full bg-[#f8fafc] p-6 lg:p-10 min-h-screen">
-        <div className="max-w-[1400px] mx-auto space-y-8 animate-pulse">
+        <div className="max-w-350 mx-auto space-y-8 animate-pulse">
           
           {/* Skeleton Header */}
           <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -138,7 +138,7 @@ export default function Sales_Index_Element() {
   // ==========================================
   return (
     <div className="w-full bg-[#f8fafc] p-6 lg:p-10 font-sans min-h-screen text-slate-800 relative">
-      <div className="max-w-[1400px] mx-auto space-y-8">
+      <div className="max-w-350 mx-auto space-y-8">
         
         {/* --- Header --- */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -305,7 +305,7 @@ export default function Sales_Index_Element() {
 
             {/* --- SALES REPRESENTATIVE PROFILE CARD --- */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-               <div className="h-20 bg-gradient-to-r from-slate-800 to-slate-700"></div>
+               <div className="h-20 bg-linear-to-r from-slate-800 to-slate-700"></div>
                <div className="px-6 pb-6 relative">
                  <div className="flex justify-between items-end mb-4">
                    <div className="w-20 h-20 rounded-full border-4 border-white bg-slate-100 -mt-10 flex items-center justify-center shadow-sm overflow-hidden text-2xl font-bold text-slate-400">

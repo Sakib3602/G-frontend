@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 
 // --- 1. Your Lead Data Interface ---
 export interface LeadData {

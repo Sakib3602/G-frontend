@@ -1,5 +1,5 @@
-import  { useContext, useState } from 'react';
-import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
+import  { useState } from 'react';
+
 import { useMutation, useQuery } from '@tanstack/react-query';
 import useAxiosSales from '@/uri/useAxiosSales';
 import Notification from '../ui/toast';
@@ -24,6 +24,27 @@ export interface LeadData {
   linkedin?: string;
   leadCreatedBy: string;
   proposalSent?: boolean;
+}
+
+type QualificationStatus = "Qualified" | "Unqualified";
+
+interface ProposalEmailPayload {
+  to?: string;
+  subject: string;
+  message: string;
+  proposalLink: string;
+  leadInfo: {
+    leadId: string;
+    name: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+    title?: string;
+    region?: string;
+    leadScore: number;
+    status: string;
+  };
+  timestamp: string;
 }
 
 
@@ -54,7 +75,6 @@ export default function Sales_In_Progress() {
   // Modal State
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
   const [isComposing, setIsComposing] = useState(false);
-  const isSending = false;
 
   // Email Form State
   const [emailSubject, setEmailSubject] = useState("");
@@ -62,7 +82,7 @@ export default function Sales_In_Progress() {
   const [proposalLink, setProposalLink] = useState("");
 
   // Awaiting Response Status State
-  const [responseStatus, setResponseStatus] = useState<string | null>(null);
+  const [responseStatus, setResponseStatus] = useState<QualificationStatus | null>(null);
 
   // Split leads
   const needsProposal = leads.filter((lead) => !lead.proposalSent);
@@ -139,7 +159,7 @@ export default function Sales_In_Progress() {
   };
 
   // Handle Qualified/Unqualified Response
-  const handleQualificationResponse = (qualification: "Qualified" | "Unqualified") => {
+  const handleQualificationResponse = (qualification: QualificationStatus) => {
     if (!selectedLead) return;
 
     const leadId = getLeadId(selectedLead);
@@ -149,7 +169,7 @@ export default function Sales_In_Progress() {
     setResponseStatus(qualification);
   };
   const MutationUpForStatusUpdate = useMutation({
-      mutationFn: async ({ leadId, status }: { leadId: string; status: string }) => {
+      mutationFn: async ({ leadId, status }: { leadId: string; status: QualificationStatus }) => {
         const res = await axiosSales.put(`/api/v1/sales/update-lead-status/${leadId}`, { status });
         return res.data;
       },
@@ -163,11 +183,13 @@ export default function Sales_In_Progress() {
     });
 
   const mutationForEmail = useMutation({
-    mutationFn : async (proposalData: any) => {
+    mutationFn : async (proposalData: ProposalEmailPayload) => {
       const res = await axiosSales.post('/api/v1/sales/emailservice/send-proposal-email', proposalData);
       return res.data;
     }
   })
+
+  const isSending = mutationForEmail.isPending;
 
 
    // --- Loading / Error States ---

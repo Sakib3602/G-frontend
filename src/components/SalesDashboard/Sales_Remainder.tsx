@@ -1,7 +1,6 @@
 import useAxiosSales from '@/uri/useAxiosSales';
 
-import  { useContext, useState } from 'react';
-import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
+import  {  useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Notification from '../ui/toast';
 import { useUserData } from './Sales_Hook/User_Data';

@@ -14,6 +14,7 @@ export const useUserData = () => {
   const { data: userData, isLoading } = useQuery({
     queryKey: ["user-data", person?.email],
     enabled: Boolean(person?.email),
+    staleTime: Infinity, // cache always fresh until email changes
     queryFn: async () => {
       const res = await axiosSales.get(`/api/v1/user/${person?.email}`);
       return res.data.data;
