@@ -1,12 +1,14 @@
 import useAxiosSales from '@/uri/useAxiosSales';
 
-import  { useContext } from 'react';
+import  { useContext, useState } from 'react';
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Notification from '../ui/toast';
 
 // --- 1. Your Lead Data Interface ---
 export interface LeadData {
   id: string;
+  _id?: string;
   leadName: string;
   owner: string;
   status: string;
@@ -25,7 +27,7 @@ export interface LeadData {
 }
 
 export default function Sales_Remainder() {
-  
+  const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
 
   const axiosSales = useAxiosSales();
   const auth = useContext(AuthContext);
@@ -55,20 +57,36 @@ export default function Sales_Remainder() {
     }
   });
 
-  console.log("Reminder Leads:", reminderLeads);
-
-
-
-
 
   // --- Console Log Function ---
-  const handleFollowUpClick = (leadName: string, email?: string) => {
-    if (email) {
-      console.log(`Follow-up initiated for: ${leadName} | Email: ${email}`);
+  const getLeadId = (lead: LeadData) => lead._id || lead.id;
+
+  const handleFollowUpClick = (lead: LeadData) => {
+    const leadId = getLeadId(lead);
+    if (lead.email) {
+      console.log(`Follow-up initiated for: ${lead.leadName} | Email: ${lead.email} | Lead ID: ${leadId}`);
     } else {
-      console.log(`Follow-up initiated for: ${leadName} | No email on file.`);
+      console.log(`Follow-up initiated for: ${lead.leadName} | No email on file. | Lead ID: ${leadId}`);
     }
   };
+
+  const handleMarkAsFollowedUp = (lead: LeadData) => {
+    const leadId = getLeadId(lead);
+    // console.log(`Marked as followed up | Lead ID: ${leadId} | Lead Name: ${lead.leadName}`);
+    mutationMark.mutate({ leadId });
+  };
+
+  const queryClient = useQueryClient();
+  const mutationMark = useMutation({
+    mutationFn: async ({ leadId }: { leadId: string }) => {
+      const res = await axiosSales.put(`/api/v1/sales/update-at-time/${leadId}`);
+      return res.data;
+    },
+    onSuccess: ()=>{
+      queryClient.invalidateQueries({ queryKey: ["rem"] });
+      setShowNotiStatusUpdate(true);
+    }
+  })
 
   if (isReminderLoading) {
     return (
@@ -89,6 +107,34 @@ export default function Sales_Remainder() {
   }
 
   return (
+    <>
+    <div className="fixed top-4 right-4 z-50">
+            {showNotiStatusUpdate && (
+              <Notification
+                type="success"
+                title="Status Updated!"
+                message="Lead status has been updated successfully."
+                showIcon={true}
+                duration={3000}
+                onClose={() => {
+                  setShowNotiStatusUpdate(false);
+                }}
+              />
+            )}
+            {/* {showNotiStatusUpdateYo && (
+              <Notification
+                type="success"
+                title="Proposal Sent!"
+                message="Proposal has been sent to the lead successfully."
+                showIcon={true}
+                duration={3000}
+                onClose={() => {
+                  setShowNotiStatusUpdateYo(false);
+                }}
+              />
+            )}
+             */}
+          </div>
     <div className="poppins-regular w-full bg-slate-50 p-4 sm:p-6 lg:p-10 font-sans min-h-screen text-slate-900">
       <div className="max-w-4xl mx-auto">
         
@@ -169,14 +215,22 @@ export default function Sales_Remainder() {
                     </div>
                   </div>
 
-                  {/* Right Side: Action Button */}
+                  {/* Right Side: Action Buttons */}
                   <div className="shrink-0 flex sm:flex-col items-center justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0">
                     <button 
-                      onClick={() => handleFollowUpClick(lead.leadName, lead.email)}
+                      onClick={() => handleFollowUpClick(lead)}
                       className="w-full sm:w-auto bg-[#99B562] hover:bg-[#85a052] text-white font-bold py-2.5 px-5 rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                       Send Follow-Up
+                    </button>
+
+                    <button
+                      onClick={() => handleMarkAsFollowedUp(lead)}
+                      className="w-full sm:w-auto bg-white hover:bg-slate-100 text-slate-700 font-bold py-2.5 px-5 rounded-lg transition-all border border-slate-300 shadow-sm flex items-center justify-center gap-2 active:scale-95"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                      Mark as Followed Up
                     </button>
                   </div>
 
@@ -188,5 +242,6 @@ export default function Sales_Remainder() {
         
       </div>
     </div>
+    </>
   );
 }

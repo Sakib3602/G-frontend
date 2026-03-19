@@ -29,6 +29,7 @@ export interface LeadData {
 
 export default function Sales_In_Progress() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
+  const [showNotiStatusUpdateYo, setShowNotiStatusUpdateYo] = useState(false);
     const auth = useContext(AuthContext);
       const person = auth?.person;
       const axiosSales = useAxiosSales();
@@ -108,7 +109,7 @@ export default function Sales_In_Progress() {
       refetch();
       setSelectedLead(null);
     setIsComposing(false);
-      alert("Lead marked as proposal sent.");
+      setShowNotiStatusUpdateYo(true);
     },
     onError: (e)=>{
       console.error("Error marking proposal sent:", e);
@@ -209,6 +210,18 @@ export default function Sales_In_Progress() {
                 duration={3000}
                 onClose={() => {
                   setShowNotiStatusUpdate(false);
+                }}
+              />
+            )}
+            {showNotiStatusUpdateYo && (
+              <Notification
+                type="success"
+                title="Proposal Sent!"
+                message="Proposal has been sent to the lead successfully."
+                showIcon={true}
+                duration={3000}
+                onClose={() => {
+                  setShowNotiStatusUpdateYo(false);
                 }}
               />
             )}

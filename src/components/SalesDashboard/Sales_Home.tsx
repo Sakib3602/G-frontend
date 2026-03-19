@@ -48,7 +48,7 @@ const Sales_Home = () => {
     { name: 'My Meetings', path: '/dashboard/sales/meetings', icon: Calendar },
     { name: 'In Progress', path: '/dashboard/sales/in-progress', icon: Briefcase },
     { name: 'Reminders', path: '/dashboard/sales/remainder', icon: Timer },  
-    { name: 'Qualified Deals', path: '/dashboard/sales/settings', icon:  WorkflowIcon  },
+    { name: 'Qualified Deals', path: '/dashboard/sales/qualified', icon:  WorkflowIcon  },
     { name: 'Unqualified Deals', path: '/dashboard/sales/settings', icon: CircleX },
   ];
 
