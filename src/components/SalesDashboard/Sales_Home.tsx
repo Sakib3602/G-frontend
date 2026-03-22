@@ -21,6 +21,7 @@ const Sales_Home = () => {
   const axiosSales = useAxiosSales()
   const auth = useContext(AuthContext);
   const person = auth?.person;
+  const { logOut } = auth;
   const { data: userData } = useQuery({
     queryKey: ["user-data", person?.email],
     enabled: Boolean(person?.email),
@@ -49,7 +50,7 @@ const Sales_Home = () => {
     { name: 'In Progress', path: '/dashboard/sales/in-progress', icon: Briefcase },
     { name: 'Reminders', path: '/dashboard/sales/remainder', icon: Timer },  
     { name: 'Qualified Deals', path: '/dashboard/sales/qualified', icon:  WorkflowIcon  },
-    { name: 'Unqualified Deals', path: '/dashboard/sales/settings', icon: CircleX },
+    { name: 'Unqualified Deals', path: '/dashboard/sales/unqualified', icon: CircleX },
   ];
 
   return (
@@ -124,6 +125,10 @@ const Sales_Home = () => {
         {/* Footer Area */}
         <div className="p-4 border-t border-gray-100">
           <button 
+          onClick={async()=>{
+            await logOut();
+            
+          }}
             className="group flex items-center px-3 py-2.5 rounded-md text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 w-full"
             title={!isSidebarOpen ? "Sign Out" : undefined}
           >

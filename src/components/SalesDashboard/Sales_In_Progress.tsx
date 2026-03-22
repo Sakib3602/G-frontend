@@ -51,7 +51,8 @@ interface ProposalEmailPayload {
 
 export default function Sales_In_Progress() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
-  const [showNotiStatusUpdateYo, setShowNotiStatusUpdateYo] = useState(false);
+  const [showNotiStatusUpdateYo, setShowNotiStatusUpdateYo] = useState(false);    
+  const [showNotiStatusUpdateEmail, setShowNotiStatusUpdateEmail] = useState(false);    
   const axiosSales = useAxiosSales();
     const {userData} = useUserData()
       console.log("Fetched User Data from index:", userData);
@@ -90,6 +91,8 @@ export default function Sales_In_Progress() {
 
   const getLeadId = (lead: LeadData | null) => lead?.id || lead?._id || "";
 
+  // dynamic notification handler
+  
   // Open Modal Handler
   const openModal = (lead: LeadData) => {
     setSelectedLead(lead);
@@ -108,20 +111,25 @@ export default function Sales_In_Progress() {
 
   const handleMarkProposalSend = () => {
     if (!selectedLead) return;
- 
-    mutationUPProposalSent.mutate(getLeadId(selectedLead));
+
+    mutationUPProposalSent.mutate({
+      leadId: getLeadId(selectedLead),
+      showNotification: true,
+    });
   };
 
   const mutationUPProposalSent = useMutation({
-    mutationFn : async (leadId: string) => {
+    mutationFn : async ({ leadId }: { leadId: string; showNotification?: boolean }) => {
       const res = await axiosSales.put(`/api/v1/sales/mark-proposal-sent/${leadId}`);
       return res.data;
     },
-    onSuccess: ()=>{
+    onSuccess: (_, variables)=>{
       refetch();
+      if (variables?.showNotification !== false) {
+        setShowNotiStatusUpdateYo(true);
+      }
       setSelectedLead(null);
-    setIsComposing(false);
-      setShowNotiStatusUpdateYo(true);
+      setIsComposing(false);
     },
     onError: (e)=>{
       console.error("Error marking proposal sent:", e);
@@ -175,6 +183,7 @@ export default function Sales_In_Progress() {
       },
       onSuccess: ()=>{
         refetch();
+      
         setShowNotiStatusUpdate(true);
         setSelectedLead(null);
     setIsComposing(false);
@@ -186,6 +195,17 @@ export default function Sales_In_Progress() {
     mutationFn : async (proposalData: ProposalEmailPayload) => {
       const res = await axiosSales.post('/api/v1/sales/emailservice/send-proposal-email', proposalData);
       return res.data;
+    },
+    onSuccess: ()=>{
+      mutationUPProposalSent.mutate({
+        leadId: getLeadId(selectedLead),
+        showNotification: false,
+      });
+      setShowNotiStatusUpdateYo(false);
+      refetch()
+      setSelectedLead(null);
+      setIsComposing(false);
+      setShowNotiStatusUpdateEmail(true);
     }
   })
 
@@ -224,6 +244,18 @@ export default function Sales_In_Progress() {
                 duration={3000}
                 onClose={() => {
                   setShowNotiStatusUpdate(false);
+                }}
+              />
+            )}
+            {showNotiStatusUpdateEmail && (
+              <Notification
+                type="success"
+                title="Email Sent!"
+                message="Proposal email has been sent successfully."
+                showIcon={true}
+                duration={3000}
+                onClose={() => {
+                  setShowNotiStatusUpdateEmail(false);
                 }}
               />
             )}

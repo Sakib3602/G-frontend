@@ -19,6 +19,7 @@ import Sales_In_Progress from "./components/SalesDashboard/Sales_In_Progress.tsx
 import SalesPrivateRoute from "./../src/components/SalesDashboard/SalesPrivateRoute.tsx"
 import Sales_Remainder from "./components/SalesDashboard/Sales_Remainder.tsx";
 import Sales_Qualified from "./components/SalesDashboard/Sales_Qualified.tsx";
+import Sales_Unqualified from "./components/SalesDashboard/Sales_Unqualified.tsx";
 
 
 
@@ -47,6 +48,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/dashboard/sales/in-progress" element={<Sales_In_Progress />} />
           <Route path="/dashboard/sales/remainder" element={<Sales_Remainder />} />
           <Route path="/dashboard/sales/qualified" element={<Sales_Qualified />} />
+          <Route path="/dashboard/sales/unqualified" element={<Sales_Unqualified />} />
           
           
           </Route>

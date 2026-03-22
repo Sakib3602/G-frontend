@@ -34,7 +34,7 @@ export interface IMeeting {
   meetingLink?: string;
   agenda?: string;
   notes?: string;
-  status?: "scheduled" | "completed" | "cancelled" | "one-more";
+  status?: "scheduled" | "completed" | "cancelled" ;
   schedulerId: string;
 }
 
@@ -460,9 +460,9 @@ export default function Sales_My_Leads() {
                   Attempted to contact
                 </option>
                 <option value="Contacted">Contacted</option>
-                <option value="In Progress">In Progress</option>
+                {/* <option value="In Progress">In Progress</option>
                 <option value="Qualified">Qualified</option>
-                <option value="Unqualified">Unqualified</option>
+                <option value="Unqualified">Unqualified</option> */}
               </select>
             </div>
 

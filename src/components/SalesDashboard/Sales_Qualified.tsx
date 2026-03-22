@@ -1,8 +1,11 @@
-import  { useState } from 'react';
+import { useUserData } from './Sales_Hook/User_Data';
+import { useQuery } from '@tanstack/react-query';
+import useAxiosSales from '@/uri/useAxiosSales';
 
 // --- 1. Your Lead Data Interface ---
 export interface LeadData {
-  id: string;
+  id?: string;
+  _id?: string;
   leadName: string;
   owner: string;
   status: string;
@@ -20,54 +23,37 @@ export interface LeadData {
   proposalSent?: boolean;
 }
 
-// --- 2. Mock Data ---
-const qualifiedMockData: LeadData[] = [
-  {
-    id: '1',
-    leadName: 'Sarah Jenkins',
-    owner: 'Sakib Sarkar',
-    status: 'Qualified',
-    companyName: 'CloudSync',
-    title: 'VP of Operations',
-    email: 'sarah@cloudsync.io',
-    phone: '+1 555-0199',
-    leadScore: 5,
-    region: 'US',
-    leadCreatedBy: 'user_992',
-    proposalSent: true,
-  },
-  {
-    id: '2',
-    leadName: 'Marcus Chen',
-    owner: 'Sakib Sarkar',
-    status: 'Qualified',
-    companyName: 'Apex Financial',
-    title: 'Director',
-    specificRole: 'Procurement Director',
-    email: 'm.chen@apexfin.com',
-    leadScore: 4,
-    region: 'APAC',
-    leadCreatedBy: 'user_992',
-    proposalSent: true,
-  },
-  {
-    id: '3',
-    leadName: 'Elena Rodriguez',
-    owner: 'Sakib Sarkar',
-    status: 'Qualified',
-    companyName: 'Stellar Tech',
-    title: 'CEO / Founder',
-    email: 'elena@stellar.tech',
-    phone: '+44 20 7123 4567',
-    leadScore: 5,
-    region: 'EMEA',
-    leadCreatedBy: 'user_992',
-    proposalSent: true,
-  }
-];
-
 export default function Sales_Qualified() {
-  const [wonLeads] = useState<LeadData[]>(qualifiedMockData);
+  const axiosSales = useAxiosSales();
+  const {userData} = useUserData();
+
+  const {data: wonLeads = [], isLoading, isError} = useQuery<LeadData[]>({
+    queryKey: ["qualified-leads-sales", userData?._id],
+    enabled: Boolean(userData?._id),
+    queryFn: async()=>{
+      const res = await axiosSales.get(`/api/v1/sales/get-qualified-leads/${userData?._id}`);
+      return res.data.leads as LeadData[];
+    }
+  })
+  console.log("Qualified Leads from API:", wonLeads);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600 font-medium">Loading qualified leads...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6 mt-10 max-w-lg mx-auto bg-red-50 border border-red-200 rounded-lg text-center text-red-600">
+        <p className="font-semibold">Error fetching qualified leads.</p>
+        <p className="text-sm mt-1">Please check your connection and try again.</p>
+      </div>
+    );
+  }
 
   // --- CRM UI Metrics ---
   const totalWon = wonLeads.length;
@@ -122,7 +108,7 @@ export default function Sales_Qualified() {
             </div>
           ) : (
             wonLeads.map((deal) => (
-              <div key={deal.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-[#99B562]/40 transition-all group flex flex-col h-full overflow-hidden">
+              <div key={deal._id || deal.id || `${deal.leadName}-${deal.email || 'no-email'}`} className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-[#99B562]/40 transition-all group flex flex-col h-full overflow-hidden">
                 
                 {/* Card Top: Company / Account Info */}
                 <div className="p-6 border-b border-slate-100 bg-gradient-to-b from-slate-50/50 to-white">

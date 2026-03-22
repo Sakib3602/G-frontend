@@ -28,6 +28,7 @@ export interface LeadData {
 
 export default function Sales_Remainder() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
+  const [showNotiReminderEmailSent, setShowNotiReminderEmailSent] = useState(false);
 
   const axiosSales = useAxiosSales();
   const {userData} = useUserData()
@@ -53,7 +54,9 @@ export default function Sales_Remainder() {
   const handleFollowUpClick = (lead: LeadData) => {
     const leadId = getLeadId(lead);
     if (lead.email) {
-      console.log(`Follow-up initiated for: ${lead.leadName} | Email: ${lead.email} | Lead ID: ${leadId}`);
+      // console.log(`Follow-up initiated for: ${lead.leadName} | Email: ${lead.email} | Lead ID: ${leadId}`);
+      mutationMarkRemainder.mutate({ email: lead.email });
+      mutationMark.mutate({ leadId, showNotification: false });
     } else {
       console.log(`Follow-up initiated for: ${lead.leadName} | No email on file. | Lead ID: ${leadId}`);
     }
@@ -63,19 +66,33 @@ export default function Sales_Remainder() {
     const leadId = getLeadId(lead);
     // console.log(`Marked as followed up | Lead ID: ${leadId} | Lead Name: ${lead.leadName}`);
     mutationMark.mutate({ leadId });
+    
   };
 
   const queryClient = useQueryClient();
+
   const mutationMark = useMutation({
-    mutationFn: async ({ leadId }: { leadId: string }) => {
+    mutationFn: async ({ leadId }: { leadId: string; showNotification?: boolean }) => {
       const res = await axiosSales.put(`/api/v1/sales/update-at-time/${leadId}`);
+      return res.data;
+    },
+    onSuccess: (_, variables)=>{
+      queryClient.invalidateQueries({ queryKey: ["rem"] });
+      if (variables?.showNotification !== false) {
+        setShowNotiStatusUpdate(true);
+      }
+    }
+  });
+  const mutationMarkRemainder = useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const res = await axiosSales.post(`/api/v1/sales/emailservice/send-reminder-email/${email}`);
       return res.data;
     },
     onSuccess: ()=>{
       queryClient.invalidateQueries({ queryKey: ["rem"] });
-      setShowNotiStatusUpdate(true);
+      setShowNotiReminderEmailSent(true);
     }
-  })
+  });
 
   if (isReminderLoading) {
     return (
@@ -107,6 +124,18 @@ export default function Sales_Remainder() {
                 duration={3000}
                 onClose={() => {
                   setShowNotiStatusUpdate(false);
+                }}
+              />
+            )}
+            {showNotiReminderEmailSent && (
+              <Notification
+                type="success"
+                title="Reminder Email Sent!"
+                message="Follow-up reminder email has been sent successfully."
+                showIcon={true}
+                duration={3000}
+                onClose={() => {
+                  setShowNotiReminderEmailSent(false);
                 }}
               />
             )}
