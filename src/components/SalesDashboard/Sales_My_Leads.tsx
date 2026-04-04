@@ -21,6 +21,7 @@ export interface LeadData {
   specificRole: string;
   region: string;
   profileUrl: string;
+  ServiceNeed?: string;
 }
 
 export interface IMeeting {
@@ -77,7 +78,6 @@ const statusOptions = [
   "Attempted to contact",
   "Contacted",
   "In Progress",
-  "Qualified",
   "Unqualified",
 ];
 // form
@@ -460,9 +460,7 @@ export default function Sales_My_Leads() {
                   Attempted to contact
                 </option>
                 <option value="Contacted">Contacted</option>
-                {/* <option value="In Progress">In Progress</option>
-                <option value="Qualified">Qualified</option>
-                <option value="Unqualified">Unqualified</option> */}
+                
               </select>
             </div>
 
@@ -500,6 +498,7 @@ export default function Sales_My_Leads() {
                 <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-40 ">
                   Status
                 </th>
+                
                 <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-40">
                   Indications
                 </th>
@@ -524,13 +523,16 @@ export default function Sales_My_Leads() {
                 <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-24">
                   Region
                 </th>
+                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-32">
+                  Service
+                </th>
               </tr>
             </thead>
             <tbody>
               {processedLeads.length === 0 && !isLoading && (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={12}
                     className="p-8 text-center text-gray-500 border-r border-gray-200"
                   >
                     No leads found matching your criteria.
@@ -651,12 +653,15 @@ export default function Sales_My_Leads() {
                   >
                     {lead.region}
                   </td>
+                  <td className="p-2 border-r border-gray-200 text-gray-700">
+                    {lead.ServiceNeed || "Graphic"}
+                  </td>
                 </tr>
               ))}
 
               {!isLoading && (
                 <tr>
-                  <td colSpan={11} className="p-0 border-t border-gray-200">
+                  <td colSpan={12} className="p-0 border-t border-gray-200">
                     <Link
                       to={"/dashboard/sales/create-leads"}
                       className="block w-full p-2 text-left text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"

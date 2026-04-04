@@ -21,6 +21,7 @@ type LeadFormData = {
   region: string;
   profileUrl: string;
   leadCreatedBy: string;
+  ServiceNeed: string;
 };
 
 const Sales_Create_leads = () => {
@@ -46,6 +47,8 @@ const Sales_Create_leads = () => {
     region: "US",
     profileUrl: "",
     leadCreatedBy: userData?._id || "",
+    ServiceNeed: "Graphic",
+
   });
 
   const handleChange = (
@@ -77,6 +80,7 @@ const Sales_Create_leads = () => {
       region: "US",
       profileUrl: "",
       leadCreatedBy: userData?._id || "",
+      ServiceNeed: "Graphic",
     });
   };
 
@@ -122,6 +126,7 @@ const Sales_Create_leads = () => {
 
   const regionOptions = ["US", "ANZ", "EMEA", "APAC", "LATAM", "Global"];
   const scoreOptions = ["1", "2", "3", "4", "5"];
+  const serviceNeedOptions = ["Graphic", "Web", "Marketing"];
 
   const CancelAll = () => {
     setFormData({
@@ -138,6 +143,7 @@ const Sales_Create_leads = () => {
       region: "US",
       profileUrl: "",
       leadCreatedBy: userData?._id || "",
+      ServiceNeed: "Graphic",
     });
   };
 
@@ -233,6 +239,23 @@ const Sales_Create_leads = () => {
                   placeholder="https://XXXX.com/in/username"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7FA23B]/50 focus:border-[#7FA23B] outline-none transition-colors"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Service Need
+                </label>
+                <select
+                  name="ServiceNeed"
+                  value={formData.ServiceNeed}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7FA23B]/50 focus:border-[#7FA23B] outline-none bg-white transition-colors"
+                >
+                  {serviceNeedOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* --- Company & Role Information --- */}

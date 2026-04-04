@@ -38,7 +38,6 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
       },
     });
 
-    console.log(userData?.role)
   
 
   const navLinks = [
@@ -80,7 +79,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             {/* Desktop Links */}
             <div className="hidden lg:flex space-x-10">
               {navLinks.map((link) => (
-                <Link key={link.name} to={link.href}>
+                <Link key={link?.name} to={link.href}>
                 <p
                   className="text-gray-900 hover:text-[#80A33C] text-[15px] font-semibold transition-colors duration-300"
                 >
