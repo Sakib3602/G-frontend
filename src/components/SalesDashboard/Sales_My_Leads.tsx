@@ -526,6 +526,8 @@ export default function Sales_My_Leads() {
                 <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-32">
                   Service
                 </th>
+                
+                
               </tr>
             </thead>
             <tbody>
