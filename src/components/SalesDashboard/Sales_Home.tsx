@@ -21,6 +21,9 @@ const Sales_Home = () => {
   const axiosSales = useAxiosSales()
   const auth = useContext(AuthContext);
   const person = auth?.person;
+  if (!auth) {
+    throw new Error("AuthContext is not available");
+  }
   const { logOut } = auth;
   const { data: userData } = useQuery({
     queryKey: ["user-data", person?.email],

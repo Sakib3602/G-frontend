@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { 
   Megaphone, 
   BarChart3, 
   Globe, 
-  Users, 
-  Image as ImageIcon, 
-  Settings, 
+  Users,  
   LogOut, 
   Menu, 
   Bell,
@@ -13,12 +11,18 @@ import {
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { useUserData } from '../SalesDashboard/Sales_Hook/User_Data';
+import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
 
 const MarketingHome = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
 
   const {userData} = useUserData();
+  const auth = useContext(AuthContext)
+  if (!auth) {
+    throw new Error("AuthContext is not available");
+  }
+  const { logOut } = auth
 
   console.log("Marketing Home - User Data:", userData);
 
@@ -109,10 +113,13 @@ const MarketingHome = () => {
         {/* Footer Area */}
         <div className="p-4 border-t border-white/10 mt-auto">
           <button 
+            onClick={async()=>{
+                await logOut();
+            }}
             className="group flex items-center px-3 py-3 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300 w-full"
             title={!isSidebarOpen ? "Sign Out" : undefined}
           >
-            <LogOut className="w-5 h-5 flex-shrink-0 transition-transform group-hover:-translate-x-1" />
+            <LogOut className="w-5 h-5 shrink-0 transition-transform group-hover:-translate-x-1" />
             <span className={`ml-4 text-sm font-medium tracking-wide ${!isSidebarOpen && 'hidden'}`}>
               Sign Out
             </span>

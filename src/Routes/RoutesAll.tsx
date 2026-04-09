@@ -7,6 +7,7 @@ import Services from "@/components/BasicComponents/Services/Services";
 import MAIN_HOME_ROUTES from "@/components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES";
 import MarketingHome from "@/components/MarketingDashboard/MarketingHome";
 import MarketingIndex from "@/components/MarketingDashboard/MarketingIndex";
+import MarketingPrivateRoute from "@/components/MarketingDashboard/MarketingPrivateRoute";
 import Sales_Create_Leads from "@/components/SalesDashboard/Sales_Create_Leads";
 import Sales_Home from "@/components/SalesDashboard/Sales_Home";
 import Sales_In_Progress from "@/components/SalesDashboard/Sales_In_Progress";
@@ -40,7 +41,7 @@ const RoutesAll = () => {
               </Route>
               {/* sales dashboard end */}
               {/* marketing dashboard start */}
-              <Route path="/dashboard/marketing" element={<MarketingHome></MarketingHome>} >
+              <Route path="/dashboard/marketing" element={<MarketingPrivateRoute><MarketingHome></MarketingHome></MarketingPrivateRoute>} >
               <Route index element={<MarketingIndex></MarketingIndex>} />
               
               </Route>
