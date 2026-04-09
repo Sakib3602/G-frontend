@@ -5,6 +5,8 @@ import Registration from "@/components/Authentication/Auth_Page/Registration";
 import Reset from "@/components/Authentication/Auth_Page/Reset";
 import Services from "@/components/BasicComponents/Services/Services";
 import MAIN_HOME_ROUTES from "@/components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES";
+import MarketingHome from "@/components/MarketingDashboard/MarketingHome";
+import MarketingIndex from "@/components/MarketingDashboard/MarketingIndex";
 import Sales_Create_Leads from "@/components/SalesDashboard/Sales_Create_Leads";
 import Sales_Home from "@/components/SalesDashboard/Sales_Home";
 import Sales_In_Progress from "@/components/SalesDashboard/Sales_In_Progress";
@@ -35,10 +37,14 @@ const RoutesAll = () => {
               <Route path="/dashboard/sales/remainder" element={<Sales_Remainder />} />
               <Route path="/dashboard/sales/qualified" element={<Sales_Qualified />} />
               <Route path="/dashboard/sales/unqualified" element={<Sales_Unqualified />} />
-              
-              
               </Route>
               {/* sales dashboard end */}
+              {/* marketing dashboard start */}
+              <Route path="/dashboard/marketing" element={<MarketingHome></MarketingHome>} >
+              <Route index element={<MarketingIndex></MarketingIndex>} />
+              
+              </Route>
+              {/* marketing dashboard end */}
             </Routes>
 };
 

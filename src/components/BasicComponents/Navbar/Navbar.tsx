@@ -45,6 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
     { name: "Blog", href: "#blog", number: "04" },
     { name: "Contact", href: "#contact", number: "05" },
     ...(userData?.role === "sales" ? [{ name: "Sales Dashboard", href: "/dashboard/sales", number: "06" }] : []),
+    ...(userData?.role === "marketing" ? [{ name: "Marketing Dashboard", href: "/dashboard/marketing", number: "06" }] : []),
   ];
 
   return (

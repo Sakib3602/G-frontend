@@ -687,6 +687,7 @@ export default function Sales_In_Progress() {
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Deal Doc Link</label>
               <input
                 type="url"
+                required
                 value={dealDocLink}
                 onChange={(e) => setDealDocLink(e.target.value)}
                 placeholder="https://example.com/deal-doc"
