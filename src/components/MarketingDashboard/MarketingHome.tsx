@@ -24,7 +24,6 @@ const MarketingHome = () => {
   }
   const { logOut } = auth
 
-  console.log("Marketing Home - User Data:", userData);
 
   // Mock user data
   const user = {
@@ -36,7 +35,7 @@ const MarketingHome = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard/marketing', icon: BarChart3 },
-    { name: 'Pending Signatures', path: '/dashboard/marketing/campaigns', icon: Megaphone },
+    { name: 'Pending Signatures', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
     { name: 'Remainders', path: '/dashboard/marketing/social', icon: Globe },
     { name: 'OnBoarding', path: '/dashboard/marketing/audience', icon: Users },
     

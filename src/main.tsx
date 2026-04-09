@@ -16,7 +16,7 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-       <RoutesAll></RoutesAll> // all route come from here.
+       <RoutesAll></RoutesAll> 
       </AuthProvider>
       </QueryClientProvider>
     </BrowserRouter>
