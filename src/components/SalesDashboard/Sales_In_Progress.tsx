@@ -84,6 +84,8 @@ export default function Sales_In_Progress() {
 
   // Awaiting Response Status State
   const [responseStatus, setResponseStatus] = useState<QualificationStatus | null>(null);
+  const [pendingQualification, setPendingQualification] = useState<QualificationStatus | null>(null);
+  const [dealDocLink, setDealDocLink] = useState("");
 
   // Split leads
   const needsProposal = leads.filter((lead) => !lead.proposalSent);
@@ -107,6 +109,8 @@ export default function Sales_In_Progress() {
     setSelectedLead(null);
     setIsComposing(false);
     setResponseStatus(null);
+    setPendingQualification(null);
+    setDealDocLink("");
   };
 
   const handleMarkProposalSend = () => {
@@ -170,15 +174,44 @@ export default function Sales_In_Progress() {
   const handleQualificationResponse = (qualification: QualificationStatus) => {
     if (!selectedLead) return;
 
+    if (qualification === "Qualified") {
+      setPendingQualification(qualification);
+      return;
+    }
+
     const leadId = getLeadId(selectedLead);
- 
-    MutationUpForStatusUpdate.mutate({ leadId, status: qualification });
+
+    MutationUpForStatusUpdate.mutate({
+      leadId,
+      status: qualification,
+    });
 
     setResponseStatus(qualification);
+    setPendingQualification(null);
+    setDealDocLink("");
   };
+
+  const handleSubmitQualification = () => {
+    if (!selectedLead || !pendingQualification || !dealDocLink.trim()) return;
+
+    const leadId = getLeadId(selectedLead);
+ 
+    MutationUpForStatusUpdate.mutate({
+      leadId,
+      status: pendingQualification,
+      dealDocLink: dealDocLink.trim(),
+    });
+
+    setResponseStatus(pendingQualification);
+    setPendingQualification(null);
+    setDealDocLink("");
+  };
+
+  
   const MutationUpForStatusUpdate = useMutation({
-      mutationFn: async ({ leadId, status }: { leadId: string; status: QualificationStatus }) => {
-        const res = await axiosSales.put(`/api/v1/sales/update-lead-status/${leadId}`, { status });
+      mutationFn: async ({ leadId, status, dealDocLink }: { leadId: string; status: QualificationStatus; dealDocLink?: string }) => {
+        const payload = dealDocLink ? { status, dealDocLink } : { status };
+        const res = await axiosSales.put(`/api/v1/sales/update-lead-status/${leadId}`, payload);
         return res.data;
       },
       onSuccess: ()=>{
@@ -628,6 +661,57 @@ export default function Sales_In_Progress() {
               )}
             </div>
             
+          </div>
+        </div>
+      )}
+
+      {selectedLead && pendingQualification && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => {
+              setPendingQualification(null);
+              setDealDocLink("");
+            }}
+          ></div>
+
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg relative z-10 border border-slate-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+              <h3 className="text-base font-bold text-slate-900">Provide Deal Doc Link</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Add the deal document link before marking this lead as {pendingQualification}.
+              </p>
+            </div>
+
+            <div className="p-5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Deal Doc Link</label>
+              <input
+                type="url"
+                value={dealDocLink}
+                onChange={(e) => setDealDocLink(e.target.value)}
+                placeholder="https://example.com/deal-doc"
+                className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#99B562] focus:ring-2 focus:ring-[#99B562]/20 transition-all"
+              />
+            </div>
+
+            <div className="px-5 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setPendingQualification(null);
+                  setDealDocLink("");
+                }}
+                className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitQualification}
+                disabled={!dealDocLink.trim() || MutationUpForStatusUpdate.isPending}
+                className="px-5 py-2 text-sm font-bold text-white bg-[#99B562] hover:bg-[#85a052] rounded-lg shadow-sm transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {MutationUpForStatusUpdate.isPending ? "Submitting..." : "Submit"}
+              </button>
+            </div>
           </div>
         </div>
       )}
