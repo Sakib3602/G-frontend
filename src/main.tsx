@@ -9,7 +9,6 @@ import RoutesAll from "./Routes/RoutesAll.tsx";  // here all the routes are defi
 
 
 
-
 const queryClient = new QueryClient();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

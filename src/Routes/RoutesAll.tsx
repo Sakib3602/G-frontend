@@ -7,7 +7,9 @@ import Services from "@/components/BasicComponents/Services/Services";
 import MAIN_HOME_ROUTES from "@/components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES";
 import MarketingHome from "@/components/MarketingDashboard/MarketingHome";
 import MarketingIndex from "@/components/MarketingDashboard/MarketingIndex";
+import MarketingOnBoarding from "@/components/MarketingDashboard/MarketingOnBoarding";
 import MarketingPrivateRoute from "@/components/MarketingDashboard/MarketingPrivateRoute";
+import MarketingRemainders from "@/components/MarketingDashboard/MarketingRemainders";
 import PendingSignature from "@/components/MarketingDashboard/PendingSignature";
 import Sales_Create_Leads from "@/components/SalesDashboard/Sales_Create_Leads";
 import Sales_Home from "@/components/SalesDashboard/Sales_Home";
@@ -45,7 +47,8 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing" element={<MarketingPrivateRoute><MarketingHome></MarketingHome></MarketingPrivateRoute>} >
               <Route index element={<MarketingIndex></MarketingIndex>} />
               <Route path="/dashboard/marketing/pending-signatures" element={<PendingSignature />} />
-              
+              <Route path="/dashboard/marketing/remainders-to-signatures" element={<MarketingRemainders />} />
+              <Route path="/dashboard/marketing/on-boarding" element={<MarketingOnBoarding />} />
               </Route>
               {/* marketing dashboard end */}
             </Routes>
