@@ -5,6 +5,7 @@ import Registration from "@/components/Authentication/Auth_Page/Registration";
 import Reset from "@/components/Authentication/Auth_Page/Reset";
 import Services from "@/components/BasicComponents/Services/Services";
 import MAIN_HOME_ROUTES from "@/components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES";
+import MarketingCreateCampaign from "@/components/MarketingDashboard/MarketingCreateCampaign";
 import MarketingHome from "@/components/MarketingDashboard/MarketingHome";
 import MarketingIndex from "@/components/MarketingDashboard/MarketingIndex";
 import MarketingOnBoarding from "@/components/MarketingDashboard/MarketingOnBoarding";
@@ -49,6 +50,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing/pending-signatures" element={<PendingSignature />} />
               <Route path="/dashboard/marketing/remainders-to-signatures" element={<MarketingRemainders />} />
               <Route path="/dashboard/marketing/on-boarding" element={<MarketingOnBoarding />} />
+              <Route path="/dashboard/marketing/create-campaign" element={<MarketingCreateCampaign />} />
               </Route>
               {/* marketing dashboard end */}
             </Routes>

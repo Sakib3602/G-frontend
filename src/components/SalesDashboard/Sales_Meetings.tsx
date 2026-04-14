@@ -33,10 +33,9 @@ const normalizeMeetingStatus = (status?: string): MeetingData["status"] => {
 
   if (
     normalized === "completed" ||
-    normalized === "cancelled" ||
-    normalized === "one-more"
+    normalized === "cancelled"
   ) {
-    return normalized;
+    return normalized as MeetingData["status"];
   }
 
   return "scheduled";

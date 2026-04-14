@@ -304,7 +304,8 @@ export default function Sales_Index_Element() {
             </div>
 
             {/* --- SALES REPRESENTATIVE PROFILE CARD --- */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
                <div className="h-20 bg-linear-to-r from-slate-800 to-slate-700"></div>
                <div className="px-6 pb-6 relative">
                  <div className="flex justify-between items-end mb-4">
@@ -356,7 +357,7 @@ export default function Sales_Index_Element() {
                    </div>
                  </div>
                </div>
-            </div>
+            </div> */}
 
           </div>
         </div>

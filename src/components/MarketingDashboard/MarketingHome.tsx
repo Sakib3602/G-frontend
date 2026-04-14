@@ -35,11 +35,12 @@ const MarketingHome = () => {
     { name: 'Dashboard', path: '/dashboard/marketing', icon: BarChart3 },
     { name: 'Pending Signatures', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
     { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
+    { name: 'Create Campaign', path: '/dashboard/marketing/create-campaign', icon: Zap },
     { name: 'OnBoarding', path: '/dashboard/marketing/on-boarding', icon: Users },
   ];
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] text-slate-800">
+    <div className="poppins-regular flex h-screen bg-[#F8FAFC] text-slate-800">
 
       {/* Sidebar */}
       <aside

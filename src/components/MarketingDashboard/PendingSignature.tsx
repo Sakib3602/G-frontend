@@ -6,6 +6,27 @@ import { useUserData } from '../SalesDashboard/Sales_Hook/User_Data';
 import { useState } from 'react';
 import Notification from '../ui/toast';
 
+// Type definitions for Deal
+interface LeadDetails {
+  _id?: string;
+  leadName: string;
+  ServiceNeed: string;
+  email: string;
+  phone: string;
+}
+
+interface Creator {
+  _id?: string;
+  name: string;
+}
+
+interface Deal {
+  _id: string;
+  leadId: LeadDetails;
+  dealFinalLink?: string;
+  createdBy: Creator;
+  signature: boolean;
+}
 
 const PendingSignature = () => {
     const [showNotification, setShowNotification] = useState(false);
@@ -16,12 +37,12 @@ const PendingSignature = () => {
     queryKey: ['pendingSignature', userData?.email],
     queryFn: async () => {
       const res = await axiosMarketing.get(`/qualified-leads/${userData?._id}`);
-      return res.data;
+      return res.data as Deal[];
     },
     enabled: !!userData?._id, 
   });
 
-  const handleSignDone = async (dealId : string) => {
+  const handleSignDone = async (dealId: string): Promise<void> => {
     try {
      
       
@@ -32,17 +53,17 @@ const PendingSignature = () => {
     }
   };
 
-  const handleDelete = (dealId: string) => {
+  const handleDelete = (dealId: string): void => {
    
     console.log('🗑️ Delete clicked with ID:', dealId);
     // Add delete logic here
   };
   const mutationForUpdateStatus = useMutation({
-    mutationFn: async(dealId : string) => {
+    mutationFn: async (dealId: string): Promise<any> => {
        const res = await axiosMarketing.put(`/update-signature/${dealId}`);
        return res.data;
     },
-    onSuccess: ()=>{
+    onSuccess: () => {
         setShowNotification(true);
         refetch();
     }

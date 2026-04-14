@@ -3,7 +3,8 @@ import axios from "axios";
 
  
  const axiosSales = axios.create({
-    baseURL: "http://localhost:5000",  
+    baseURL: "https://g-backend-g4pi.onrender.com",  
+    // baseURL: "http://localhost:5000",  
  })
 
 const useAxiosSales = () => {
