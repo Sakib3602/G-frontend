@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { Navigate, useLocation } from "react-router";
 
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
-import { useUserData } from "../SalesDashboard/Sales_Hook/User_Data";
+import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 
 const MarketingPrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const auth = useContext(AuthContext);
@@ -16,7 +16,7 @@ const MarketingPrivateRoute = ({ children }: { children: React.ReactNode }) => {
 
   
 
-  const {userData, isLoading} = useUserData()
+  const {userData, isLoading} = useUserDataMarketing()
 
     if (loading || isLoading) {
     return (

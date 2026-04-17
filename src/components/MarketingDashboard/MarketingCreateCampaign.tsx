@@ -1,5 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+
+import useAxiosMarketing from "@/uri/useAxiosMarketing";
+import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
+import { useMutation } from "@tanstack/react-query";
+import Alert from "./Alert/Alert";
 
 type CampaignFormData = {
   campaignName: string;
@@ -10,23 +15,27 @@ type CampaignFormData = {
   targetLeads: number;
 };
 
+
+export type CampaignForm = CampaignFormData & {
+    marketerId: string;
+};
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
   :root {
-    --gold-light: #e6cf85;
-    --gold-mid: #c7a84a;
-    --gold-dark: #8b6a18;
+    --gold-light: #f5ecd1;
+    --gold-mid: #b89a53;
+    --gold-dark: #876f35;
     --gold-deep: #2f2612;
-    --gold-glow: rgba(199, 168, 74, 0.14);
-    --gold-subtle: rgba(199, 168, 74, 0.06);
-    --gold-border: rgba(199, 168, 74, 0.16);
-    --gold-border-mid: rgba(199, 168, 74, 0.28);
+    --gold-glow: rgba(148, 163, 184, 0.16);
+    --gold-subtle: rgba(148, 163, 184, 0.08);
+    --gold-border: rgba(148, 163, 184, 0.24);
+    --gold-border-mid: rgba(148, 163, 184, 0.36);
     --white: #ffffff;
-    --off-white: #faf8f3;
-    --text-primary: #1d1a16;
-    --text-secondary: #625b51;
-    --text-muted: #8e8577;
+    --off-white: #f8fafc;
+    --text-primary: #111827;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
     --error: #C0392B;
     --error-bg: #FEF2F0;
   }
@@ -57,10 +66,10 @@ const styles = `
 
   .mcf-wrap {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfaf6 100%);
+    background: rgba(248, 250, 252, 0.6);
     border: 1px solid var(--gold-border);
     border-radius: 24px;
-    padding: 1.9rem 2rem 1.6rem;
+    padding: 2.5rem 2rem 1.6rem;
     max-width: 620px;
     margin: 0 auto;
     position: relative;
@@ -72,7 +81,7 @@ const styles = `
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 3px;
-    background: linear-gradient(90deg, transparent, rgba(199, 168, 74, 0.15), rgba(199, 168, 74, 0.35), rgba(199, 168, 74, 0.15), transparent);
+    background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.14), rgba(148, 163, 184, 0.26), rgba(148, 163, 184, 0.14), transparent);
     background-size: 300% auto;
     animation: shimmer 4s linear infinite;
   }
@@ -139,8 +148,8 @@ const styles = `
     animation: pulseRing 2.5s ease infinite;
   }
   .mcf-step-circle.done {
-    background: var(--gold-subtle);
-    border: 1px solid var(--gold-border-mid);
+    background: rgba(184, 154, 83, 0.12);
+    border: 1px solid rgba(184, 154, 83, 0.35);
     color: var(--gold-mid);
   }
   .mcf-step-circle.idle {
@@ -186,7 +195,7 @@ const styles = `
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--gold-mid);
+    color: var(--text-secondary);
     margin-bottom: 7px;
   }
   .mcf-input-wrap { position: relative; }
@@ -195,7 +204,7 @@ const styles = `
     left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--gold-mid);
+    color: var(--text-secondary);
     font-weight: 500;
     font-size: 14px;
     pointer-events: none;
@@ -215,9 +224,9 @@ const styles = `
   }
   .mcf-input::placeholder { color: #C8BBAA; }
   .mcf-input:focus, .mcf-select:focus {
-    border-color: var(--gold-mid);
+    border-color: #94a3b8;
     box-shadow: 0 0 0 3px var(--gold-glow);
-    background: #FEFDF9;
+    background: #ffffff;
   }
   .mcf-input.has-prefix { padding-left: 28px; }
   .mcf-input.error { border-color: var(--error); box-shadow: 0 0 0 3px #C0392B1A; background: var(--error-bg); }
@@ -265,7 +274,7 @@ const styles = `
     font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--gold-mid);
+    color: var(--text-secondary);
   }
   .mcf-review-row {
     display: flex;
@@ -277,7 +286,7 @@ const styles = `
   .mcf-review-row:last-child { border-bottom: none; padding-bottom: 0; }
   .mcf-review-key { font-size: 12px; color: var(--text-muted); }
   .mcf-review-val { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-  .mcf-review-val.gold { color: var(--gold-dark); font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; }
+  .mcf-review-val.gold { color: #334155; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; }
 
   /* Buttons */
   .mcf-actions {
@@ -291,7 +300,7 @@ const styles = `
   .mcf-btn-back {
     background: transparent;
     border: 1px solid var(--gold-border-mid);
-    color: var(--gold-mid);
+    color: var(--gold-dark);
     padding: 10px 20px;
     border-radius: 10px;
     font-family: 'Poppins', sans-serif;
@@ -320,7 +329,7 @@ const styles = `
     align-items: center;
     gap: 6px;
   }
-  .mcf-btn-next:hover { background-position: right center; transform: translateY(-1px); box-shadow: 0 5px 20px #C9A84C55; }
+  .mcf-btn-next:hover { background-position: right center; transform: translateY(-1px); box-shadow: 0 5px 20px rgba(199, 168, 74, 0.35); }
   .mcf-btn-next:active { transform: scale(0.97); }
 
   /* Dots */
@@ -347,7 +356,7 @@ const styles = `
     width: 68px;
     height: 68px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold-mid), var(--gold-light));
+    background: linear-gradient(135deg, #94a3b8, #cbd5e1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -371,15 +380,33 @@ const styles = `
   .mcf-divider {
     width: 48px;
     height: 1.5px;
-    background: linear-gradient(90deg, transparent, var(--gold-mid), transparent);
+    background: linear-gradient(90deg, transparent, #94a3b8, transparent);
     margin: 0 auto 1.5rem;
   }
 `;
+
+
 
 const MarketingCreateCampaign = () => {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState<CampaignFormData | null>(null);
+
+  const [showNotification, setShowNotification] = useState(false);
+
+  useEffect(() => {
+    if (!showNotification) return;
+
+    const timer = setTimeout(() => {
+      setShowNotification(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [showNotification]);
+  
+  const {userData}  = useUserDataMarketing()
+  // console.log("User data in MarketingCreateCampaign:", userData);
+  const axiosMarketer = useAxiosMarketing()
 
   const {
     register,
@@ -423,12 +450,41 @@ const MarketingCreateCampaign = () => {
     console.log("Launch campaign clicked:", {
       ...data,
       perDayCost: submittedPerDayCost,
+
     });
+
+    const dataFOrCreate = {
+      ...data,
+    perDayCost: getPerDayCost(),
+    marketerId: userData?._id
+
+    }
+
+   
+
+  
+    mutationCreateCampaign.mutate(dataFOrCreate);
+
+
     setSubmittedData(data);
     resetForm();
     setStep(1);
     setSubmitted(true);
   };
+
+  const mutationCreateCampaign = useMutation({
+    mutationFn: async(data: CampaignForm)=>{
+      const res = await axiosMarketer.post("/campaigns/create-campaign",data)
+      return res.data;
+    },
+      onSuccess: () => {
+        setShowNotification(true);  
+      },
+      onError: (error)=>{
+        console.error("Error creating campaign:", error);
+      }
+    
+  })
 
   const handleCreateAnother = () => {
     setStep(1);
@@ -447,6 +503,10 @@ const MarketingCreateCampaign = () => {
 
   return (
     <>
+    {showNotification && 
+    <Alert title="Campaign launched" message={`The campaign "${submittedData?.campaignName}" has been launched successfully.`} />
+    }
+
       <style>{styles}</style>
       <div className="mcf-wrap">
         <div className="mcf-shimmer-bar" />

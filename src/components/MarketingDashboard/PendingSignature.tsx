@@ -2,9 +2,9 @@
 import {   Check, ArrowUpRight, Trash2 } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import useAxiosMarketing from '@/uri/useAxiosMarketing';
-import { useUserData } from '../SalesDashboard/Sales_Hook/User_Data';
 import { useState } from 'react';
 import Notification from '../ui/toast';
+import { useUserDataMarketing } from './HOOK/User_Data_Marketer';
 
 // Type definitions for Deal
 interface LeadDetails {
@@ -31,7 +31,7 @@ interface Deal {
 const PendingSignature = () => {
     const [showNotification, setShowNotification] = useState(false);
   const axiosMarketing = useAxiosMarketing();
-  const { userData } = useUserData();
+  const { userData } = useUserDataMarketing();
 
   const { data: deals = [], isLoading, refetch } = useQuery({
     queryKey: ['pendingSignature', userData?.email],

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
-import { useUserData } from "../SalesDashboard/Sales_Hook/User_Data";
+
 import { 
   Loader2, 
   Send, 
@@ -9,6 +9,7 @@ import {
   ArrowUpRight, 
   CheckCircle2 
 } from "lucide-react";
+import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 
 type Reminder = {
   _id: string;
@@ -32,7 +33,7 @@ const MarketingRemainders = () => {
   const [signLink, setSignLink] = useState("");
   const [modalError, setModalError] = useState("");
   const axiosMarketing = useAxiosMarketing();
-  const { userData } = useUserData();
+  const { userData } = useUserDataMarketing();
 
   const { data: reminders = [], isLoading, refetch } = useQuery<Reminder[]>({
     queryKey: ['reminders-marketing', userData?.email],
@@ -126,14 +127,14 @@ const MarketingRemainders = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
+      <div className=" flex justify-center items-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 text-[#6B8932] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="w-full relative">
+    <div className="p-4 w-full relative">
       
       {/* Toast Notification */}
       {showNotification && (
@@ -226,7 +227,7 @@ const MarketingRemainders = () => {
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-slate-50/60 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>

@@ -3,21 +3,21 @@ import {
   Megaphone,
   BarChart3,
   Globe,
-  Users,
   LogOut,
   Menu,
   Bell,
   Zap
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { useUserData } from '../SalesDashboard/Sales_Hook/User_Data';
+
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
+import { useUserDataMarketing } from './HOOK/User_Data_Marketer';
 
 const MarketingHome = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
 
-  const { userData } = useUserData();
+  const { userData } = useUserDataMarketing();
   const auth = useContext(AuthContext);
   if (!auth) throw new Error("AuthContext is not available");
 
@@ -36,7 +36,7 @@ const MarketingHome = () => {
     { name: 'Pending Signatures', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
     { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
     { name: 'Create Campaign', path: '/dashboard/marketing/create-campaign', icon: Zap },
-    { name: 'OnBoarding', path: '/dashboard/marketing/on-boarding', icon: Users },
+    { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: BarChart3 },
   ];
 
   return (
@@ -149,8 +149,23 @@ const MarketingHome = () => {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-[#F8FAFC]">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto  bg-[#F8FAFC]">
+          <div className="min-h-screen w-full bg-white relative">
+  {/* Noise Texture (Darker Dots) Background */}
+  <div
+    className="absolute inset-0 z-0"
+    style={{
+      background: "#ffffff",
+      backgroundImage: "radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.35) 1px, transparent 0)",
+      backgroundSize: "20px 20px",
+    }}
+  />
+     {/* Your Content/Components */}
+          <div className="relative z-10">
+    <Outlet />
+  </div>
+
+</div>
         </main>
 
       </div>
