@@ -9,59 +9,63 @@ import {
   DollarSign,
   X,
   Wallet,
+  Loader2,
 } from "lucide-react";
+import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
+import { useQuery } from "@tanstack/react-query";
+import useAxiosMarketing from "@/uri/useAxiosMarketing";
 
 // TypeScript Interfaces
 export interface Campaign {
   id: string;
   campaignName: string;
   channel: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   perDayCost: number;
   targetLeads: number;
   totalBudget: number;
+  revenue?: number;
   adminApproval?: "pending" | "approved" | "rejected";
 }
 
+type ApiCampaign = Partial<Campaign> & {
+  _id?: string;
+  id?: string;
+  totalRevenue?: number;
+};
+
 type CampaignStatusFilter = "all" | "approved" | "pending" | "rejected";
 
-// Mock Data (টেবিল চেক করার জন্য কিছু ডামি ডেটা)
-const mockCampaigns: Campaign[] = [
-  {
-    id: "1",
-    campaignName: "Black Friday Sale 2026",
-    channel: "Facebook",
-    startDate: new Date("2026-11-20"),
-    endDate: new Date("2026-11-30"),
-    totalBudget: 1500,
-    perDayCost: 150,
-    targetLeads: 300,
-    adminApproval: "approved",
-  },
-  {
-    id: "2",
-    campaignName: "Q1 B2B Lead Gen",
-    channel: "LinkedIn",
-    startDate: new Date("2026-02-01"),
-    endDate: new Date("2026-03-31"),
-    totalBudget: 3000,
-    perDayCost: 50,
-    targetLeads: 150,
-    adminApproval: "pending",
-  },
-  {
-    id: "3",
-    campaignName: "Summer SEO Push",
-    channel: "SEO",
-    startDate: new Date("2026-05-01"),
-    endDate: new Date("2026-08-31"),
-    totalBudget: 1200,
-    perDayCost: 10,
-    targetLeads: 500,
-    adminApproval: "rejected",
-  },
-];
+const normalizeStatus = (status?: string): Campaign["adminApproval"] => {
+  if (status === "approved" || status === "pending" || status === "rejected") {
+    return status;
+  }
+  return "pending";
+};
+
+const mapCampaign = (campaign: ApiCampaign): Campaign => {
+  const parsedStatus = String(campaign.adminApproval ?? "pending").toLowerCase();
+  return {
+    id: String(campaign.id ?? campaign._id ?? ""),
+    campaignName: String(campaign.campaignName ?? "Untitled Campaign"),
+    channel: String(campaign.channel ?? "Unknown"),
+    startDate: String(campaign.startDate ?? ""),
+    endDate: String(campaign.endDate ?? ""),
+    perDayCost: Number(campaign.perDayCost ?? 0),
+    targetLeads: Number(campaign.targetLeads ?? 0),
+    totalBudget: Number(campaign.totalBudget ?? 0),
+    revenue: Number(campaign.revenue ?? campaign.totalRevenue ?? 0),
+    adminApproval: normalizeStatus(parsedStatus),
+  };
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString();
+};
 
 const MarketingAllCampaign = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,20 +73,40 @@ const MarketingAllCampaign = () => {
   const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [revenueAmount, setRevenueAmount] = useState("");
+  const { userData } = useUserDataMarketing();
+  const axiosMarketing = useAxiosMarketing();
+
+  const {
+    data: campaigns = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Campaign[]>({
+    queryKey: ["allCampaigns", userData?._id],
+    enabled: Boolean(userData?._id),
+    queryFn: async () => {
+      const res = await axiosMarketing.get(`/campaigns/all-campaigns/${userData?._id}`);
+      const payload = (res.data?.data ?? res.data) as ApiCampaign[];
+      if (!Array.isArray(payload)) return [];
+      return payload.map(mapCampaign);
+    },
+  });
 
   // Summary cards
-  const approvedCount = mockCampaigns.filter((c) => c.adminApproval === "approved").length;
-  const pendingCount = mockCampaigns.filter((c) => c.adminApproval === "pending").length;
-  const rejectedCount = mockCampaigns.filter((c) => c.adminApproval === "rejected").length;
+  const approvedCount = campaigns.filter((c) => c.adminApproval === "approved").length;
+  const pendingCount = campaigns.filter((c) => c.adminApproval === "pending").length;
+  const rejectedCount = campaigns.filter((c) => c.adminApproval === "rejected").length;
 
   const filteredCampaigns = useMemo(() => {
-    return mockCampaigns.filter((campaign) => {
+    return campaigns.filter((campaign) => {
       const isStatusMatched = filterStatus === "all" ? true : campaign.adminApproval === filterStatus;
-      const isSearchMatched = campaign.campaignName.toLowerCase().includes(searchTerm.trim().toLowerCase());
+      const query = searchTerm.trim().toLowerCase();
+      const isSearchMatched =
+        campaign.campaignName.toLowerCase().includes(query) || campaign.channel.toLowerCase().includes(query);
 
       return isStatusMatched && isSearchMatched;
     });
-  }, [filterStatus, searchTerm]);
+  }, [campaigns, filterStatus, searchTerm]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -123,6 +147,22 @@ const MarketingAllCampaign = () => {
     closeRevenueModal();
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[45vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        Failed to load campaigns. {error instanceof Error ? error.message : "Please try again."}
+      </div>
+    );
+  }
+
   // স্ট্যাটাস অনুযায়ী ব্যাজের কালার দেওয়ার ফাংশন
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -160,7 +200,7 @@ const MarketingAllCampaign = () => {
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50/60 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md">
           <Wallet className="h-3.5 w-3.5 text-slate-500" />
-          Total Campaigns: {mockCampaigns.length}
+          Total Campaigns: {campaigns.length}
         </span>
       </div>
 
@@ -253,8 +293,8 @@ const MarketingAllCampaign = () => {
                     <span className="rounded-md border border-slate-200/70 bg-slate-50/60 px-2.5 py-1 text-sm text-slate-600 backdrop-blur-sm">{campaign.channel}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-900">{campaign.startDate.toLocaleDateString()}</div>
-                    <div className="text-xs text-slate-500">to {campaign.endDate.toLocaleDateString()}</div>
+                    <div className="text-sm text-slate-900">{formatDate(campaign.startDate)}</div>
+                    <div className="text-xs text-slate-500">to {formatDate(campaign.endDate)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-900">${campaign.totalBudget}</div>
@@ -269,7 +309,7 @@ const MarketingAllCampaign = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1 text-sm font-medium text-slate-700">
                       <DollarSign className="h-4 w-4 text-slate-500" />
-                      --
+                      {campaign.revenue && campaign.revenue > 0 ? `$${campaign.revenue.toLocaleString()}` : "--"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -293,7 +333,7 @@ const MarketingAllCampaign = () => {
               ))}
               {filteredCampaigns.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500">
+                  <td colSpan={9} className="px-6 py-10 text-center text-sm text-slate-500">
                     No campaigns found for your current search/filter.
                   </td>
                 </tr>

@@ -7,6 +7,7 @@ import Services from "@/components/BasicComponents/Services/Services";
 import MAIN_HOME_ROUTES from "@/components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES";
 import MarketingAllCampaign from "@/components/MarketingDashboard/MarketingAllCampaign";
 import MarketingCreateCampaign from "@/components/MarketingDashboard/MarketingCreateCampaign";
+import MarketingEndCampaigns from "@/components/MarketingDashboard/MarketingEndCampaigns";
 import MarketingHome from "@/components/MarketingDashboard/MarketingHome";
 import MarketingIndex from "@/components/MarketingDashboard/MarketingIndex";
 import MarketingPrivateRoute from "@/components/MarketingDashboard/MarketingPrivateRoute";
@@ -52,6 +53,7 @@ const RoutesAll = () => {
          
               <Route path="/dashboard/marketing/create-campaign" element={<MarketingCreateCampaign />} />
               <Route path="/dashboard/marketing/all-campaigns" element={<MarketingAllCampaign />} />
+              <Route path="/dashboard/marketing/end-campaigns" element={<MarketingEndCampaigns />} />
               </Route>
               {/* marketing dashboard end */}
             </Routes>

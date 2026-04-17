@@ -3,8 +3,10 @@ import {
   Megaphone,
   BarChart3,
   Globe,
+  Layers,
   LogOut,
   Menu,
+  CircleCheckBig,
   Bell,
   Zap
 } from 'lucide-react';
@@ -36,7 +38,8 @@ const MarketingHome = () => {
     { name: 'Pending Signatures', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
     { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
     { name: 'Create Campaign', path: '/dashboard/marketing/create-campaign', icon: Zap },
-    { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: BarChart3 },
+    { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: Layers },
+    { name: 'End Campaigns', path: '/dashboard/marketing/end-campaigns', icon: CircleCheckBig },
   ];
 
   return (

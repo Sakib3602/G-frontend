@@ -405,7 +405,7 @@ const MarketingCreateCampaign = () => {
   }, [showNotification]);
   
   const {userData}  = useUserDataMarketing()
-  // console.log("User data in MarketingCreateCampaign:", userData);
+
   const axiosMarketer = useAxiosMarketing()
 
   const {
