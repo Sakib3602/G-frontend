@@ -8,7 +8,8 @@ import {
   Menu,
   CircleCheckBig,
   Bell,
-  Zap
+  Zap,
+  UserPlus
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
 
@@ -40,6 +41,7 @@ const MarketingHome = () => {
     { name: 'Create Campaign', path: '/dashboard/marketing/create-campaign', icon: Zap },
     { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: Layers },
     { name: 'End Campaigns', path: '/dashboard/marketing/end-campaigns', icon: CircleCheckBig },
+    { name: 'Add Task', path: '/dashboard/marketing/add-task', icon: UserPlus },
   ];
 
   return (

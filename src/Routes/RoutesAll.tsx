@@ -5,6 +5,7 @@ import Registration from "@/components/Authentication/Auth_Page/Registration";
 import Reset from "@/components/Authentication/Auth_Page/Reset";
 import Services from "@/components/BasicComponents/Services/Services";
 import MAIN_HOME_ROUTES from "@/components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES";
+import MarketingAddTask from "@/components/MarketingDashboard/MarketingAddTask";
 import MarketingAllCampaign from "@/components/MarketingDashboard/MarketingAllCampaign";
 import MarketingCreateCampaign from "@/components/MarketingDashboard/MarketingCreateCampaign";
 import MarketingEndCampaigns from "@/components/MarketingDashboard/MarketingEndCampaigns";
@@ -54,6 +55,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing/create-campaign" element={<MarketingCreateCampaign />} />
               <Route path="/dashboard/marketing/all-campaigns" element={<MarketingAllCampaign />} />
               <Route path="/dashboard/marketing/end-campaigns" element={<MarketingEndCampaigns />} />
+              <Route path="/dashboard/marketing/add-task" element={<MarketingAddTask />} />
               </Route>
               {/* marketing dashboard end */}
             </Routes>

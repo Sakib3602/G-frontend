@@ -504,7 +504,7 @@ const MarketingCreateCampaign = () => {
   return (
     <>
     {showNotification && 
-    <Alert title="Campaign launched" message={`The campaign "${submittedData?.campaignName}" has been launched successfully.`} />
+    <Alert title="Campaign launched" message={`The campaign "${submittedData?.campaignName}" has been launched successfully.`} onClose={() => setShowNotification(false)} />
     }
 
       <style>{styles}</style>

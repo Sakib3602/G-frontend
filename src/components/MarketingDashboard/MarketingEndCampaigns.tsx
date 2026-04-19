@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { BarChart3, CalendarDays, CheckCircle2, Clock3, Filter, Loader2, Search, Sparkles, Target, TrendingUp } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import type { Campaign } from "./MarketingAllCampaign";
+import Alert from "./Alert/Alert";
 
 type CompletedCampaignApi = Partial<Campaign> & {
   _id?: string;
@@ -46,6 +47,8 @@ const MarketingEndCampaigns = () => {
   const axiosMarketing = useAxiosMarketing();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "revenue" | "budget">("recent");
+  const [channelFilter, setChannelFilter] = useState("all");
+  const [revenueFilter, setRevenueFilter] = useState<"all" | "added" | "missing">("all");
   const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [revenueInput, setRevenueInput] = useState("");
@@ -55,6 +58,7 @@ const MarketingEndCampaigns = () => {
     isLoading,
     isError,
     error,
+    refetch,
   } = useQuery<Campaign[]>({
     queryKey: ["completedCampaigns", userData?._id],
     enabled: Boolean(userData?._id),
@@ -65,7 +69,7 @@ const MarketingEndCampaigns = () => {
     },
   });
 
-  console.log("Completed campaigns:", campaigns);
+
 
   const completedCount = campaigns.length;
   const totalRevenue = campaigns.reduce((sum, campaign) => sum + Number(campaign.revenue ?? 0), 0);
@@ -74,11 +78,22 @@ const MarketingEndCampaigns = () => {
 
   const featuredCampaignName = featuredCampaign?.campaignName ?? "No completed campaign yet";
 
+  const availableChannels = Array.from(new Set(campaigns.map((campaign) => campaign.channel).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+
   const query = searchTerm.trim().toLowerCase();
   const filtered = campaigns.filter((campaign) => {
     const nameMatched = campaign.campaignName.toLowerCase().includes(query);
     const channelMatched = campaign.channel.toLowerCase().includes(query);
-    return nameMatched || channelMatched;
+    const searchMatched = nameMatched || channelMatched;
+
+    const selectedChannelMatched = channelFilter === "all" || campaign.channel === channelFilter;
+
+    const selectedRevenueMatched =
+      revenueFilter === "all" ||
+      (revenueFilter === "added" && Number(campaign.revenue ?? 0) > 0) ||
+      (revenueFilter === "missing" && Number(campaign.revenue ?? 0) === 0);
+
+    return searchMatched && selectedChannelMatched && selectedRevenueMatched;
   });
 
   const filteredCampaigns = [...filtered].sort((a, b) => {
@@ -115,11 +130,28 @@ const MarketingEndCampaigns = () => {
     console.log("Add total revenue submit:", {
       campaignId: selectedCampaign.id,
       campaignName: selectedCampaign.campaignName,
-      totalRevenue: parsedRevenue,
+      revenue: parsedRevenue,
     });
 
-    closeRevenueModal();
+    mutationAddRevenue.mutate({ campaignId: selectedCampaign.id, revenue: parsedRevenue });
+
+    
   };
+
+  const [showAlert, setShowAlert] = useState(false);
+
+  const mutationAddRevenue = useMutation({
+    mutationFn: async ({ campaignId, revenue }: { campaignId: string; revenue: number }) => {
+      const res = await axiosMarketing.post(`/campaigns/add-revenue/${campaignId}`, { revenue });
+      return res.data;
+    },
+    onSuccess: () => {
+      closeRevenueModal();
+      refetch();
+      setShowAlert(true);
+
+    }
+  })
 
   if (isLoading) {
     return (
@@ -138,6 +170,10 @@ const MarketingEndCampaigns = () => {
   }
 
   return (
+    <>
+    {
+      showAlert && <Alert title="Revenue Added Successfully" message="The revenue has been added to the campaign." onClose={() => setShowAlert(false)} ></Alert>
+    }
     <div className="relative min-h-screen overflow-hidden bg-transparent">
 
       <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col gap-6 p-6 sm:p-8">
@@ -228,8 +264,8 @@ const MarketingEndCampaigns = () => {
           </div>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-3xl border border-slate-200/70 bg-slate-50/65 p-4 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-lg">
+        <section className="flex flex-col gap-4 rounded-3xl border border-slate-200/70 bg-slate-50/65 p-4 shadow-sm backdrop-blur-md lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-lg">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -240,15 +276,36 @@ const MarketingEndCampaigns = () => {
             />
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Filter className="h-4 w-4" />
-              Sort by
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+              <Filter className="h-3.5 w-3.5" />
+              Filter
             </div>
+            <select
+              value={channelFilter}
+              onChange={(e) => setChannelFilter(e.target.value)}
+              className="rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900/10"
+            >
+              <option value="all">All channels</option>
+              {availableChannels.map((channel) => (
+                <option key={channel} value={channel}>
+                  {channel}
+                </option>
+              ))}
+            </select>
+            <select
+              value={revenueFilter}
+              onChange={(e) => setRevenueFilter(e.target.value as typeof revenueFilter)}
+              className="rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900/10"
+            >
+              <option value="all">All revenue</option>
+              <option value="added">Revenue added</option>
+              <option value="missing">Revenue missing</option>
+            </select>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="rounded-2xl border border-slate-200/80 bg-white/75 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900/10"
+              className="rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-slate-900/10"
             >
               <option value="recent">Most recent</option>
               <option value="revenue">Highest revenue</option>
@@ -390,6 +447,7 @@ const MarketingEndCampaigns = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
