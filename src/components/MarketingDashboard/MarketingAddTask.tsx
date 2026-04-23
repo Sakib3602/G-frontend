@@ -10,7 +10,7 @@ type TaskFormData = {
   title: string;
   description: string;
   campaignId: string;
-  assignedTo: string[]; // একাধিক ইউজারের জন্য Array
+  assignedTo: string;
   dueDate: string;
   dueTime: string;
   priority: "Low" | "Medium" | "High";
@@ -90,7 +90,7 @@ const MarketingAddTask: React.FC = () => {
     reset,
   } = useForm<TaskFormData>({
     defaultValues: {
-      assignedTo: [], // ডিফল্ট খালি অ্যারে
+      assignedTo: "",
       priority: "Medium",
       dueTime: "",
     },
@@ -99,12 +99,12 @@ const MarketingAddTask: React.FC = () => {
   const onSubmit = (data: TaskFormData) => {
     console.log("Task Submitted:", data);
     alert("Task Created Successfully!");
-    reset(); // ফর্ম সাবমিট হওয়ার পর খালি করে দেবে
+    reset(); 
   };
 
   return (
-    <div className="mx-auto mt-8 max-w-4xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)]">
-      <div className="bg-[linear-gradient(135deg,_rgba(201,166,70,0.16),_rgba(248,250,252,1)_60%)] px-6 py-6 sm:px-8">
+    <div className="mx-auto   max-w-4xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)]">
+      <div className=" bg-[linear-gradient(135deg,_rgba(201,166,70,0.16),_rgba(248,250,252,1)_60%)] px-6 py-8 sm:px-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A646]/20 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A22] shadow-sm">
           <span className="h-2 w-2 rounded-full bg-[#C9A646]" />
           Marketing task studio
@@ -115,7 +115,7 @@ const MarketingAddTask: React.FC = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 px-6 py-6 sm:px-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 px-6 py-8 sm:px-8">
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-5">
             <div>
@@ -194,7 +194,7 @@ const MarketingAddTask: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">Assignment</h3>
-                <p className="text-xs text-slate-500">Choose one or more team members</p>
+                <p className="text-xs text-slate-500">Choose one team member</p>
               </div>
             </div>
 
@@ -203,13 +203,13 @@ const MarketingAddTask: React.FC = () => {
               {teamMembers.map((member) => (
                 <label
                   key={member.id}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-3 transition hover:border-[#C9A646]/40 hover:shadow-sm has-[:checked]:border-[#C9A646] has-[:checked]:bg-[#C9A646]/5"
+                  className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-3 transition hover:border-[#C9A646]/40 hover:shadow-sm has-[:checked]:border-[#C9A646] has-[:checked]:bg-[#C9A646]/5"
                 >
                   <input
-                    type="checkbox"
+                    type="radio"
                     value={member.id}
-                    className="h-4 w-4 rounded border-slate-300 text-[#C9A646] focus:ring-[#C9A646]"
-                    {...register("assignedTo", { required: "Please assign at least one team member" })}
+                    className="h-4 w-4 border-slate-300 text-[#C9A646] focus:ring-[#C9A646]"
+                    {...register("assignedTo", { required: "Please assign one team member" })}
                   />
                   <div className="flex min-w-0 flex-col">
                     <span className="text-sm font-medium text-slate-800">{member.name}</span>
