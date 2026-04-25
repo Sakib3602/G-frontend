@@ -61,6 +61,7 @@ const MarketingPendingTask = () => {
     },
     enabled: !!userData?._id, 
   });
+  console.log("Fetched tasks:", tasks);
   const formatDate = (date?: string) => {
     if (!date) return "Not set";
 
@@ -192,7 +193,7 @@ const MarketingPendingTask = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-slate-50 min-h-screen">
+    <div className="max-w-7xl mx-auto p-6 min-h-screen">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
@@ -257,7 +258,7 @@ const MarketingPendingTask = () => {
 
               <div className="mb-5">
                 <h3 className={`text-base font-bold leading-snug transition-colors line-clamp-1 ${
-                  isUrgent ? "text-red-800 group-hover:text-red-900" : "text-slate-900 group-hover:text-indigo-600"
+                  isUrgent ? "text-red-800 group-hover:text-red-900" : "text-slate-900 group-hover:text-amber-600"
                 }`}>
                   {task.title}
                 </h3>
