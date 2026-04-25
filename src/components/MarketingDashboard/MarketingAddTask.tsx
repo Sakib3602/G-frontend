@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Calendar, User, AlignLeft, Briefcase } from "lucide-react";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 // TypeScript Interface
 type TaskFormData = {
@@ -14,6 +14,7 @@ type TaskFormData = {
   dueDate: string;
   dueTime: string;
   priority: "Low" | "Medium" | "High";
+  makerId: string; // ID of the marketer creating the task
 };
 
 type TaskCampaignApi = {
@@ -72,14 +73,9 @@ const MarketingAddTask: React.FC = () => {
     })
 
   const campaignOptions = mockCampaigns.map((camp) => ({ id: camp._id, name: camp.campaignName }));
+  const hasCampaigns = campaignOptions.length > 0;
 
   const teamMembers = teamMembersApi.map((member) => ({ id: member._id, name: member.name, role: member.role }));
-
-
-
-
-
-
 
 
 
@@ -88,18 +84,59 @@ const MarketingAddTask: React.FC = () => {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<TaskFormData>({
     defaultValues: {
+      title: "",
+      description: "",
+      campaignId: "",
       assignedTo: "",
+      dueDate: "",
       priority: "Medium",
       dueTime: "",
+      makerId: "",
     },
   });
 
+  useEffect(() => {
+    if (userData?._id) {
+      setValue("makerId", userData._id, { shouldDirty: false, shouldValidate: true });
+    }
+  }, [setValue, userData?._id]);
+
+  const resetTaskForm = () => {
+    reset({
+      title: "",
+      description: "",
+      campaignId: "",
+      assignedTo: "",
+      dueDate: "",
+      priority: "Medium",
+      dueTime: "",
+      makerId: userData?._id ?? "",
+    });
+  };
+
+  const mutationSubmitTask = useMutation({
+    mutationFn: async (taskData: TaskFormData) => {
+      const response = await axiosMarketing.post("/tasks/create-marketing-task", taskData);
+      return response.data;
+    },
+    onSuccess: () => {
+      alert("Task Created Successfully!");
+      resetTaskForm();
+    }
+  });
+
+  const isSubmitDisabled =
+    !hasCampaigns ||
+    isCampaignsLoading ||
+    isTeamMembersLoading ||
+    mutationSubmitTask.isPending;
+
   const onSubmit = (data: TaskFormData) => {
-    console.log("Task Submitted:", data);
-    alert("Task Created Successfully!");
-    reset(); 
+    if (mutationSubmitTask.isPending) return;
+    mutationSubmitTask.mutate(data);
   };
 
   return (
@@ -116,6 +153,7 @@ const MarketingAddTask: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 px-6 py-8 sm:px-8">
+        <input type="hidden" {...register("makerId", { required: true })} />
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-5">
             <div>
@@ -176,7 +214,7 @@ const MarketingAddTask: React.FC = () => {
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#C9A646] focus:bg-white focus:ring-2 focus:ring-[#C9A646]/20"
                 {...register("campaignId")}
               >
-                <option value="">No specific campaign (General task)</option>
+                
                 {isCampaignsLoading && <option value="" disabled>Loading campaigns...</option>}
                 {campaignOptions.map((camp) => (
                   <option key={camp.id} value={camp.id}>
@@ -237,9 +275,18 @@ const MarketingAddTask: React.FC = () => {
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-full bg-[#C9A646] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(201,166,70,0.24)] transition hover:bg-[#b89434] focus:outline-none focus:ring-2 focus:ring-[#C9A646]/30"
+            disabled={isSubmitDisabled}
+            className={`inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(201,166,70,0.24)] transition focus:outline-none focus:ring-2 focus:ring-[#C9A646]/30 ${
+              !isSubmitDisabled
+                ? "bg-[#C9A646] hover:bg-[#b89434]"
+                : "cursor-not-allowed bg-slate-300 text-slate-600 shadow-none"
+            }`}
           >
-            Create Task
+            {!hasCampaigns
+              ? "Make campaigns first"
+              : mutationSubmitTask.isPending
+                ? "Creating..."
+                : "Create Task"}
           </button>
         </div>
 

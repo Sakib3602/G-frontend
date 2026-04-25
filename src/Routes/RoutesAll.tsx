@@ -11,6 +11,7 @@ import MarketingCreateCampaign from "@/components/MarketingDashboard/MarketingCr
 import MarketingEndCampaigns from "@/components/MarketingDashboard/MarketingEndCampaigns";
 import MarketingHome from "@/components/MarketingDashboard/MarketingHome";
 import MarketingIndex from "@/components/MarketingDashboard/MarketingIndex";
+import MarketingPendingTask from "@/components/MarketingDashboard/MarketingPendingTask";
 import MarketingPrivateRoute from "@/components/MarketingDashboard/MarketingPrivateRoute";
 import MarketingRemainders from "@/components/MarketingDashboard/MarketingRemainders";
 import PendingSignature from "@/components/MarketingDashboard/PendingSignature";
@@ -56,6 +57,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing/all-campaigns" element={<MarketingAllCampaign />} />
               <Route path="/dashboard/marketing/end-campaigns" element={<MarketingEndCampaigns />} />
               <Route path="/dashboard/marketing/add-task" element={<MarketingAddTask />} />
+              <Route path="/dashboard/marketing/pending-tasks" element={<MarketingPendingTask />} />
               </Route>
               {/* marketing dashboard end */}
             </Routes>

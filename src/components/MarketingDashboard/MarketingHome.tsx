@@ -9,7 +9,8 @@ import {
   CircleCheckBig,
   Bell,
   Zap,
-  UserPlus
+  UserPlus,
+  TimerReset
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
 
@@ -42,6 +43,7 @@ const MarketingHome = () => {
     { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: Layers },
     { name: 'End Campaigns', path: '/dashboard/marketing/end-campaigns', icon: CircleCheckBig },
     { name: 'Add Task', path: '/dashboard/marketing/add-task', icon: UserPlus },
+    { name: 'Pending Tasks', path: '/dashboard/marketing/pending-tasks', icon: TimerReset },
   ];
 
   return (
