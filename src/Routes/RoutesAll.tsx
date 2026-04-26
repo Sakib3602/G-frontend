@@ -4,9 +4,11 @@ import Login from "@/components/Authentication/Auth_Page/Login";
 import Registration from "@/components/Authentication/Auth_Page/Registration";
 import Reset from "@/components/Authentication/Auth_Page/Reset";
 import Services from "@/components/BasicComponents/Services/Services";
+import DesignerHome from "@/components/DesignerDashboard/DesignerHome";
 import MAIN_HOME_ROUTES from "@/components/MAIN_HOME_ROUTES/MAIN_HOME_ROUTES";
 import MarketingAddTask from "@/components/MarketingDashboard/MarketingAddTask";
 import MarketingAllCampaign from "@/components/MarketingDashboard/MarketingAllCampaign";
+import MarketingCompleteTasks from "@/components/MarketingDashboard/MarketingCompleteTasks";
 import MarketingCreateCampaign from "@/components/MarketingDashboard/MarketingCreateCampaign";
 import MarketingEndCampaigns from "@/components/MarketingDashboard/MarketingEndCampaigns";
 import MarketingHome from "@/components/MarketingDashboard/MarketingHome";
@@ -58,8 +60,14 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing/end-campaigns" element={<MarketingEndCampaigns />} />
               <Route path="/dashboard/marketing/add-task" element={<MarketingAddTask />} />
               <Route path="/dashboard/marketing/pending-tasks" element={<MarketingPendingTask />} />
+              <Route path="/dashboard/marketing/complete-tasks" element={<MarketingCompleteTasks />} />
               </Route>
               {/* marketing dashboard end */}
+              {/* designer dashboard start */}
+              <Route path="/dashboard/designer" element={<DesignerHome></DesignerHome>} >
+              {/* <Route index element={<DesignerIndex></DesignerIndex>} /> */}
+              </Route>
+              {/* designer dashboard end */}
             </Routes>
 };
 
