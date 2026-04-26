@@ -1,4 +1,5 @@
 
+import { useState, useMemo } from "react";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +11,9 @@ import {
   UserRound,
   FolderKanban,
   AlertTriangle,
+  Search,
+  SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 
 type PersonRef = {
@@ -52,16 +56,18 @@ type Task = {
 const MarketingPendingTask = () => {
   const axiosMarketing = useAxiosMarketing();
   const { userData } = useUserDataMarketing();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState<"All" | Task["priority"]>("All");
+  const [selectedStatus, setSelectedStatus] = useState("All");
 
   const { data: tasks, isLoading } = useQuery<Task[]>({
     queryKey: ["pendingTasks", userData?._id],
     queryFn: async () => {
       const response = await axiosMarketing.get(`/tasks/all-tasks/${userData?._id}`);
-      return response.data?.filter((task: Task) => task.status === "pending") || [];
+      return response.data || [];
     },
     enabled: !!userData?._id, 
   });
-  console.log("Fetched tasks:", tasks);
   const formatDate = (date?: string) => {
     if (!date) return "Not set";
 
@@ -125,6 +131,13 @@ const MarketingPendingTask = () => {
     return formatDateTime(task.dueDate);
   };
 
+  const isOverdue = (task: Task) => {
+    if (!task.dueDate) return false;
+    const due = new Date(task.dueDate);
+    const now = new Date();
+    return due.getTime() < now.getTime() && task.status.toLowerCase() !== "completed";
+  };
+
   const getReferenceName = (
     reference?: PersonRef | CampaignRef | string | null,
     fallback = "Not assigned"
@@ -147,6 +160,39 @@ const MarketingPendingTask = () => {
     return fallback;
   };
 
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+
+    const query = searchTerm.trim().toLowerCase();
+
+    return tasks.filter((task) => {
+      const matchesSearch =
+        !query ||
+        [
+          task.title,
+          task.description,
+          task.status,
+          task.priority,
+          getReferenceName(task.campaignId, ""),
+          getReferenceName(task.assignedTo, ""),
+        ].some((value) => value.toLowerCase().includes(query));
+
+      const matchesPriority = selectedPriority === "All" || task.priority === selectedPriority;
+      const matchesStatus = selectedStatus === "All" || task.status.toLowerCase() === selectedStatus.toLowerCase();
+
+      return matchesSearch && matchesPriority && matchesStatus;
+    });
+  }, [tasks, searchTerm, selectedPriority, selectedStatus]);
+
+  const overdueCount = filteredTasks.filter((task) => isOverdue(task)).length;
+  const highPriorityCount = filteredTasks.filter((task) => task.priority === "High").length;
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setSelectedPriority("All");
+    setSelectedStatus("All");
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "High":
@@ -162,8 +208,7 @@ const MarketingPendingTask = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-emerald-50 text-emerald-700 border-emerald-100";
+      
       case "in-progress":
         return "bg-blue-50 text-blue-700 border-blue-100";
       case "pending":
@@ -172,16 +217,6 @@ const MarketingPendingTask = () => {
         return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
-
-  const isOverdue = (task: Task) => {
-    if (!task.dueDate) return false;
-    const due = new Date(task.dueDate);
-    const now = new Date();
-    return due.getTime() < now.getTime() && task.status.toLowerCase() !== "completed";
-  };
-
-  const overdueCount = tasks?.filter((task) => isOverdue(task)).length || 0;
-  const highPriorityCount = tasks?.filter((task) => task.priority === "High").length || 0;
 
   if (isLoading) {
     return (
@@ -197,15 +232,15 @@ const MarketingPendingTask = () => {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-indigo-600" /> My Pending Tasks
+            <CheckSquare className="w-6 h-6 text-indigo-600" /> Assigned Tasks Overview
           </h1>
-          <p className="text-sm text-slate-500">Tasks that need your attention</p>
+          <p className="text-sm text-slate-500">Tasks you have assigned to team members</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full sm:w-auto">
           <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-medium text-slate-500">Total Pending</p>
-            <p className="text-lg font-semibold text-indigo-600">{tasks?.length || 0}</p>
+            <p className="text-xs font-medium text-slate-500">Visible Tasks</p>
+            <p className="text-lg font-semibold text-indigo-600">{filteredTasks.length}</p>
           </div>
           <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
             <p className="text-xs font-medium text-slate-500">Overdue</p>
@@ -218,135 +253,209 @@ const MarketingPendingTask = () => {
         </div>
       </div>
 
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+          <div className="lg:col-span-6">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Search tasks
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by title, description, campaign, assignee, or status"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="lg:col-span-3">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Priority
+            </label>
+            <select
+              value={selectedPriority}
+              onChange={(event) => setSelectedPriority(event.target.value as "All" | Task["priority"])}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white"
+            >
+              <option value="All">All priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+
+          <div className="lg:col-span-3">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status
+            </label>
+            <select
+              value={selectedStatus}
+              onChange={(event) => setSelectedStatus(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white"
+            >
+              <option value="All">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="in-progress">In progress</option>
+            
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filters active: {searchTerm || selectedPriority !== "All" || selectedStatus !== "All" ? "Yes" : "No"}
+          </div>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset filters
+          </button>
+        </div>
+      </div>
+
       {!tasks || tasks.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
           <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckSquare className="w-8 h-8 text-slate-400" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">All Caught Up!</h3>
-          <p className="text-sm text-slate-500 mt-1">You have no pending tasks right now.</p>
+          <h3 className="text-lg font-bold text-slate-900">No assigned tasks yet</h3>
+          <p className="text-sm text-slate-500 mt-1">Tasks you assign to employees will appear here.</p>
+        </div>
+      ) : filteredTasks.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+          <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">No tasks match your filters</h3>
+          <p className="text-sm text-slate-500 mt-1">Try changing the search term, priority, or status filter.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {tasks.map((task) => {
+          {filteredTasks.map((task) => {
             const isUrgent = isZeroDayTask(task);
 
             return (
-            <div
-              key={task._id}
-              className={`p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all duration-200 group ${
-                isUrgent
-                  ? "bg-red-50 border-red-300"
-                  : "bg-white border-slate-200"
-              }`}
-            >
-              <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${getPriorityColor(task.priority)}`}>
-                    {task.priority} Priority
-                  </span>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-md border capitalize ${getStatusColor(task.status)}`}>
-                    {task.status}
-                  </span>
-                </div>
-                {isOverdue(task) && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md bg-rose-50 border border-rose-100 text-rose-700">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Overdue
-                  </span>
-                )}
-              </div>
-
-              <div className="mb-5">
-                <h3 className={`text-base font-bold leading-snug transition-colors line-clamp-1 ${
-                  isUrgent ? "text-red-800 group-hover:text-red-900" : "text-slate-900 group-hover:text-amber-600"
-                }`}>
-                  {task.title}
-                </h3>
-                <p className={`text-sm mt-1.5 line-clamp-2 ${isUrgent ? "text-red-700/80" : "text-slate-500"}`}>
-                  {task.description}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-5">
-                <div className={`rounded-lg border p-2.5 ${
-                  isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
-                }`}>
-                  <p className={isUrgent ? "text-red-500" : "text-slate-400"}>Campaign</p>
-                  <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
-                    <FolderKanban className="w-3.5 h-3.5" />
-                    {getReferenceName(task.campaignId, "No campaign")}
-                  </p>
-                </div>
-                <div className={`rounded-lg border p-2.5 ${
-                  isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
-                }`}>
-                  <p className={isUrgent ? "text-red-500" : "text-slate-400"}>Assigned To</p>
-                  <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
-                    <UserRound className="w-3.5 h-3.5" />
-                    {getReferenceName(task.assignedTo)}
-                  </p>
-                </div>
-                <div className={`rounded-lg border p-2.5 sm:col-span-2 ${
-                  isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
-                }`}>
-                  <p className={isUrgent ? "text-red-500" : "text-slate-400"}>Created By</p>
-                  <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
-                    <UserRound className="w-3.5 h-3.5" />
-                    {getReferenceName(task.makerId, "Unknown maker")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-5">
-                <div className="flex justify-between text-xs font-medium mb-1.5">
-                  <span className={isUrgent ? "text-red-600" : "text-slate-500"}>Progress</span>
-                  <span className={isUrgent ? "text-red-800" : "text-slate-700"}>{task.percentageCompleted}%</span>
-                </div>
-                <div className={`w-full h-1.5 rounded-full overflow-hidden ${isUrgent ? "bg-red-200" : "bg-slate-100"}`}>
-                  <div
-                    className={`h-1.5 rounded-full transition-all duration-500 ${isUrgent ? "bg-red-600" : "bg-indigo-500"}`}
-                    style={{ width: `${task.percentageCompleted}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className={`pt-4 space-y-2 ${isUrgent ? "border-t border-red-200" : "border-t border-slate-100"}`}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className={`flex items-center gap-1.5 text-xs ${isUrgent ? "text-red-700" : "text-slate-500"}`}>
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{formatDate(task.dueDate)}</span>
+              <div
+                key={task._id}
+                className={`p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all duration-200 group ${
+                  isUrgent
+                    ? "bg-red-50 border-red-300"
+                    : "bg-white border-slate-200"
+                }`}
+              >
+                <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${getPriorityColor(task.priority)}`}>
+                      {task.priority} Priority
+                    </span>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-md border capitalize ${getStatusColor(task.status)}`}>
+                      {task.status}
+                    </span>
                   </div>
-                  <div className={`flex items-center gap-1.5 text-xs ${isUrgent ? "text-red-700" : "text-slate-500"}`}>
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{task.dueTime || "Not set"}</span>
+                  {isOverdue(task) && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md bg-rose-50 border border-rose-100 text-rose-700">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Overdue
+                    </span>
+                  )}
+                </div>
+
+                <div className="mb-5">
+                  <h3 className={`text-base font-bold leading-snug transition-colors line-clamp-1 ${
+                    isUrgent ? "text-red-800 group-hover:text-red-900" : "text-slate-900 group-hover:text-amber-600"
+                  }`}>
+                    {task.title}
+                  </h3>
+                  <p className={`text-sm mt-1.5 line-clamp-2 ${isUrgent ? "text-red-700/80" : "text-slate-500"}`}>
+                    {task.description}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-5">
+                  <div className={`rounded-lg border p-2.5 ${
+                    isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
+                  }`}>
+                    <p className={isUrgent ? "text-red-500" : "text-slate-400"}>Campaign</p>
+                    <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
+                      <FolderKanban className="w-3.5 h-3.5" />
+                      {getReferenceName(task.campaignId, "No campaign")}
+                    </p>
+                  </div>
+                  <div className={`rounded-lg border p-2.5 ${
+                    isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
+                  }`}>
+                    <p className={isUrgent ? "text-red-500" : "text-slate-400"}>Assigned To</p>
+                    <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
+                      <UserRound className="w-3.5 h-3.5" />
+                      {getReferenceName(task.assignedTo)}
+                    </p>
+                  </div>
+                  <div className={`rounded-lg border p-2.5 sm:col-span-2 ${
+                    isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
+                  }`}>
+                    <p className={isUrgent ? "text-red-500" : "text-slate-400"}>Created By</p>
+                    <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
+                      <UserRound className="w-3.5 h-3.5" />
+                      {getReferenceName(task.makerId, "Unknown maker")}
+                    </p>
                   </div>
                 </div>
 
-                <p className="text-sm font-bold text-red-600">
-                  Remaining Date: {getRemainingSummary(task)}
-                </p>
-
-                {isZeroDayTask(task) && (
-                  <p className="text-xs font-semibold text-red-700">
-                    Due Time Window: {task.remainingDate?.dueTimeWithDayAndHour || "N/A"}
-                  </p>
-                )}
-
-                {isZeroDayTask(task) && (
-                  <p className="text-xs font-semibold text-red-700">
-                    Due Date Time: {getDueDateTimeText(task)}
-                  </p>
-                )}
-
-                <div className={`grid grid-cols-1 gap-1 text-[11px] ${isUrgent ? "text-red-700" : "text-slate-500"}`}>
-                  <div>
-                    Created: <span className={`font-medium ${isUrgent ? "text-red-800" : "text-slate-700"}`}>{formatDateTime(task.createdAt)}</span>
+                <div className="mb-5">
+                  <div className="flex justify-between text-xs font-medium mb-1.5">
+                    <span className={isUrgent ? "text-red-600" : "text-slate-500"}>Progress</span>
+                    <span className={isUrgent ? "text-red-800" : "text-slate-700"}>{task.percentageCompleted}%</span>
                   </div>
-                
+                  <div className={`w-full h-1.5 rounded-full overflow-hidden ${isUrgent ? "bg-red-200" : "bg-slate-100"}`}>
+                    <div
+                      className={`h-1.5 rounded-full transition-all duration-500 ${isUrgent ? "bg-red-600" : "bg-indigo-500"}`}
+                      style={{ width: `${task.percentageCompleted}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className={`pt-4 space-y-2 ${isUrgent ? "border-t border-red-200" : "border-t border-slate-100"}`}>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className={`flex items-center gap-1.5 text-xs ${isUrgent ? "text-red-700" : "text-slate-500"}`}>
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{formatDate(task.dueDate)}</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 text-xs ${isUrgent ? "text-red-700" : "text-slate-500"}`}>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{task.dueTime || "Not set"}</span>
+                    </div>
+                  </div>
+
+                  
+
+                  {!isZeroDayTask(task) && (
+                    <p className="text-sm font-bold text-red-600">
+                    Remaining Date: {getRemainingSummary(task)}
+                  </p>
+                  )}
+                  {isZeroDayTask(task) && (
+                    <p className="text-xs font-semibold text-red-700">
+                      Due Time Window: {task.remainingDate?.dueTimeWithDayAndHour || "N/A"}
+                    </p>
+                  )}
+
+                 
+
+                  <div className={`grid grid-cols-1 gap-1 text-[11px] ${isUrgent ? "text-red-700" : "text-slate-500"}`}>
+                    <div>
+                      Created: <span className={`font-medium ${isUrgent ? "text-red-800" : "text-slate-700"}`}>{formatDateTime(task.createdAt)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )})}
+            );
+          })}
         </div>
       )}
     </div>

@@ -77,6 +77,11 @@ const MarketingAddTask: React.FC = () => {
 
   const teamMembers = teamMembersApi.map((member) => ({ id: member._id, name: member.name, role: member.role }));
 
+  const today = new Date();
+  const todayDateISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate()
+  ).padStart(2, "0")}`;
+
 
 
   const {
@@ -188,10 +193,14 @@ const MarketingAddTask: React.FC = () => {
                 </label>
                 <input
                   type="date"
+                  min={todayDateISO}
                   className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none transition focus:bg-white focus:ring-2 focus:ring-[#C9A646]/20 ${
                     errors.dueDate ? "border-rose-500" : "border-slate-200 focus:border-[#C9A646]"
                   }`}
-                  {...register("dueDate", { required: "Due date is required" })}
+                  {...register("dueDate", {
+                    required: "Due date is required",
+                    validate: (value) => value >= todayDateISO || "Due date cannot be before today",
+                  })}
                 />
                 {errors.dueDate && <p className="mt-1.5 text-xs text-rose-500">{errors.dueDate.message}</p>}
               </div>
