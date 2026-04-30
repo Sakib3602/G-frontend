@@ -44,7 +44,7 @@ const MarketingHome = () => {
     { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: Layers },
     { name: 'End Campaigns', path: '/dashboard/marketing/end-campaigns', icon: CircleCheckBig },
     { name: 'Add Task', path: '/dashboard/marketing/add-task', icon: UserPlus },
-    { name: 'Pending Tasks', path: '/dashboard/marketing/pending-tasks', icon: TimerReset },
+    { name: 'Assigned Tasks', path: '/dashboard/marketing/assigned-tasks', icon: TimerReset },
     { name: 'Complete Tasks', path: '/dashboard/marketing/complete-tasks', icon: CheckCircle },
   ];
 

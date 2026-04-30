@@ -59,7 +59,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing/all-campaigns" element={<MarketingAllCampaign />} />
               <Route path="/dashboard/marketing/end-campaigns" element={<MarketingEndCampaigns />} />
               <Route path="/dashboard/marketing/add-task" element={<MarketingAddTask />} />
-              <Route path="/dashboard/marketing/pending-tasks" element={<MarketingPendingTask />} />
+              <Route path="/dashboard/marketing/assigned-tasks" element={<MarketingPendingTask />} />
               <Route path="/dashboard/marketing/complete-tasks" element={<MarketingCompleteTasks />} />
               </Route>
               {/* marketing dashboard end */}

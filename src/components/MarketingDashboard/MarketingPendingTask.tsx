@@ -19,6 +19,7 @@ import {
 type PersonRef = {
   _id: string;
   name?: string;
+  email?: string;
 };
 
 type CampaignRef = {
@@ -68,6 +69,7 @@ const MarketingPendingTask = () => {
     },
     enabled: !!userData?._id, 
   });
+  console.log( "Fetched tasks:", tasks);
   const formatDate = (date?: string) => {
     if (!date) return "Not set";
 
@@ -158,6 +160,12 @@ const MarketingPendingTask = () => {
     }
 
     return fallback;
+  };
+
+  const getReferenceEmail = (reference?: PersonRef | string | null) => {
+    if (!reference) return "";
+    if (typeof reference === "string") return "";
+    return reference.email || "";
   };
 
   const filteredTasks = useMemo(() => {
@@ -391,10 +399,15 @@ const MarketingPendingTask = () => {
                     isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
                   }`}>
                     <p className={isUrgent ? "text-red-500" : "text-slate-400"}>Assigned To</p>
-                    <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
-                      <UserRound className="w-3.5 h-3.5" />
-                      {getReferenceName(task.assignedTo)}
-                    </p>
+                    <div>
+                      <p className={`font-semibold truncate inline-flex items-center gap-1.5 ${isUrgent ? "text-red-800" : "text-slate-700"}`}>
+                        <UserRound className="w-3.5 h-3.5" />
+                        <span className="truncate">{getReferenceName(task.assignedTo)}</span>
+                      </p>
+                      {getReferenceEmail(task.assignedTo) ? (
+                        <p className="text-xs text-slate-400 mt-0.5 truncate">{getReferenceEmail(task.assignedTo)}</p>
+                      ) : null}
+                    </div>
                   </div>
                   <div className={`rounded-lg border p-2.5 sm:col-span-2 ${
                     isUrgent ? "border-red-200 bg-red-100/60" : "border-slate-100 bg-slate-50/70"
