@@ -2,16 +2,15 @@ import { useContext, useMemo, useState } from 'react';
 import {
   Megaphone,
   BarChart3,
-  Globe,
   LogOut,
   Menu,
 
   Bell,
-
-  Search,
   Sparkles,
   ChevronRight,
-  PenTool
+  PenTool,
+  ChartNetwork,
+  LocateOff
 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 
@@ -55,9 +54,10 @@ const DesignerHome = () => {
   
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard/marketing', icon: BarChart3 },
-    { name: 'Pending Signatures', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
-    { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
+    { name: 'Dashboard', path: '/dashboard/designer', icon: BarChart3 },
+    { name: 'My Tasks', path: '/dashboard/designer/my-tasks', icon: Megaphone },
+    { name: 'In Progress Tasks', path: '/dashboard/designer/in-progress-tasks', icon: ChartNetwork },
+    { name: 'Overdue Tasks', path: '/dashboard/designer/overdue-tasks', icon: LocateOff },
    
   ];
 
@@ -90,9 +90,9 @@ const DesignerHome = () => {
             <div className="mx-4 mb-6 rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-100 via-orange-100 to-rose-100 p-4">
               <div className="mb-2 flex items-center gap-2 text-amber-800">
                 <Sparkles className="h-4 w-4" />
-                <p className="text-xs font-semibold uppercase tracking-wider">Creative Focus</p>
+                <p className="text-xs font-semibold uppercase tracking-wider">Creative Designer</p>
               </div>
-              <p className="text-sm text-stone-700">Build standout campaigns with modern visual direction.</p>
+              <p className="text-sm text-stone-700">Welcome back, {profile.displayName}!</p>
             </div>
           )}
           <nav className="space-y-2">

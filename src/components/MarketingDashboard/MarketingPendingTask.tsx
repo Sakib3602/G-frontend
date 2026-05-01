@@ -126,12 +126,7 @@ const MarketingPendingTask = () => {
     return getRemainingDate(task.dueDate);
   };
 
-  const getDueDateTimeText = (task: Task) => {
-    if (task.remainingDate?.dueDateTime) {
-      return formatDateTime(task.remainingDate.dueDateTime);
-    }
-    return formatDateTime(task.dueDate);
-  };
+ 
 
   const isOverdue = (task: Task) => {
     if (!task.dueDate) return false;

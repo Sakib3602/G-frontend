@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Calendar, User, AlignLeft, Briefcase } from "lucide-react";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import Alert from "./Alert/Alert";
 
 // TypeScript Interface
 type TaskFormData = {
@@ -122,13 +123,14 @@ const MarketingAddTask: React.FC = () => {
     });
   };
 
+  const [showNotification, setShowNotification] = useState(false);
   const mutationSubmitTask = useMutation({
     mutationFn: async (taskData: TaskFormData) => {
       const response = await axiosMarketing.post("/tasks/create-marketing-task", taskData);
       return response.data;
     },
     onSuccess: () => {
-      alert("Task Created Successfully!");
+      setShowNotification(true);
       resetTaskForm();
     }
   });
@@ -145,6 +147,10 @@ const MarketingAddTask: React.FC = () => {
   };
 
   return (
+    <>
+    {
+      showNotification && <Alert title="Task is Assigned!"  message="Your Task Successfuly Assigned." onClose={() => setShowNotification(false)}></Alert>
+    }
     <div className="mx-auto   max-w-4xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)]">
       <div className=" bg-[linear-gradient(135deg,_rgba(201,166,70,0.16),_rgba(248,250,252,1)_60%)] px-6 py-8 sm:px-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A646]/20 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A22] shadow-sm">
@@ -301,6 +307,8 @@ const MarketingAddTask: React.FC = () => {
 
       </form>
     </div>
+    
+    </>
   );
 };
 
