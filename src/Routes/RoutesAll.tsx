@@ -6,7 +6,6 @@ import Reset from "@/components/Authentication/Auth_Page/Reset";
 import Services from "@/components/BasicComponents/Services/Services";
 import DesignerHome from "@/components/DesignerDashboard/DesignerHome";
 import DesignerIndex from "@/components/DesignerDashboard/DesignerIndex";
-import DesignerInProgressTasks from "@/components/DesignerDashboard/DesignerInProgressTasks";
 import DesignerMyTasks from "@/components/DesignerDashboard/DesignerMyTasks";
 import DesignerOverDueTasks from "@/components/DesignerDashboard/DesignerOverDueTasks";
 import DesignerPrivate from "@/components/DesignerDashboard/DesignerPrivate";
@@ -33,6 +32,7 @@ import Sales_Remainder from "@/components/SalesDashboard/Sales_Remainder";
 import Sales_Unqualified from "@/components/SalesDashboard/Sales_Unqualified";
 import SalesPrivateRoute from "@/components/SalesDashboard/SalesPrivateRoute";
 import {Routes, Route } from "react-router";
+import DesignerRunningWorks from "@/components/DesignerDashboard/DesignerRunningWorks";
 const RoutesAll = () => {
     return <Routes>
               <Route path="/" element={<App />}>
@@ -72,7 +72,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/designer" element={<DesignerPrivate><DesignerHome></DesignerHome></DesignerPrivate>} >
               <Route index element={<DesignerIndex></DesignerIndex>} />
               <Route path="/dashboard/designer/my-tasks" element={<DesignerMyTasks />} />
-              <Route path="/dashboard/designer/in-progress-tasks" element={<DesignerInProgressTasks />} />
+              <Route path="/dashboard/designer/in-progress-tasks" element={<DesignerRunningWorks />} />
               <Route path="/dashboard/designer/overdue-tasks" element={<DesignerOverDueTasks />} />
               </Route>
               {/* designer dashboard end */}
