@@ -117,10 +117,10 @@ const MarketingPendingTask = () => {
     return `Overdue by ${overdueDays} day${overdueDays === 1 ? "" : "s"}`;
   };
 
-  const isZeroDayTask = (task: Task) => task.remainingDate?.days === 0;
+  const isTaskOverdue = (task: Task) => task.remainingDate?.isOverdue ?? isOverdue(task);
 
   const getRemainingSummary = (task: Task) => {
-    if (isZeroDayTask(task) && task.remainingDate?.dueTimeWithDayAndHour) {
+    if (task.remainingDate?.dueTimeWithDayAndHour) {
       return task.remainingDate.dueTimeWithDayAndHour;
     }
     return getRemainingDate(task.dueDate);
@@ -342,7 +342,7 @@ const MarketingPendingTask = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredTasks.map((task) => {
-            const isUrgent = isZeroDayTask(task);
+            const isUrgent = isTaskOverdue(task);
 
             return (
               <div
@@ -442,16 +442,9 @@ const MarketingPendingTask = () => {
 
                   
 
-                  {!isZeroDayTask(task) && (
-                    <p className="text-sm font-bold text-red-600">
+                  <p className={`text-sm font-bold ${isUrgent ? "text-red-600" : "text-slate-700"}`}>
                     Remaining Date: {getRemainingSummary(task)}
                   </p>
-                  )}
-                  {isZeroDayTask(task) && (
-                    <p className="text-xs font-semibold text-red-700">
-                      Due Time Window: {task.remainingDate?.dueTimeWithDayAndHour || "N/A"}
-                    </p>
-                  )}
 
                  
 
