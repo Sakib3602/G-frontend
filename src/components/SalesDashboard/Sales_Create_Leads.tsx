@@ -236,7 +236,7 @@ const Sales_Create_leads = () => {
                   name="profileUrl"
                   value={formData.profileUrl}
                   onChange={handleChange}
-                  placeholder="https://XXXX.com/in/username"
+                  placeholder="https://yourprofile.com/in/username"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7FA23B]/50 focus:border-[#7FA23B] outline-none transition-colors"
                 />
               </div>

@@ -33,15 +33,15 @@ const DesignerRunningWorks = () => {
     const axiosDesigner = useAxiosDesigner();
     const { userData } = useUserDataDesigner();
 
-    const { data: myTasks = [], isLoading } = useQuery<Task[]>({
+    const { data: myTasks = [], isLoading , refetch} = useQuery<Task[]>({
         queryKey: ["designer-running-tasks", userData?._id],
         queryFn: async () => {
-            const res = await axiosDesigner.get(`/api/v1/designer/my-tasks/${userData?._id}`);
+            const res = await axiosDesigner.get(`/api/v1/designer/my-works/${userData?._id}`);
             return res.data || [];
         },
         enabled: !!userData?._id,
     });
-    console.log("Fetched tasks", myTasks );
+  
 
     // Local UI state
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -78,6 +78,7 @@ const DesignerRunningWorks = () => {
     };
 
     const [showNotification, setShowNotification] = useState(false);
+    const [showNotificationn, setShowNotificationn] = useState(false);
     const mutationUpdateProgress = useMutation({
         mutationFn: async ({ taskId, progress }: { taskId: string; progress: number }) => {
             const data = await axiosDesigner.post(`/api/v1/designer/update-progress/${taskId}`, { percentageCompleted: progress });
@@ -97,10 +98,21 @@ const DesignerRunningWorks = () => {
     const submitLink = () => {
         if (!linkTask) return;
         console.log("Done task link submitted", { taskId: linkTask._id, link: linkValue });
+        mutationDoneTask.mutate({ taskId: linkTask._id, link: linkValue });
         setIsLinkOpen(false);
         setLinkTask(null);
         setLinkValue("");
     };
+    const mutationDoneTask = useMutation({
+        mutationFn: async ({ taskId, link }: { taskId: string; link: string }) => {
+            const data = await axiosDesigner.post(`/api/v1/designer/complete-task/${taskId}`, { url: link });
+            return data;
+        },
+         onSuccess: ()=>{
+            refetch();
+            setShowNotificationn(true);
+        }
+    })
 
     const makerName = (t: Task) => t.makerId?.name || "Unknown maker";
 
@@ -108,6 +120,9 @@ const DesignerRunningWorks = () => {
         <>
         {
             showNotification && <Alert title="Progress Updated" message="Working Progress Updated!" onClose={() => setShowNotification(false)}></Alert>
+        }
+        {
+            showNotificationn && <Alert title="Task Completed" message="Task marked as completed!" onClose={() => setShowNotificationn(false)}></Alert>
         }
         <div className="max-w-7xl mx-auto p-4">
             <div className="flex items-center justify-between mb-4">
@@ -170,44 +185,74 @@ const DesignerRunningWorks = () => {
             {/* Details modal */}
             {isDetailsOpen && selectedTask && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-                    <div className="fixed inset-0 bg-black/40" onClick={() => { setIsDetailsOpen(false); setSelectedTask(null); }} />
-                    <div className="relative z-10 w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-auto max-h-[85vh]">
-                        <div className="flex items-center justify-between p-5 border-b">
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-900">{selectedTask.title}</h3>
-                                <p className="text-xs text-slate-500 mt-1">Full task details</p>
-                            </div>
-                            <button onClick={() => { setIsDetailsOpen(false); setSelectedTask(null); }} className="text-slate-500 p-2 rounded-md hover:bg-slate-50">Close</button>
-                        </div>
-                        <div className="p-6 text-sm text-slate-700">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <div className="text-xs text-slate-500">Maker</div>
-                                    <div className="font-medium text-slate-900">{selectedTask.makerId?.name || 'Unknown'}</div>
+                    <div className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={() => { setIsDetailsOpen(false); setSelectedTask(null); }} />
+                    <div role="dialog" aria-modal="true" aria-labelledby="task-details-title" className="relative z-10 w-full max-w-2xl mx-auto">
+                        <div className="overflow-hidden rounded-3xl bg-white shadow-[0_25px_80px_rgba(15,23,42,0.25)] border border-white/60">
+                            <div className="h-2 bg-gradient-to-r from-[#F16C65] via-rose-500 to-indigo-500" />
+                            <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 uppercase tracking-wide">Task Details</span>
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${selectedTask.remainingDate?.isOverdue ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                            {selectedTask.remainingDate?.isOverdue ? 'Overdue' : 'On Track'}
+                                        </span>
+                                    </div>
+                                    <h3 id="task-details-title" className="truncate text-2xl font-semibold text-slate-900">{selectedTask.title || 'Untitled task'}</h3>
+                                    <p className="mt-1 text-sm text-slate-500">Full task details and metadata</p>
                                 </div>
-                                <div>
-                                    <div className="text-xs text-slate-500">Campaign</div>
-                                    <div className="font-medium text-slate-900">{selectedTask.campaignId?.campaignName || 'No campaign'}</div>
-                                </div>
-                                <div>
-                                    <div className="text-xs text-slate-500">Status</div>
-                                    <div className="font-medium text-slate-900">{selectedTask.status || '-'}</div>
-                                </div>
-                                <div>
-                                    <div className="text-xs text-slate-500">Priority</div>
-                                    <div className="font-medium text-slate-900">{selectedTask.priority || '-'}</div>
-                                </div>
+                                <button onClick={() => { setIsDetailsOpen(false); setSelectedTask(null); }} className="rounded-full border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50">
+                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
 
-                            {selectedTask.description ? (
-                                <div className="mt-6">
-                                    <div className="text-xs text-slate-500">Description</div>
-                                    <div className="mt-2 text-sm text-slate-700 bg-slate-50 p-3 rounded-md">{selectedTask.description}</div>
+                            <div className="p-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Maker</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">{selectedTask.makerId?.name || 'Unknown'}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Campaign</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">{selectedTask.campaignId?.campaignName || 'No campaign'}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Status</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">{selectedTask.status || '-'}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Priority</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">{selectedTask.priority || '-'}</div>
+                                    </div>
                                 </div>
-                            ) : null}
-                        </div>
-                        <div className="flex items-center justify-end gap-2 p-4 border-t">
-                            <button onClick={() => { setIsDetailsOpen(false); setSelectedTask(null); }} className="px-3 py-2 bg-white border rounded-md">Close</button>
+
+                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Remaining</div>
+                                        <div className={`mt-1 text-sm font-semibold ${selectedTask.remainingDate?.isOverdue ? 'text-rose-700' : 'text-slate-900'}`}>{selectedTask.remainingDate?.dueTimeWithDayAndHour || 'N/A'}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Days</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">{selectedTask.remainingDate?.days ?? '-'}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Progress</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">{selectedTask.percentageCompleted ?? 0}%</div>
+                                    </div>
+                                </div>
+
+                                {selectedTask.description ? (
+                                    <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Description</div>
+                                        <div className="mt-2 text-sm leading-6 text-slate-700">{selectedTask.description}</div>
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+                                <button onClick={() => { setIsDetailsOpen(false); setSelectedTask(null); }} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Close</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -215,34 +260,50 @@ const DesignerRunningWorks = () => {
 
             {/* Done task link modal */}
             {isLinkOpen && linkTask && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-                        <div className="fixed inset-0 bg-black/40" onClick={() => { setIsLinkOpen(false); setLinkTask(null); }} />
-                        <div role="dialog" aria-modal="true" aria-labelledby="done-link-title" className="relative z-10 w-full max-w-md mx-auto">
-                            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
-                                <header className="flex items-start justify-between p-5 border-b">
-                                    <div>
-                                        <h3 id="done-link-title" className="text-lg font-semibold text-slate-900">Submit completion link</h3>
-                                        <p className="text-xs text-slate-500 mt-1">Provide a public link to verify the completed work (Figma, Drive, etc.).</p>
-                                    </div>
-                                    <button aria-label="Close" onClick={() => { setIsLinkOpen(false); setLinkTask(null); }} className="text-slate-500 p-2 rounded-md hover:bg-slate-50">✕</button>
-                                </header>
-                                <div className="p-6">
-                                    <label className="text-xs text-slate-500">Link</label>
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                    <div className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={() => { setIsLinkOpen(false); setLinkTask(null); }} />
+                    <div role="dialog" aria-modal="true" aria-labelledby="done-link-title" className="relative z-10 w-full max-w-md mx-auto">
+                        <div className="overflow-hidden rounded-3xl bg-white shadow-[0_25px_80px_rgba(15,23,42,0.25)] border border-white/60">
+                            <div className="h-2 bg-gradient-to-r from-[#F16C65] via-rose-500 to-indigo-500" />
+                            <header className="flex items-start justify-between gap-4 p-6 border-b border-slate-100">
+                                <div>
+                                    <div className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Done Task</div>
+                                    <h3 id="done-link-title" className="mt-3 text-2xl font-semibold text-slate-900">Submit completion link</h3>
+                                    <p className="mt-1 text-sm text-slate-500">Share a public link so the task can be reviewed and verified.</p>
+                                </div>
+                                <button aria-label="Close" onClick={() => { setIsLinkOpen(false); setLinkTask(null); }} className="rounded-full border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50">
+                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </header>
+
+                            <div className="p-6">
+                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 mb-5">
+                                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Selected Task</div>
+                                    <div className="mt-1 text-sm font-semibold text-slate-900">{linkTask.title || 'Untitled task'}</div>
+                                    <div className="mt-1 text-xs text-slate-500">{linkTask.campaignId?.campaignName || 'No campaign'}</div>
+                                </div>
+
+                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Completion link</label>
+                                <div className="mt-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-100">
                                     <input
                                         value={linkValue}
                                         onChange={(e) => setLinkValue(e.target.value)}
                                         placeholder="https://"
-                                        className="mt-2 w-full border border-slate-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                        className="w-full border-0 p-0 text-sm text-slate-900 outline-none placeholder:text-slate-400"
                                     />
-                                    <div className="text-xs text-slate-400 mt-2">You can paste a Figma file, Drive link, or any public URL for review.</div>
                                 </div>
-                                <footer className="flex items-center justify-end gap-2 p-4 border-t">
-                                    <button onClick={() => { setIsLinkOpen(false); setLinkTask(null); }} className="px-3 py-2 text-sm rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</button>
-                                    <button onClick={submitLink} className="px-3 py-2 text-sm rounded-md bg-[#F16C65] text-white hover:bg-[#e4564f]">Submit</button>
-                                </footer>
+                                <p className="mt-2 text-xs text-slate-400">Paste a Figma, Google Drive, or other public review link.</p>
                             </div>
+
+                            <footer className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+                                <button onClick={() => { setIsLinkOpen(false); setLinkTask(null); }} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Cancel</button>
+                                <button onClick={submitLink} className="rounded-xl bg-[#F16C65] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e4564f]">Submit</button>
+                            </footer>
                         </div>
                     </div>
+                </div>
             )}
         </div>
         </>

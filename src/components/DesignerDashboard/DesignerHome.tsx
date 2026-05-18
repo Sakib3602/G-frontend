@@ -1,7 +1,7 @@
 import { useContext, useMemo, useState } from 'react';
 import {
   Megaphone,
-  BarChart3,
+
   LogOut,
   Menu,
 
@@ -10,7 +10,8 @@ import {
   ChevronRight,
   PenTool,
   ChartNetwork,
-  LocateOff
+  LocateOff,
+  BarChart3
 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 
@@ -54,8 +55,8 @@ const DesignerHome = () => {
   
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard/designer', icon: BarChart3 },
-    { name: 'My Tasks', path: '/dashboard/designer/my-tasks', icon: Megaphone },
+    { name: 'My Tasks', path: '/dashboard/designer', icon: BarChart3 },
+    // { name: 'My Tasks', path: '/dashboard/designer/my-tasks', icon: Megaphone },
     { name: 'Running Works', path: '/dashboard/designer/in-progress-tasks', icon: ChartNetwork },
     { name: 'Overdue Tasks', path: '/dashboard/designer/overdue-tasks', icon: LocateOff },
    
