@@ -6,6 +6,7 @@ import useAxiosSales from "@/uri/useAxiosSales";
 import Notification from "../ui/toast";
 
 import { useUserData } from "./Sales_Hook/User_Data";
+import Sales_Bulk_Upload from "./Sales_Bulk_Upload";
 
 type LeadFormData = {
   leadName: string;
@@ -162,6 +163,7 @@ const Sales_Create_leads = () => {
           />
         )}
       </div>
+      {/* <Sales_Bulk_Upload></Sales_Bulk_Upload> */}
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
