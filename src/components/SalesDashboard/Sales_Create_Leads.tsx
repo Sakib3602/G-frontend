@@ -107,8 +107,7 @@ const Sales_Create_leads = () => {
     "Attempted to contact",
     "Contacted",
     "In Progress",
-    "Qualified",
-    "Unqualified",
+
   ];
 
   const titleOptions = [
@@ -126,7 +125,7 @@ const Sales_Create_leads = () => {
 
   const regionOptions = ["US", "ANZ", "EMEA", "APAC", "LATAM", "Global"];
   const scoreOptions = ["1", "2", "3", "4", "5"];
-  const serviceNeedOptions = ["Graphic", "Web", "Marketing"];
+  const serviceNeedOptions = ["Graphic", "Web"];
 
   const CancelAll = () => {
     setFormData({

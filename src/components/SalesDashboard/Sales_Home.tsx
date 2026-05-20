@@ -54,6 +54,7 @@ const Sales_Home = () => {
     { name: 'Reminders', path: '/dashboard/sales/remainder', icon: Timer },  
     { name: 'Qualified Deals', path: '/dashboard/sales/qualified', icon:  WorkflowIcon  },
     { name: 'Unqualified Deals', path: '/dashboard/sales/unqualified', icon: CircleX },
+    { name: 'Assigned Leads', path: '/dashboard/sales/assigned', icon: CircleX },
   ];
 
   return (

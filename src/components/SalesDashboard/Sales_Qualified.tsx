@@ -1,6 +1,7 @@
 import { useUserData } from './Sales_Hook/User_Data';
 import { useQuery } from '@tanstack/react-query';
 import useAxiosSales from '@/uri/useAxiosSales';
+import { useState } from 'react';
 
 // --- 1. Your Lead Data Interface ---
 export interface LeadData {
@@ -26,6 +27,7 @@ export interface LeadData {
 export default function Sales_Qualified() {
   const axiosSales = useAxiosSales();
   const {userData} = useUserData();
+  const [monthFilter, setMonthFilter] = useState<'thisMonth' | 'lastMonth'>('thisMonth');
 
   const {data: wonLeads = [], isLoading, isError} = useQuery<LeadData[]>({
     queryKey: ["qualified-leads-sales", userData?._id],
@@ -36,6 +38,40 @@ export default function Sales_Qualified() {
     }
   })
   console.log("Qualified Leads from API:", wonLeads);
+
+  const currentDate = new Date();
+  const thisMonthIndex = currentDate.getMonth();
+  const thisYear = currentDate.getFullYear();
+  const lastMonthDate = new Date(thisYear, thisMonthIndex - 1, 1);
+  const lastMonthIndex = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
+
+  const isDateInMonth = (value: string | undefined, year: number, month: number) => {
+    if (!value) {
+      return false;
+    }
+
+    const parsedDate = new Date(value);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return false;
+    }
+
+    return parsedDate.getFullYear() === year && parsedDate.getMonth() === month;
+  };
+
+  const thisMonthWonLeads = wonLeads.filter((lead) => isDateInMonth((lead as any)?.updatedAt, thisYear, thisMonthIndex));
+  const lastMonthWonLeads = wonLeads.filter((lead) => isDateInMonth((lead as any)?.updatedAt, lastMonthYear, lastMonthIndex));
+
+  const visibleWonLeads = monthFilter === 'thisMonth' ? thisMonthWonLeads : lastMonthWonLeads;
+
+  const getMonthLabel = (filter: 'thisMonth' | 'lastMonth') => {
+    if (filter === 'thisMonth') {
+      return currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    return lastMonthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  };
 
   if (isLoading) {
     return (
@@ -88,26 +124,47 @@ export default function Sales_Qualified() {
 
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden hidden sm:block">
             <div className="absolute right-0 top-0 w-24 h-24 bg-[#99B562]/5 rounded-bl-full -z-0"></div>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1 relative z-10">Recent Activity</p>
-            <p className="text-lg font-bold text-slate-800 relative z-10 mt-2 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#99B562]"></span>
-              {wonLeads[0]?.companyName || wonLeads[0]?.leadName || 'No recent deals'} closed
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1 relative z-10">This Month Won</p>
+            <p className="text-4xl font-black text-slate-900 relative z-10">{thisMonthWonLeads.length}</p>
+          </div>
+        </div>
+
+        <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Month Filter</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Showing {monthFilter === 'thisMonth' ? 'this month' : 'last month'} qualified deals from {getMonthLabel(monthFilter)}.
             </p>
+          </div>
+
+          <div className="inline-flex rounded-full bg-slate-100 p-1 text-sm font-medium">
+            <button
+              onClick={() => setMonthFilter('thisMonth')}
+              className={`rounded-full px-4 py-2 transition-colors ${monthFilter === 'thisMonth' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              This Month ({thisMonthWonLeads.length})
+            </button>
+            <button
+              onClick={() => setMonthFilter('lastMonth')}
+              className={`rounded-full px-4 py-2 transition-colors ${monthFilter === 'lastMonth' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Last Month ({lastMonthWonLeads.length})
+            </button>
           </div>
         </div>
 
         {/* --- Won Deals Grid --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {wonLeads.length === 0 ? (
+          {visibleWonLeads.length === 0 ? (
             <div className="col-span-full text-center p-16 bg-white border border-dashed border-slate-300 rounded-2xl">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
               </div>
-              <h3 className="text-lg font-bold text-slate-900">No qualified deals yet</h3>
-              <p className="text-slate-500 mt-1">Keep pushing! Your successfully closed accounts will appear here.</p>
+              <h3 className="text-lg font-bold text-slate-900">No qualified deals for {monthFilter === 'thisMonth' ? 'this month' : 'last month'}</h3>
+              <p className="text-slate-500 mt-1">Switch the filter or wait for new closed deals to appear.</p>
             </div>
           ) : (
-            wonLeads.map((deal) => (
+            visibleWonLeads.map((deal) => (
               <div key={deal._id || deal.id || `${deal.leadName}-${deal.email || 'no-email'}`} className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-[#99B562]/40 transition-all group flex flex-col h-full overflow-hidden">
                 
                 {/* Card Top: Company / Account Info */}
@@ -133,6 +190,15 @@ export default function Sales_Qualified() {
                     </div>
                     <span className="text-xs text-slate-400 font-medium">• {deal.region || 'Global'}</span>
                   </div>
+                  { (deal as any)?.updatedAt && (
+                    <p className="mt-2 text-xs font-medium text-slate-400">
+                      Updated: {new Date((deal as any).updatedAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  )}
                 </div>
 
                 {/* Card Bottom: Primary Contact */}

@@ -34,6 +34,7 @@ import SalesPrivateRoute from "@/components/SalesDashboard/SalesPrivateRoute";
 import {Routes, Route } from "react-router";
 import DesignerRunningWorks from "@/components/DesignerDashboard/DesignerRunningWorks";
 import AdminHome from "@/components/AdminDashboard/AdminHome";
+import Sales_AssignedTask from "@/components/SalesDashboard/Sales_AssignedTask";
 const RoutesAll = () => {
     return <Routes>
               <Route path="/" element={<App />}>
@@ -53,6 +54,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/sales/remainder" element={<Sales_Remainder />} />
               <Route path="/dashboard/sales/qualified" element={<Sales_Qualified />} />
               <Route path="/dashboard/sales/unqualified" element={<Sales_Unqualified />} />
+              <Route path="/dashboard/sales/assigned" element={<Sales_AssignedTask />} />
               </Route>
               {/* sales dashboard end */}
               {/* marketing dashboard start */}
