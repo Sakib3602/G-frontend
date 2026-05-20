@@ -33,6 +33,7 @@ import Sales_Unqualified from "@/components/SalesDashboard/Sales_Unqualified";
 import SalesPrivateRoute from "@/components/SalesDashboard/SalesPrivateRoute";
 import {Routes, Route } from "react-router";
 import DesignerRunningWorks from "@/components/DesignerDashboard/DesignerRunningWorks";
+import AdminHome from "@/components/AdminDashboard/AdminHome";
 const RoutesAll = () => {
     return <Routes>
               <Route path="/" element={<App />}>
@@ -76,6 +77,11 @@ const RoutesAll = () => {
               <Route path="/dashboard/designer/overdue-tasks" element={<DesignerOverDueTasks />} />
               </Route>
               {/* designer dashboard end */}
+              {/* Admin dashboard start */}
+              <Route path="/dashboard/admin" element={<AdminHome></AdminHome>} >
+              {/* <Route index element={< />} /> */}
+              </Route>
+              {/* Admin dashboard end */}
             </Routes>
 };
 
