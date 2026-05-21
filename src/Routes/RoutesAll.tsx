@@ -35,6 +35,7 @@ import {Routes, Route } from "react-router";
 import DesignerRunningWorks from "@/components/DesignerDashboard/DesignerRunningWorks";
 import AdminHome from "@/components/AdminDashboard/AdminHome";
 import Sales_AssignedTask from "@/components/SalesDashboard/Sales_AssignedTask";
+import DesignerIndex from "@/components/DesignerDashboard/DesignerIndex";
 const RoutesAll = () => {
     return <Routes>
               <Route path="/" element={<App />}>
@@ -73,8 +74,8 @@ const RoutesAll = () => {
               {/* marketing dashboard end */}
               {/* designer dashboard start */}
               <Route path="/dashboard/designer" element={<DesignerPrivate><DesignerHome></DesignerHome></DesignerPrivate>} >
-              <Route index element={<DesignerMyTasks />} />
-              {/* <Route path="/dashboard/designer/my-tasks" element={<DesignerMyTasks />} /> */}
+              <Route index element={<DesignerIndex/>} />
+              <Route path="/dashboard/designer/my-tasks" element={<DesignerMyTasks />} />
               <Route path="/dashboard/designer/in-progress-tasks" element={<DesignerRunningWorks />} />
               <Route path="/dashboard/designer/overdue-tasks" element={<DesignerOverDueTasks />} />
               </Route>

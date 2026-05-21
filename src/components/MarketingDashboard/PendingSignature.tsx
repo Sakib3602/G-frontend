@@ -1,8 +1,8 @@
 
-import {   Check, ArrowUpRight, Trash2 } from 'lucide-react';
+import { Check, ArrowUpRight, Trash2, X } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import useAxiosMarketing from '@/uri/useAxiosMarketing';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import Notification from '../ui/toast';
 import { useUserDataMarketing } from './HOOK/User_Data_Marketer';
 
@@ -28,10 +28,48 @@ interface Deal {
   signature: boolean;
 }
 
+type TeamMemberApi = {
+  _id: string;
+  name: string;
+  role: string;
+};
+
+type TaskPriority = 'Low' | 'Medium' | 'High';
+
+type TaskFormState = {
+  title: string;
+  description: string;
+  dueDate: string;
+  dueTime: string;
+  priority: TaskPriority;
+  assignedTo: string;
+};
+
 const PendingSignature = () => {
     const [showNotification, setShowNotification] = useState(false);
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+    const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
+    const [taskForm, setTaskForm] = useState<TaskFormState>({
+      title: '',
+      description: '',
+      dueDate: '',
+      dueTime: '',
+      priority: 'Medium',
+      assignedTo: '',
+    });
   const axiosMarketing = useAxiosMarketing();
   const { userData } = useUserDataMarketing();
+
+  const { data: teamMembers = [] } = useQuery<TeamMemberApi[]>({
+    queryKey: ['marketing-task-team-members', userData?._id],
+    enabled: Boolean(userData?._id),
+    queryFn: async () => {
+      const res = await axiosMarketing.get(`/tasks/all-team-members/${userData?._id}`);
+      const payload = (res.data?.data ?? res.data) as TeamMemberApi[];
+      return Array.isArray(payload) ? payload : [];
+    },
+  });
 
   const { data: deals = [], isLoading, refetch } = useQuery({
     queryKey: ['pendingSignature', userData?.email],
@@ -42,6 +80,7 @@ const PendingSignature = () => {
     enabled: !!userData?._id, 
   });
 
+  
   const handleSignDone = async (dealId: string): Promise<void> => {
     try {
      
@@ -58,6 +97,55 @@ const PendingSignature = () => {
     console.log('🗑️ Delete clicked with ID:', dealId);
     // Add delete logic here
   };
+
+  const openTaskModal = (deal: Deal): void => {
+    setSelectedDeal(deal);
+    setSelectedEmployeeName('');
+    setTaskForm({
+      title: `Follow up with ${deal.leadId?.leadName || 'deal'}`,
+      description: '',
+      dueDate: '',
+      dueTime: '',
+      priority: 'Medium',
+      assignedTo: '',
+    });
+    setShowTaskModal(true);
+  };
+
+  const closeTaskModal = (): void => {
+    setShowTaskModal(false);
+    setSelectedDeal(null);
+    setSelectedEmployeeName('');
+  };
+
+  const updateTaskField = <K extends keyof TaskFormState>(field: K, value: TaskFormState[K]) => {
+    setTaskForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const selectEmployee = (member: TeamMemberApi) => {
+    setSelectedEmployeeName(member.name);
+    updateTaskField('assignedTo', member._id);
+  };
+
+  const handleTaskSubmit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+
+    const payload = {
+      ...taskForm,
+      createdBy: userData?._id,
+      dealId: selectedDeal?._id,
+      leadName: selectedDeal?.leadId?.leadName,
+      leadEmail: selectedDeal?.leadId?.email,
+      employeeName: selectedEmployeeName,
+    };
+
+    console.log('Pending signature task submit:', payload);
+    closeTaskModal();
+  };
+
   const mutationForUpdateStatus = useMutation({
     mutationFn: async (dealId: string): Promise<any> => {
        const res = await axiosMarketing.put(`/update-signature/${dealId}`);
@@ -313,6 +401,16 @@ const PendingSignature = () => {
                   {/* Actions - Sign & Delete Buttons */}
                   <td className="py-5 pl-6 align-top text-right">
                     <div className="inline-flex items-center gap-2">
+                      {deal.signature && (
+                        <button
+                          onClick={() => openTaskModal(deal)}
+                          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-[#C9A646]/40 transition-all duration-200 cursor-pointer"
+                          type="button"
+                        >
+                          Add Task
+                        </button>
+                      )}
+
                       {!deal.signature && (
                         <button
                           onClick={() => handleSignDone(deal._id)}
@@ -346,6 +444,144 @@ const PendingSignature = () => {
           )}
         </div>
       </div>
+      {showTaskModal && selectedDeal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl ring-1 ring-black/5">
+            <div className="flex items-start justify-between border-b border-slate-100 px-5 py-3.5">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">Create task for signed deal</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Add task details for {selectedDeal.leadId?.leadName || 'this deal'}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTaskModal}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleTaskSubmit} className="space-y-3.5 px-5 py-4.5">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Title</label>
+                  <input
+                    type="text"
+                    value={taskForm.title}
+                    onChange={(event) => updateTaskField('title', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#C9A646] focus:ring-2 focus:ring-[#C9A646]/20"
+                    placeholder="Enter task title"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Due Date</label>
+                  <input
+                    type="date"
+                    value={taskForm.dueDate}
+                    onChange={(event) => updateTaskField('dueDate', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#C9A646] focus:ring-2 focus:ring-[#C9A646]/20"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Due Time</label>
+                  <input
+                    type="time"
+                    value={taskForm.dueTime}
+                    onChange={(event) => updateTaskField('dueTime', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#C9A646] focus:ring-2 focus:ring-[#C9A646]/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
+                <textarea
+                  value={taskForm.description}
+                  onChange={(event) => updateTaskField('description', event.target.value)}
+                  className="min-h-24 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#C9A646] focus:ring-2 focus:ring-[#C9A646]/20"
+                  placeholder="Write task details here"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Priority</label>
+                  <select
+                    value={taskForm.priority}
+                    onChange={(event) => updateTaskField('priority', event.target.value as TaskPriority)}
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-[#C9A646] focus:ring-2 focus:ring-[#C9A646]/20"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+
+                <div />
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label className="block text-sm font-medium text-slate-700">Employees</label>
+                  <span className="text-xs text-slate-500">Click a name to assign their ID</span>
+                </div>
+                <div className="grid max-h-44 grid-cols-1 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:grid-cols-2">
+                  {teamMembers.map((member) => (
+                    <button
+                      key={member._id}
+                      type="button"
+                      onClick={() => selectEmployee(member)}
+                      className={`flex items-start justify-between rounded-xl border px-3 py-2.5 text-left transition ${
+                        taskForm.assignedTo === member._id
+                          ? 'border-[#C9A646] bg-[#C9A646]/10'
+                          : 'border-slate-200 bg-white hover:border-[#C9A646]/40 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{member.name}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{member.role}</p>
+                      </div>
+                      <span className="ml-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        {taskForm.assignedTo === member._id ? 'Selected' : 'Select'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 text-xs text-slate-500">
+                  Selected employee ID: <span className="font-medium text-slate-700">{taskForm.assignedTo || 'None'}</span>
+                  {selectedEmployeeName ? <span className="ml-2">({selectedEmployeeName})</span> : null}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={closeTaskModal}
+                  className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[#C9A646] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#b89434]"
+                >
+                  Submit Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 </div>
 
    

@@ -11,6 +11,7 @@ type TaskFormData = {
   title: string;
   description: string;
   campaignId: string;
+  leadId: string;
   assignedTo: string;
   dueDate: string;
   dueTime: string;
@@ -23,36 +24,38 @@ type TaskCampaignApi = {
   campaignName: string;
  
 };
+type LeadApi = {
+  _id: string;
+  leadName?: string;
+  name?: string;
+  leadId?: {
+    _id?: string;
+    leadName?: string;
+    name?: string;
+  };
+};
 type TeamMemberApi = {
   _id: string;
   name: string;
   role: string;
 };
 
-// Mock Data (ডেটাবেস থেকে এগুলো আসবে)
-// const mockCampaigns = [
-//   { id: "c1", name: "Black Friday Sale 2026" },
-//   { id: "c2", name: "Q1 B2B Lead Gen" },
-// ];
 
-// const teamMembers = [
-//   { id: "u1", name: "John Doe", role: "Graphic Designer" },
-//   { id: "u2", name: "Jane Smith", role: "Content Writer" },
-//   { id: "u3", name: "Mike Ross", role: "Media Buyer" },
-//   { id: "u4", name: "Sarah Khan", role: "Marketing Strategist" },
-//   { id: "u5", name: "Ariana Roy", role: "SEO Specialist" },
-//   { id: "u6", name: "Imran Hossain", role: "Video Editor" },
-//   { id: "u7", name: "Nusrat Jahan", role: "Social Media Manager" },
-//   { id: "u8", name: "Omar Faruk", role: "Performance Analyst" },
-//   { id: "u9", name: "Tanvir Ahmed", role: "Copywriter" },
-//   { id: "u10", name: "Nabila Noor", role: "UI/UX Designer" },
-// ];
 
 const MarketingAddTask: React.FC = () => {
 
     const {userData} = useUserDataMarketing()
     const axiosMarketing = useAxiosMarketing();
 
+     const { data: leads = [], isLoading: isLeadsLoading } = useQuery<LeadApi[]>({
+        queryKey: ['pendingSignature-add-task', userData?.email],
+        queryFn: async () => {
+          const res = await axiosMarketing.get(`/qualified-leads/${userData?._id}`);
+          const payload = (res.data?.data ?? res.data) as LeadApi[];
+          return Array.isArray(payload) ? payload : [];
+        },
+        enabled: !!userData?._id, 
+      });
 
     const { data: mockCampaigns = [], isLoading: isCampaignsLoading } = useQuery<TaskCampaignApi[]>({
         queryKey : ["marketing-campaigns-task"],
@@ -76,6 +79,11 @@ const MarketingAddTask: React.FC = () => {
   const campaignOptions = mockCampaigns.map((camp) => ({ id: camp._id, name: camp.campaignName }));
   const hasCampaigns = campaignOptions.length > 0;
 
+  const leadOptions = leads.map((lead) => ({
+    id: lead._id,
+    name: lead.leadName ?? lead.name ?? lead.leadId?.leadName ?? lead.leadId?.name ?? "Unnamed lead",
+  }));
+
   const teamMembers = teamMembersApi.map((member) => ({ id: member._id, name: member.name, role: member.role }));
 
   const today = new Date();
@@ -91,11 +99,13 @@ const MarketingAddTask: React.FC = () => {
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm<TaskFormData>({
     defaultValues: {
       title: "",
       description: "",
       campaignId: "",
+      leadId: "",
       assignedTo: "",
       dueDate: "",
       priority: "Medium",
@@ -115,6 +125,7 @@ const MarketingAddTask: React.FC = () => {
       title: "",
       description: "",
       campaignId: "",
+      leadId: "",
       assignedTo: "",
       dueDate: "",
       priority: "Medium",
@@ -123,10 +134,17 @@ const MarketingAddTask: React.FC = () => {
     });
   };
 
+  const selectedCampaignId = watch("campaignId");
+  const selectedLeadId = watch("leadId");
+
   const [showNotification, setShowNotification] = useState(false);
   const mutationSubmitTask = useMutation({
     mutationFn: async (taskData: TaskFormData) => {
-      const response = await axiosMarketing.post("/tasks/create-marketing-task", taskData);
+      const response = await axiosMarketing.post("/tasks/create-marketing-task", {
+        ...taskData,
+        campaignId: taskData.campaignId || null,
+        leadId: taskData.leadId || null,
+      });
       return response.data;
     },
     onSuccess: () => {
@@ -221,22 +239,62 @@ const MarketingAddTask: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                <Briefcase className="h-4 w-4 text-[#C9A646]" /> Related campaign
-              </label>
-              <select
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#C9A646] focus:bg-white focus:ring-2 focus:ring-[#C9A646]/20"
-                {...register("campaignId")}
-              >
-                
-                {isCampaignsLoading && <option value="" disabled>Loading campaigns...</option>}
-                {campaignOptions.map((camp) => (
-                  <option key={camp.id} value={camp.id}>
-                    {camp.name}
-                  </option>
-                ))}
-              </select>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                  <Briefcase className="h-4 w-4 text-[#C9A646]" /> Related campaign
+                </label>
+                <select
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#C9A646] focus:bg-white focus:ring-2 focus:ring-[#C9A646]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  disabled={Boolean(selectedLeadId)}
+                  {...register("campaignId", {
+                    onChange: (event) => {
+                      const nextCampaignId = event.target.value;
+                      setValue("leadId", "", { shouldDirty: true, shouldValidate: true });
+                      if (nextCampaignId) {
+                        console.log("selected campaign id:", nextCampaignId);
+                      }
+                    },
+                  })}
+                >
+                  <option value="">Select a campaign</option>
+                  {isCampaignsLoading && <option value="" disabled>Loading campaigns...</option>}
+                  {campaignOptions.map((camp) => (
+                    <option key={camp.id} value={camp.id}>
+                      {camp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                  <User className="h-4 w-4 text-[#C9A646]" /> Related lead
+                </label>
+                <select
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#C9A646] focus:bg-white focus:ring-2 focus:ring-[#C9A646]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  disabled={Boolean(selectedCampaignId)}
+                  {...register("leadId", {
+                    onChange: (event) => {
+                      const nextLeadId = event.target.value;
+                      setValue("campaignId", "", { shouldDirty: true, shouldValidate: true });
+                      if (nextLeadId) {
+                        const selectedLead = leadOptions.find((lead) => lead.id === nextLeadId);
+                        console.log("selected lead id:", nextLeadId);
+                        console.log("selected lead name:", selectedLead?.name);
+                      }
+                    },
+                  })}
+                >
+                  <option value="">Select a lead</option>
+                  {isLeadsLoading && <option value="" disabled>Loading leads...</option>}
+                  {leadOptions.map((lead) => (
+                    <option key={lead.id} value={lead.id}>
+                      {lead.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

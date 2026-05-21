@@ -55,8 +55,8 @@ const DesignerHome = () => {
   
 
   const navItems = [
-    { name: 'My Tasks', path: '/dashboard/designer', icon: BarChart3 },
-    // { name: 'My Tasks', path: '/dashboard/designer/my-tasks', icon: Megaphone },
+    { name: 'DashBoard', path: '/dashboard/designer', icon: BarChart3 },
+    { name: 'My Tasks', path: '/dashboard/designer/my-tasks', icon: Megaphone },
     { name: 'Running Works', path: '/dashboard/designer/in-progress-tasks', icon: ChartNetwork },
     { name: 'Overdue Tasks', path: '/dashboard/designer/overdue-tasks', icon: LocateOff },
    
