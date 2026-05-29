@@ -10,7 +10,8 @@ import {
   Bell, 
   LayersPlus,
   WorkflowIcon,
-  Timer
+  Timer,
+  Pin
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
@@ -54,7 +55,7 @@ const Sales_Home = () => {
     { name: 'Reminders', path: '/dashboard/sales/remainder', icon: Timer },  
     { name: 'Qualified Deals', path: '/dashboard/sales/qualified', icon:  WorkflowIcon  },
     { name: 'Unqualified Deals', path: '/dashboard/sales/unqualified', icon: CircleX },
-    { name: 'Assigned Leads', path: '/dashboard/sales/assigned', icon: CircleX },
+    { name: 'Assigned Leads', path: '/dashboard/sales/assigned', icon: Pin },
   ];
 
   return (

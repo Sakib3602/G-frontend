@@ -56,6 +56,8 @@ const DesignerIndex = () => {
     const summary = data?.tasks ?? { total: 0, pending: 0, inProgress: 0, overdue: 0 };
     const completedTasks = data?.completedData ?? [];
     const filteredCompletedTasks = completedTasks.filter((task) => isTaskInSelectedMonth(task.updatedAt, monthFilter));
+    const overdueTrueCount = completedTasks.filter((task) => task.remainingDate?.isOverdue === true).length;
+    const overdueFalseCount = completedTasks.filter((task) => task.remainingDate?.isOverdue === false).length;
 
     const completionRate = summary.total > 0 ? Math.round((completedTasks.length / summary.total) * 100) : 0;
 
@@ -66,10 +68,7 @@ const DesignerIndex = () => {
                 <div className="border-b border-slate-100 px-6 py-7 sm:px-8">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                         <div className="max-w-2xl">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-[#F16C65]/15 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c84c45] shadow-sm">
-                                <ListTodo className="h-3.5 w-3.5" />
-                                Designer dashboard
-                            </div>
+                           
                             <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
                                 Work summary for {userData?.name || "designer"}
                             </h1>
@@ -134,7 +133,7 @@ const DesignerIndex = () => {
 
                                 <div className="rounded-3xl border border-slate-200 p-5">
                                     <div className="flex items-center justify-between">
-                                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Overdue</div>
+                                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Overdue not completed</div>
                                         <div className="rounded-full border border-slate-200 p-2 text-rose-600"><CircleAlert className="h-4 w-4" /></div>
                                     </div>
                                     <div className="mt-3 text-3xl font-semibold text-rose-600">{summary.overdue}</div>
@@ -167,9 +166,17 @@ const DesignerIndex = () => {
                                     >
                                         Last month
                                     </button>
-                                    <span className="ml-auto inline-flex items-center rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                        {filteredCompletedTasks.length} completed
-                                    </span>
+                                    <div className="ml-auto flex flex-wrap items-center gap-2">
+                                        <span className="inline-flex items-center rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-700">
+                                            Overdue: {overdueTrueCount}
+                                        </span>
+                                        <span className="inline-flex items-center rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                            On Time: {overdueFalseCount}
+                                        </span>
+                                        <span className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
+                                            {filteredCompletedTasks.length} completed
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {filteredCompletedTasks.length === 0 ? (
@@ -183,8 +190,8 @@ const DesignerIndex = () => {
                                                 <tr className="text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                                                     <th className="px-6 py-4">Title</th>
                                                     <th className="px-6 py-4">Priority</th>
-                                                    <th className="px-6 py-4">Updated At</th>
-                                                    <th className="px-6 py-4">Remaining</th>
+                                                    <th className="px-6 py-4">Completed At</th>
+                                                    <th className="px-6 py-4">Due</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">

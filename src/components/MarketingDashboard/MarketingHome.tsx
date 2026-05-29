@@ -38,7 +38,7 @@ const MarketingHome = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard/marketing', icon: BarChart3 },
-    { name: 'Pending Signatures', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
+    { name: 'Works', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
     { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
     { name: 'Create Campaign', path: '/dashboard/marketing/create-campaign', icon: Zap },
     { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: Layers },

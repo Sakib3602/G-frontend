@@ -62,7 +62,7 @@ const Sales_AssignedTask = () => {
                     </p>
                 </div>
 
-                <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200">
                     <span className="h-2 w-2 rounded-full bg-[#99B562]" />
                     {tasks.length} task{tasks.length === 1 ? '' : 's'} loaded
                 </div>
