@@ -1,6 +1,7 @@
 import useAxiosSales from '@/uri/useAxiosSales';
 import { useUserData } from './Sales_Hook/User_Data';
 import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
 
 const Sales_AssignedTask = () => {
     const axiosSales = useAxiosSales()
@@ -14,7 +15,28 @@ const Sales_AssignedTask = () => {
         }
     })
 
-    const tasks = Array.isArray(data) ? data : [];
+    const tasks = useMemo<Record<string, unknown>[]>(() => (Array.isArray(data) ? (data as Record<string, unknown>[]) : []), [data]);
+
+    const [query, setQuery] = useState('');
+
+    const filteredTasks = useMemo(() => {
+        const q = (query || '').trim().toLowerCase();
+        if (!q) return tasks;
+        return tasks.filter((t: Record<string, unknown>) => {
+            const lead = String((t as any)?.leadID?.leadName || (t as any)?.leadName || '').toLowerCase();
+            const leadEmail = String((t as any)?.leadID?.email || (t as any)?.email || '').toLowerCase();
+            const status = String((t as any)?.taskStatus || '').toLowerCase();
+            const marketer = String((t as any)?.assignedToMarketer?.name || '').toLowerCase();
+            const marketerEmail = String((t as any)?.assignedToMarketer?.email || '').toLowerCase();
+            return (
+                lead.includes(q) ||
+                leadEmail.includes(q) ||
+                status.includes(q) ||
+                marketer.includes(q) ||
+                marketerEmail.includes(q)
+            );
+        });
+    }, [tasks, query]);
 
     const formatDate = (value: string) => {
         if (!value) {
@@ -54,7 +76,7 @@ const Sales_AssignedTask = () => {
 
     return (
         <div className="w-full">
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900">Assigned Tasks</h1>
                     <p className="mt-1 text-sm text-slate-500">
@@ -62,9 +84,37 @@ const Sales_AssignedTask = () => {
                     </p>
                 </div>
 
+                <div className="flex items-center gap-4 w-full sm:w-auto">
                     <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200">
-                    <span className="h-2 w-2 rounded-full bg-[#99B562]" />
-                    {tasks.length} task{tasks.length === 1 ? '' : 's'} loaded
+                        <span className="h-2 w-2 rounded-full bg-[#99B562]" />
+                        {tasks.length} task{tasks.length === 1 ? '' : 's'} loaded
+                    </div>
+
+                    <div className="ml-0 w-full sm:ml-4 sm:w-64">
+                        <label className="sr-only">Search tasks</label>
+                        <div className="relative">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+                                <circle cx="11" cy="11" r="6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search lead, email, status, marketer"
+                                className="w-full rounded-md border border-slate-200 bg-white pl-10 pr-9 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                            />
+                            {query && (
+                                <button
+                                    onClick={() => setQuery('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:text-slate-700"
+                                    aria-label="Clear search"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -125,7 +175,15 @@ const Sales_AssignedTask = () => {
                             </thead>
 
                             <tbody className="divide-y divide-slate-100 bg-white">
-                                {tasks.map((task: any) => (
+                                {filteredTasks.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-5 py-6 text-center text-sm text-slate-500">
+                                            {query ? `No results for "${query}"` : 'No tasks available.'}
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredTasks.map((task: any) => {
+                                    return (
                                     <tr key={task?._id || `${task?.leadID?.email}-${task?.createdAt}`} className="transition-colors hover:bg-slate-50/70">
                                         <td className="px-5 py-3 align-top">
                                             <div className="font-semibold text-slate-900">
@@ -162,8 +220,9 @@ const Sales_AssignedTask = () => {
                                         <td className="px-5 py-3 align-top text-sm text-slate-600">
                                             {formatDate(task?.createdAt)}
                                         </td>
-                                    </tr>
-                                ))}
+                                            </tr>
+                                                );
+                                            }))}
                             </tbody>
                         </table>
                     </div>
