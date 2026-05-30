@@ -7,7 +7,7 @@ import {
   CircleX, 
   LogOut, 
   Menu, 
-  Bell, 
+
   LayersPlus,
   WorkflowIcon,
   Timer,
@@ -160,10 +160,7 @@ const Sales_Home = () => {
           </div>
 
           <div className="flex items-center space-x-6">
-            <button className="text-gray-400 hover:text-gray-600 relative p-2 rounded-full hover:bg-gray-100 transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+           
 
             <div className="flex items-center space-x-3 border-l pl-6 border-gray-200 cursor-pointer hover:opacity-80 transition-opacity">
               <div className="text-right hidden md:block">

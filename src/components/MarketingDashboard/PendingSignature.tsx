@@ -137,8 +137,8 @@ const PendingSignature = () => {
         {showNotification && (
           <Notification
             type="success"
-            title="Signature Updated!"
-            message="The signature has been updated successfully."
+            title="Work Status Updated!"
+            message="The work status has been updated successfully."
             showIcon={true}
             duration={3000}
             onClose={() => {

@@ -5,7 +5,7 @@ import {
   LogOut,
   Menu,
 
-  Bell,
+  
   Sparkles,
   ChevronRight,
   PenTool,
@@ -34,7 +34,7 @@ const DesignerHome = () => {
   console.log("Designer User Data:", userData);
   const profile = useMemo(() => {
     const displayName = userData?.name || person?.displayName || 'Creative User';
-    const title = 'Designer';
+    const title = userData?.role === "web" ? "Web Specialist" : "Graphic Designer";
     const email = userData?.email || person?.email || 'designer@studio.io';
     const initials = displayName
       .split(' ')
@@ -75,7 +75,7 @@ const DesignerHome = () => {
           <span className={`font-semibold text-lg flex items-center gap-3 ${!isSidebarOpen && 'hidden'}`}>
             
             <span>
-              GENE<span className="text-amber-700">SYS</span> Designer
+              GENE<span className="text-amber-700">SYS</span> {userData?.role === "web" ? "WS" : "GD"}
             </span>
           </span>
           {!isSidebarOpen && (
@@ -91,7 +91,7 @@ const DesignerHome = () => {
             <div className="mx-4 mb-6 rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-100 via-orange-100 to-rose-100 p-4">
               <div className="mb-2 flex items-center gap-2 text-amber-800">
                 <Sparkles className="h-4 w-4" />
-                <p className="text-xs font-semibold uppercase tracking-wider">Creative Designer</p>
+                <p className="text-xs font-semibold uppercase tracking-wider">{userData?.role === "web" ? "Web Specialist" : "Graphic Designer"}</p>
               </div>
               <p className="text-sm text-stone-700">Welcome back, {profile.displayName}!</p>
             </div>
@@ -165,7 +165,7 @@ const DesignerHome = () => {
             </button>
             <div>
               <h2 className="text-lg font-semibold text-stone-900 hidden sm:block">
-                Designer Command Center
+                {userData?.role === "web" ? "Web Specialist" : "Graphic Designer"} Command Center
               </h2>
               <p className="hidden sm:block text-xs text-stone-500">
                 Curate, launch, and optimize your visual campaigns
@@ -176,10 +176,7 @@ const DesignerHome = () => {
           <div className="flex items-center gap-4">
             
 
-            <button className="relative p-2.5 rounded-xl text-stone-600 hover:bg-black/5">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full"></span>
-            </button>
+            
 
             <div className="h-7 w-px bg-[#DCCFBE]"></div>
 

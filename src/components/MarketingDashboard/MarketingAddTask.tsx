@@ -33,6 +33,7 @@ type LeadApi = {
     leadName?: string;
     name?: string;
   };
+  signature?: boolean;
 };
 type TeamMemberApi = {
   _id: string;
@@ -57,6 +58,7 @@ const MarketingAddTask: React.FC = () => {
         enabled: !!userData?._id, 
       });
 
+  
     const { data: mockCampaigns = [], isLoading: isCampaignsLoading } = useQuery<TaskCampaignApi[]>({
         queryKey : ["marketing-campaigns-task"],
       enabled: Boolean(userData?._id),
@@ -79,10 +81,12 @@ const MarketingAddTask: React.FC = () => {
   const campaignOptions = mockCampaigns.map((camp) => ({ id: camp._id, name: camp.campaignName }));
   const hasCampaigns = campaignOptions.length > 0;
 
-  const leadOptions = leads.map((lead) => ({
-    id: lead._id,
-    name: lead.leadName ?? lead.name ?? lead.leadId?.leadName ?? lead.leadId?.name ?? "Unnamed lead",
-  }));
+  const leadOptions = leads
+    .filter((lead) => lead.signature === false)
+    .map((lead) => ({
+      id: lead._id,
+      name: lead.leadName ?? lead.name ?? lead.leadId?.leadName ?? lead.leadId?.name ?? "Unnamed lead",
+    }));
 
   const teamMembers = teamMembersApi.map((member) => ({ id: member._id, name: member.name, role: member.role }));
 

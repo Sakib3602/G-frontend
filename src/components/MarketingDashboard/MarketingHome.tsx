@@ -2,12 +2,12 @@ import { useContext, useState } from 'react';
 import {
   Megaphone,
   BarChart3,
-  Globe,
+  // Globe,
   Layers,
   LogOut,
   Menu,
   CircleCheckBig,
-  Bell,
+  // Bell,
   Zap,
   UserPlus,
   TimerReset,
@@ -39,7 +39,7 @@ const MarketingHome = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard/marketing', icon: BarChart3 },
     { name: 'Works', path: '/dashboard/marketing/pending-signatures', icon: Megaphone },
-    { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
+    // { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
     { name: 'Create Campaign', path: '/dashboard/marketing/create-campaign', icon: Zap },
     { name: 'All Campaigns', path: '/dashboard/marketing/all-campaigns', icon: Layers },
     { name: 'End Campaigns', path: '/dashboard/marketing/end-campaigns', icon: CircleCheckBig },
@@ -136,10 +136,10 @@ const MarketingHome = () => {
           </div>
 
           <div className="flex items-center gap-5">
-            <button className="relative p-2 rounded-full text-slate-500 hover:bg-gray-100">
+            {/* <button className="relative p-2 rounded-full text-slate-500 hover:bg-gray-100">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#C9A646] rounded-full"></span>
-            </button>
+            </button> */}
 
             <div className="h-6 w-px bg-gray-200"></div>
 

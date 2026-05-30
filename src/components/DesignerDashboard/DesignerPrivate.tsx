@@ -49,10 +49,9 @@ const DesignerPrivate = ({ children }: { children: React.ReactNode }) => {
         await logOut();
     }
 
-    if(userData?.role !== "designer")
-    {
-        X();
-        return <Navigate to="/login" state={{ from: location }} replace />;
+    if (userData?.role !== "designer" && userData?.role !== "web") {
+      X();
+      return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
 
