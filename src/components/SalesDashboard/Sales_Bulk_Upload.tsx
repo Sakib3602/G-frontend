@@ -174,7 +174,7 @@ const Sales_Bulk_Upload = () => {
   // ── Mutation ──────────────────────────────────────────────────────────────
   const bulkMutation = useMutation<unknown, Error, BulkLeadRow[]>({
     mutationFn: async (leads) => {
-      const res = await axiosSales.post("/api/v1/sales/bulk-upload", leads );
+      const res = await axiosSales.post("/api/v1/sales/create-lead", leads );
       return res.data;
     },
     onSuccess: () => {

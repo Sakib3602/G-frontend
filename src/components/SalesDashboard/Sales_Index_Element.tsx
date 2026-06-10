@@ -1,17 +1,15 @@
-import React, {  useState } from 'react';
-
+import React, { useState } from 'react';
 import useAxiosSales from '@/uri/useAxiosSales';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { useUserData } from './Sales_Hook/User_Data';
+// Imported Recharts components for beautiful visualization
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, } from 'recharts';
 
 export default function Sales_Index_Element() {
-
   const axiosSales = useAxiosSales();
 
-
-
-  const {userData} = useUserData()
+  const { userData } = useUserData();
   console.log("Fetched User Data from index:", userData);
 
   const { data: m, isLoading } = useQuery({
@@ -42,6 +40,28 @@ export default function Sales_Index_Element() {
 
   const totalActiveLeads = metrics.totalLeads;
   const winRate = metrics.winRate;
+
+  // ==========================================
+  // GRAPH DATA PREPARATION
+  // ==========================================
+  
+  // 1. Funnel/Pipeline Bar Chart Data
+  const barChartData = [
+    { name: 'New', count: metrics.newLeads },
+    { name: 'Attempted', count: metrics.attemptedToContact },
+    { name: 'Contacted', count: metrics.contacted },
+    { name: 'Proposal Sent', count: metrics.proposalSent },
+    { name: 'Awaiting Res.', count: metrics.awaitingResponse },
+  ];
+
+  // 2. Conversion Outcome Pie Chart Data
+  const pieChartData = [
+    { name: 'Qualified', value: metrics.qualified },
+    { name: 'Unqualified/Lost', value: metrics.unqualified },
+  ];
+  
+  // Custom theme colors matching your styling
+  const PIE_COLORS = ['#99B562', '#EF4444']; 
 
   // --- Profile State ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -138,7 +158,7 @@ export default function Sales_Index_Element() {
   // ==========================================
   return (
     <div className="w-full bg-[#f8fafc] p-6 lg:p-10 font-sans min-h-screen text-slate-800 relative">
-      <div className="max-w-350 mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* --- Header --- */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -148,10 +168,10 @@ export default function Sales_Index_Element() {
           </div>
           <div className="flex gap-3">
             <Link to={'/dashboard/sales/create-leads'}>
-            <button className="bg-[#99B562] hover:bg-[#85a052] text-white font-medium py-2.5 px-4 rounded-xl transition-all text-sm shadow-sm flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-              Add New Lead
-            </button>
+              <button className="bg-[#99B562] hover:bg-[#85a052] text-white font-medium py-2.5 px-4 rounded-xl transition-all text-sm shadow-sm flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                Add New Lead
+              </button>
             </Link>
           </div>
         </div>
@@ -190,13 +210,84 @@ export default function Sales_Index_Element() {
           </div>
         </div>
 
+        {/* --- Visual Analytics Row (New Section) --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Funnel Graph */}
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h3 className="font-bold text-slate-800 mb-2">Pipeline Velocity</h3>
+            <p className="text-xs text-slate-400 mb-6">Visual volume of leads tracking through each active phase.</p>
+            <div className="w-full h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1E293B', borderRadius: '12px', border: 'none' }}
+                    itemStyle={{ color: '#F8FAFC' }}
+                    labelStyle={{ color: '#94A3B8', fontWeight: 'bold' }}
+                  />
+                  <Bar dataKey="count" fill="#99B562" radius={[6, 6, 0, 0]} barSize={45} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Donut Chart Conversion */}
+          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between">
+            <div>
+              <h3 className="font-bold text-slate-800 mb-1">Deal Outcome Ratios</h3>
+              <p className="text-xs text-slate-400 mb-4">Proportion of Qualified versus Drop-off Leads.</p>
+            </div>
+            <div className="w-full h-52 relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieChartData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1E293B', borderRadius: '12px', border: 'none' }}
+                    itemStyle={{ color: '#F8FAFC' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Central text displaying Win-rate overlay */}
+              <div className="absolute text-center">
+                <span className="block text-2xl font-black text-slate-800">{winRate}%</span>
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Win Status</span>
+              </div>
+            </div>
+            
+            {/* Custom Legend Layout */}
+            <div className="flex justify-center gap-6 mt-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#99B562]"></div>
+                <span className="text-xs font-semibold text-slate-600">Qualified ({metrics.qualified})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-xs font-semibold text-slate-600">Unqualified ({metrics.unqualified})</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* --- Main Layout Grid --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column: Full Pipeline Breakdown */}
           <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="font-bold text-slate-800">Pipeline Distribution</h3>
+              <h3 className="font-bold text-slate-800">Pipeline Distribution Details</h3>
             </div>
             
             <div className="p-6">
@@ -257,7 +348,7 @@ export default function Sales_Index_Element() {
                 <div>
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">3. Outcomes</h4>
                   <div className="grid grid-cols-2 gap-4">
-                     <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-4">
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                       </div>
@@ -273,10 +364,8 @@ export default function Sales_Index_Element() {
             </div>
           </div>
 
-          {/* Right Column: Actions & Profile */}
+          {/* Right Column: Action Center */}
           <div className="lg:col-span-5 space-y-6">
-            
-            {/* Reminders Block */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800">Action Center</h3>
@@ -302,63 +391,6 @@ export default function Sales_Index_Element() {
                 </div>
               </div>
             </div>
-
-            {/* --- SALES REPRESENTATIVE PROFILE CARD --- */}
-            {/* <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-
-               <div className="h-20 bg-linear-to-r from-slate-800 to-slate-700"></div>
-               <div className="px-6 pb-6 relative">
-                 <div className="flex justify-between items-end mb-4">
-                   <div className="w-20 h-20 rounded-full border-4 border-white bg-slate-100 -mt-10 flex items-center justify-center shadow-sm overflow-hidden text-2xl font-bold text-slate-400">
-                     {profileData.avatar ? (
-                       <img src={profileData.avatar} alt="Profile" className="w-full h-full object-cover" />
-                     ) : (
-                       profileData.name.charAt(0)
-                     )}
-                   </div>
-                   <button 
-                     onClick={() => {
-                       setFormData(profileData); 
-                       setIsEditModalOpen(true);
-                     }}
-                     className="text-xs font-bold text-[#99B562] bg-[#99B562]/10 hover:bg-[#99B562]/20 border border-[#99B562]/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                   >
-                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                     Edit Profile
-                   </button>
-                 </div>
-                 
-                 <div>
-                   <h3 className="text-xl font-bold text-slate-900">{profileData.name}</h3>
-                   <p className="text-sm font-medium text-[#99B562] mb-5">{profileData.role}</p>
-                   
-                   <div className="space-y-3">
-                     <div className="flex items-start gap-3">
-                       <svg className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                       <div>
-                         <p className="text-xs text-slate-500 font-medium leading-none">Phone</p>
-                         <p className="text-sm text-slate-800 mt-0.5">{profileData.phone || 'Not set'}</p>
-                       </div>
-                     </div>
-                     <div className="flex items-start gap-3">
-                       <svg className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                       <div>
-                         <p className="text-xs text-slate-500 font-medium leading-none">Address</p>
-                         <p className="text-sm text-slate-800 mt-0.5">{profileData.address || 'Not set'}</p>
-                       </div>
-                     </div>
-                     <div className="flex items-start gap-3">
-                       <svg className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
-                       <div>
-                         <p className="text-xs text-slate-500 font-medium leading-none">National ID (NID)</p>
-                         <p className="text-sm text-slate-800 mt-0.5 font-mono">{profileData.nid || 'Not set'}</p>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-               </div>
-            </div> */}
-
           </div>
         </div>
       </div>

@@ -3,7 +3,8 @@ import axios from "axios";
 
  
  const axiosAdmin = axios.create({
-    baseURL: "http://localhost:5000/api/v1/admin/dashboard",  
+    baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/dashboard`
+    ,  
  })
 
 const useAxiosAdmin = () => {

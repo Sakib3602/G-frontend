@@ -1,4 +1,4 @@
-import React, {  useState } from "react";
+import React, { useState } from "react";
 import type { IMeeting } from "./Sales_My_Leads";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import useAxiosSales from "@/uri/useAxiosSales";
@@ -31,10 +31,7 @@ const createEmptyForm = (): IMeeting => ({
 const normalizeMeetingStatus = (status?: string): MeetingData["status"] => {
   const normalized = status?.toLowerCase();
 
-  if (
-    normalized === "completed" ||
-    normalized === "cancelled"
-  ) {
+  if (normalized === "completed" || normalized === "cancelled") {
     return normalized as MeetingData["status"];
   }
 
@@ -69,18 +66,22 @@ const normalizeMeetingsResponse = (response: unknown): MeetingData[] => {
 };
 
 export default function Sales_Meetings() {
+  // --- UI & Modal States ---
   const [showNoti, setShowNoti] = useState(false);
   const [showNotiUpdate, setShowNotiUpdate] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<
-    "scheduled" | "completed" | "cancelled"
-  >("scheduled");
+  const [selectedStatus, setSelectedStatus] = useState<"scheduled" | "completed" | "cancelled">("scheduled");
+  
+  // New UI State for the detached layout
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingMeetingId, setEditingMeetingId] = useState<string>("");
   const [editFormData, setEditFormData] = useState<IMeeting>(createEmptyForm());
+  
   const axiosSales = useAxiosSales();
-  const {userData} = useUserData()
+  const { userData } = useUserData();
 
-  // meetings data fetch
+  // --- Data Fetching ---
   const {
     data: meetings = [],
     isLoading,
@@ -96,13 +97,12 @@ export default function Sales_Meetings() {
       return normalizeMeetingsResponse(res.data);
     },
   });
-  // Form State
+
+  // --- Create Form Logic ---
   const [formData, setFormData] = useState<IMeeting>(createEmptyForm());
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => {
@@ -124,10 +124,9 @@ export default function Sales_Meetings() {
       schedulerId: userData?._id || "",
       owner: userData?.name || "Unknown User",
     };
-    console.log("Meeting Submitted:", newMeeting);
     mutationUpformeeting.mutate(newMeeting);
-
     setFormData(createEmptyForm());
+    setIsCreateModalOpen(false); 
   };
 
   const mutationUpformeeting = useMutation({
@@ -141,54 +140,63 @@ export default function Sales_Meetings() {
     onSuccess: () => {
       refetch();
       setShowNoti(true);
-      // alert("Meeting saved successfully!");
-      
     },
   });
 
+  // --- Actions Logic ---
   const handleCompleteMeeting = (meeting: MeetingData) => {
     Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
+      title: "Confirm Completion",
+      text: "Mark this meeting as successfully completed?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Update it!",
+      confirmButtonColor: "#99B562",
+      cancelButtonColor: "#94a3b8",
+      confirmButtonText: "Yes, Complete",
     }).then((result) => {
       if (result.isConfirmed) {
         mutationUpStatusCNG.mutate({ id: meeting._id as string, status: "completed" });
-        Swal.fire({
-          title: "Completed!",
-          text: "Your meeting status has been completed.",
-          icon: "success",
-        });
+        Swal.fire({ title: "Completed!", text: "Status updated.", icon: "success" });
       }
     });
   };
 
   const handleCancelMeeting = (meeting: MeetingData) => {
     Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
+      title: "Cancel Meeting?",
+      text: "This will move the meeting to your cancelled log.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      cancelButtonText: "No, keep it!",
-      confirmButtonText: "Yes, Cancel Meeting!",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#94a3b8",
+      cancelButtonText: "Keep it",
+      confirmButtonText: "Yes, Cancel",
     }).then((result) => {
       if (result.isConfirmed) {
         mutationUpStatusCNG.mutate({ id: meeting._id as string, status: "cancelled" });
-        Swal.fire({
-          title: "Cancelled!",
-          text: "Your meeting status has been cancelled.",
-          icon: "success",
-        });
+        Swal.fire({ title: "Cancelled!", text: "Meeting cancelled.", icon: "success" });
       }
     });
   };
 
+  const handleDeleteMeeting = (meeting: MeetingData) => {
+    Swal.fire({
+      title: "Delete Record?",
+      text: "This action cannot be undone.",
+      icon: "error",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#94a3b8",
+      confirmButtonText: "Yes, delete",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        mutationUpdelete.mutate(meeting?._id as string);
+        Swal.fire({ title: "Deleted!", text: "Record wiped.", icon: "success" });
+      }
+    });
+  };
+
+  // --- Edit Logic ---
   const handleUpdateMeeting = (meeting: MeetingData) => {
     setEditingMeetingId(meeting._id ?? meeting.id ?? "");
     setEditFormData({
@@ -208,9 +216,7 @@ export default function Sales_Meetings() {
   };
 
   const handleEditChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setEditFormData((prev) => {
@@ -233,25 +239,21 @@ export default function Sales_Meetings() {
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Updated Meeting Payload:", editFormData);
     mutatuionUpdatemeeting.mutate({ id: editingMeetingId, updatedData: editFormData });
     closeEditModal();
   };
 
-  // update full meeting
-
+  // --- Mutations ---
   const mutatuionUpdatemeeting = useMutation({
-    mutationFn : async ({ id, updatedData }: { id: string; updatedData: IMeeting }) => {
+    mutationFn: async ({ id, updatedData }: { id: string; updatedData: IMeeting }) => {
       const res = await axiosSales.put(`/api/v1/sales/meetings/update-full-meeting/${id}`, updatedData);
       return res.data;
     },
-
-    onSuccess: ()=>{
+    onSuccess: () => {
       refetch();
       setShowNotiUpdate(true);
-    }
-
-  })
+    },
+  });
 
   const mutationUpStatusCNG = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -261,36 +263,11 @@ export default function Sales_Meetings() {
     onSuccess: () => {
       refetch();
     },
-  })
-
-  const handleDeleteMeeting = (meeting: MeetingData) => {
-    // console.log("Delete Meeting:", meeting._id);
-    Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        mutationUpdelete.mutate(meeting?._id as string);
-        Swal.fire({
-          title: "Deleted!",
-          text: "Your file has been deleted.",
-          icon: "success",
-        });
-      }
-    });
-    
-  };
+  });
 
   const mutationUpdelete = useMutation({
     mutationFn: async (id: string) => {
-      const res = await axiosSales.delete(
-        `/api/v1/sales/meetings/delete-meeting/${id}`,
-      );
+      const res = await axiosSales.delete(`/api/v1/sales/meetings/delete-meeting/${id}`);
       return res.data;
     },
     onSuccess: () => {
@@ -298,738 +275,345 @@ export default function Sales_Meetings() {
     },
   });
 
-  // KPI Calculations
+  // --- KPIs & Filtering ---
   const totalMeetings = meetings.length;
-  const upcomingMeetings = meetings.filter(
-    (m) => m.status === "scheduled",
-  ).length;
-  const completedMeetings = meetings.filter(
-    (m) => m.status === "completed",
-  ).length;
-  const cancelledMeetings = meetings.filter(
-    (m) => m.status === "cancelled",
-  ).length;
+  const upcomingMeetings = meetings.filter((m) => m.status === "scheduled").length;
+  const completedMeetings = meetings.filter((m) => m.status === "completed").length;
+  const cancelledMeetings = meetings.filter((m) => m.status === "cancelled").length;
   const filteredMeetings = meetings.filter((m) => m.status === selectedStatus);
 
   return (
     <>
-      <div className="fixed top-4 right-4 z-50">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
         {showNoti && (
-          <Notification
-            type="success"
-            title="Meeting Scheduled!"
-            message="Your meeting has been scheduled successfully."
-            showIcon={true}
-            duration={3000}
-            onClose={() => {
-              setShowNoti(false);
-            }}
-          />
+          <Notification type="success" title="Schedule Confirmed" message="New meeting injected into timeline." showIcon={true} duration={3000} onClose={() => setShowNoti(false)} />
         )}
         {showNotiUpdate && (
-          <Notification
-            type="success"
-            title="Meeting Updated!"
-            message="Your meeting has been updated successfully."
-            showIcon={true}
-            duration={3000}
-            onClose={() => {
-              setShowNotiUpdate(false);
-            }}
-          />
+          <Notification type="success" title="Record Updated" message="Meeting details synced successfully." showIcon={true} duration={3000} onClose={() => setShowNotiUpdate(false)} />
         )}
       </div>
-      <div className=" poppins-regular w-full bg-gray-50/50 p-4 sm:p-6 lg:p-8 font-sans min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+
+      <div className="w-full bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans min-h-screen text-slate-900 antialiased">
+        <div className="max-w-[1400px] mx-auto">
+          
+          {/* --- HEADER --- */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b border-slate-200 pb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                Meeting Center
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage your calendar and upcoming client calls.
-              </p>
+              <p className="text-sm tracking-widest text-[#99B562] uppercase font-bold mb-2">Timeline & Engagements</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Meeting Calendar</h1>
+            </div>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-[#99B562] hover:bg-[#85a052] text-white px-6 py-3 rounded-lg text-base font-semibold transition-colors shadow-sm flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+              Schedule Engagement
+            </button>
+          </div>
+
+          {/* --- KPI METRICS --- */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="bg-white border border-slate-200 p-5 rounded-xl flex items-center justify-between shadow-sm">
+              <div>
+                <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Total Logged</p>
+                <p className="text-3xl font-bold text-slate-800">{totalMeetings}</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              </div>
+            </div>
+            <div className="bg-white border border-[#99B562]/40 p-5 rounded-xl flex items-center justify-between shadow-sm relative overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#99B562]"></div>
+              <div className="pl-3">
+                <p className="text-xs uppercase tracking-wider font-bold text-[#7a914e] mb-1">Upcoming</p>
+                <p className="text-3xl font-bold text-slate-900">{upcomingMeetings}</p>
+              </div>
+            </div>
+            <div className="bg-white border border-slate-200 p-5 rounded-xl flex items-center justify-between shadow-sm">
+              <div>
+                <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Completed</p>
+                <p className="text-3xl font-bold text-slate-800">{completedMeetings}</p>
+              </div>
+            </div>
+            <div className="bg-white border border-slate-200 p-5 rounded-xl flex items-center justify-between shadow-sm">
+              <div>
+                <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Cancelled</p>
+                <p className="text-3xl font-bold text-slate-800">{cancelledMeetings}</p>
+              </div>
             </div>
           </div>
 
-          {/* --- KPI WIDGETS --- */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-full bg-[#99B562]/10 flex items-center justify-center text-[#99B562]">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Total Meetings
-                </h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">
-                {totalMeetings}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Upcoming
-                </h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">
-                {upcomingMeetings}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Completed
-                </h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">
-                {completedMeetings}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Cancelled
-                </h3>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">
-                {cancelledMeetings}
-              </p>
-            </div>
+          {/* --- TABS --- */}
+          <div className="flex gap-8 border-b border-slate-200 mb-8">
+            {["scheduled", "completed", "cancelled"].map((status) => (
+              <button
+                key={status}
+                onClick={() => setSelectedStatus(status as any)}
+                className={`pb-4 text-base font-semibold capitalize transition-colors relative ${
+                  selectedStatus === status ? "text-[#99B562]" : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {status}
+                {selectedStatus === status && (
+                  <span className="absolute bottom-0 left-0 w-full h-1 bg-[#99B562] rounded-t-full"></span>
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* --- MEETING COMPONENT (Form + List) --- */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-            {/* Left: Schedule Form */}
-            <div className="xl:col-span-4">
-              <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden sticky top-6">
-                <div className="bg-white border-b border-gray-100 px-6 py-4">
-                  <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4 text-[#99B562]"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    Schedule Activity
-                  </h2>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-6 space-y-4 text-sm">
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Meeting Title *
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      required
-                      value={formData.title}
-                      onChange={handleChange}
-                      placeholder="e.g. Discovery Call"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Client Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="clientName"
-                      required
-                      value={formData.clientName}
-                      onChange={handleChange}
-                      placeholder="e.g. Liam Smith"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Client Email *
-                    </label>
-                    <input
-                      type="email"
-                      name="clientEmail"
-                      required
-                      value={formData.clientEmail}
-                      onChange={handleChange}
-                      placeholder="e.g. client@example.com"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Date *
-                      </label>
-                      <input
-                        type="date"
-                        name="meetingDate"
-                        required
-                        value={formData.meetingDate}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Time *
-                      </label>
-                      <input
-                        type="time"
-                        name="meetingTime"
-                        required
-                        value={formData.meetingTime}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Meeting Type
-                      </label>
-                      <select
-                        name="meetingType"
-                        value={formData.meetingType}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors"
-                      >
-                        <option value="online">Online</option>
-                        <option value="offline">Offline</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Status
-                      </label>
-                      <select
-                        name="status"
-                        value={formData.status || "scheduled"}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors"
-                      >
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {formData.meetingType === "online" && (
-                    <div>
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Meeting Link
-                      </label>
-                      <input
-                        type="text"
-                        name="meetingLink"
-                        value={formData.meetingLink || ""}
-                        onChange={handleChange}
-                        placeholder="https://meet.google.com/..."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Agenda
-                    </label>
-                    <textarea
-                      name="agenda"
-                      value={formData.agenda || ""}
-                      onChange={handleChange}
-                      rows={2}
-                      placeholder="Outline what will be covered in this meeting."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Notes
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={formData.notes || ""}
-                      onChange={handleChange}
-                      rows={3}
-                      placeholder="Add internal notes or follow-up context."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
-                    />
-                  </div>
-
-                  <div className="pt-4 mt-2 border-t border-gray-100">
-                    <button
-                      type="submit"
-                      className="w-full bg-[#99B562] hover:bg-[#8da857] text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm"
-                    >
-                      Save Meeting
-                    </button>
-                  </div>
-                </form>
+          {/* --- MEETING GRID --- */}
+          <div className="min-h-[400px]">
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center pt-20">
+                <div className="w-8 h-8 border-4 border-slate-200 border-t-[#99B562] rounded-full animate-spin"></div>
+                <span className="mt-4 text-sm tracking-wider text-slate-500 uppercase font-bold">Syncing Timeline...</span>
               </div>
-            </div>
+            )}
 
-            {/* Right: Meeting List */}
-            <div className="xl:col-span-8 mt-8 xl:mt-0">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">
-                  Meeting Timeline
-                </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSelectedStatus("scheduled")}
-                    className={`text-sm px-3 py-1.5 border rounded-md font-medium transition-colors ${selectedStatus === "scheduled" ? "border-[#99B562] bg-[#99B562] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
-                  >
-                    Scheduled
-                  </button>
-                  <button
-                    onClick={() => setSelectedStatus("completed")}
-                    className={`text-sm px-3 py-1.5 border rounded-md font-medium transition-colors ${selectedStatus === "completed" ? "border-[#99B562] bg-[#99B562] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
-                  >
-                    Completed
-                  </button>
-                  <button
-                    onClick={() => setSelectedStatus("cancelled")}
-                    className={`text-sm px-3 py-1.5 border rounded-md font-medium transition-colors ${selectedStatus === "cancelled" ? "border-[#99B562] bg-[#99B562] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
-                  >
-                    Cancelled
-                  </button>
-                </div>
+            {isError && !isLoading && (
+              <div className="p-10 text-center border border-red-200 bg-red-50 rounded-xl mt-10 max-w-lg mx-auto">
+                <p className="text-lg font-bold text-red-700">Sync Failure</p>
+                <p className="text-sm text-red-600 mt-2">Unable to establish timeline connection.</p>
               </div>
+            )}
 
-              <div className="space-y-4">
-                {isLoading && (
-                  <div className="text-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
-                    <p className="text-gray-500">Loading meetings...</p>
-                  </div>
-                )}
+            {!isLoading && !isError && filteredMeetings.length === 0 && (
+              <div className="p-16 text-center border-2 border-dashed border-slate-300 bg-white rounded-xl mt-10">
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Registry Empty</p>
+                <p className="text-base text-slate-500 mt-2">No records match the <span className="font-semibold text-slate-700">{selectedStatus}</span> state.</p>
+              </div>
+            )}
 
-                {isError && !isLoading && (
-                  <div className="text-center p-12 bg-white rounded-xl border border-dashed border-rose-300">
-                    <p className="text-rose-500">
-                      Unable to load meetings from the database.
-                    </p>
-                  </div>
-                )}
-
-                {!isLoading && !isError && filteredMeetings.length === 0 ? (
-                  <div className="text-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
-                    <p className="text-gray-500">
-                      No {selectedStatus} meetings found.
-                    </p>
-                  </div>
-                ) : !isLoading && !isError ? (
-                  filteredMeetings.map((meeting) => (
-                    <div
-                      key={meeting._id ?? meeting.id}
-                      className={`bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group ${meeting.status === "completed" ? "border-gray-200 bg-gray-50/50" : "border-gray-200"}`}
-                    >
-                      {/* Dynamic Accent Line */}
-                      <div
-                        className={`absolute left-0 top-0 bottom-0 w-1 ${meeting.status === "scheduled" ? "bg-[#99B562]" : "bg-slate-300"}`}
-                      ></div>
-
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-start pl-2 gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${meeting.status === "scheduled" ? "bg-[#99B562]/10 text-[#7a914e] border-[#99B562]/20" : "bg-slate-100 text-slate-600 border-slate-200"}`}
-                            >
-                              {meeting.status}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                              • {meeting.meetingType}
-                            </span>
-                          </div>
-
-                          <h4 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-[#99B562] transition-colors cursor-pointer">
-                            {meeting.title}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-2">
-                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                              {(meeting.clientName || "NA")
-                                .substring(0, 2)
-                                .toUpperCase()}
-                            </div>
-                            <p className="text-sm font-medium text-gray-600">
-                              <span className="text-gray-900">
-                                {meeting.clientName}
-                              </span>
-                              {meeting.clientEmail && (
-                                <span className="text-gray-400 ml-2 text-xs">
-                                  {meeting.clientEmail}
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                          {meeting.agenda && (
-                            <p className="text-xs text-gray-500 mt-1 max-w-2xl">
-                              <span className="font-semibold">Agenda:</span>{" "}
-                              {meeting.agenda}
-                            </p>
-                          )}
-                          {meeting.notes && (
-                            <p className="text-sm text-gray-600 mt-1 max-w-2xl">
-                              {meeting.notes}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Date Block */}
-                        <div className="bg-white border border-gray-100 shadow-sm rounded-lg p-3 text-center min-w-22.5 shrink-0">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {new Date(meeting.meetingDate).toLocaleString(
-                              "default",
-                              { month: "short" },
-                            )}
-                          </p>
-                          <p className="text-2xl font-black text-gray-800 leading-none my-1">
-                            {new Date(meeting.meetingDate).getDate()}
-                          </p>
-                          <p className="text-[11px] font-bold text-gray-500">
-                            {meeting.meetingTime}
-                          </p>
-                        </div>
+            {!isLoading && !isError && filteredMeetings.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredMeetings.map((meeting) => (
+                  <div key={meeting._id ?? meeting.id} className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col transition-all hover:border-slate-300 hover:shadow-md group">
+                    
+                    {/* Card Header */}
+                    <div className="flex justify-between items-start mb-6">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-md uppercase tracking-wider border ${
+                        meeting.status === "scheduled" ? "bg-[#99B562]/10 text-[#7a914e] border-[#99B562]/20" :
+                        meeting.status === "completed" ? "bg-slate-100 text-slate-700 border-slate-200" :
+                        "bg-red-50 text-red-700 border-red-200"
+                      }`}>
+                        {meeting.status}
+                      </span>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-slate-900">
+                          {new Date(meeting.meetingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        <p className="text-xs font-mono text-slate-500 mt-0.5">{meeting.meetingTime}</p>
                       </div>
+                    </div>
 
-                      <div className="mt-5 pt-3 border-t border-gray-50 pl-2 flex justify-between items-center">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <svg
-                            className="w-4 h-4 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                            ></path>
-                          </svg>
-                          {meeting.meetingLink ? (
-                            meeting.meetingLink.startsWith("http") ? (
-                              <a
-                                href={meeting.meetingLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[#99B562] hover:underline font-medium truncate max-w-50 sm:max-w-xs block"
-                              >
-                                {meeting.meetingLink}
-                              </a>
-                            ) : (
-                              <span>{meeting.meetingLink}</span>
-                            )
-                          ) : (
-                            <span className="text-gray-400 italic">
-                              No link — offline meeting
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleDeleteMeeting(meeting)}
-                            className="p-1.5 text-rose-500 hover:text-rose-700 rounded-md hover:bg-rose-50 transition-colors"
-                            aria-label="Delete meeting"
-                            title="Delete meeting"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"
-                              ></path>
-                            </svg>
-                          </button>
-                        </div>
+                    {/* Content */}
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-slate-900 leading-tight mb-2">{meeting.title}</h3>
+                      <div className="flex items-center gap-2 text-sm text-slate-600 mb-5">
+                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        <span className="font-semibold text-slate-800">{meeting.clientName}</span>
                       </div>
+                      
+                      {meeting.agenda && (
+                        <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed mb-4">
+                          <span className="font-bold text-slate-800">Agenda:</span> {meeting.agenda}
+                        </p>
+                      )}
 
-                      {meeting.status === "scheduled" && (
-                        <div className="mt-4 pt-3 border-t border-gray-100 pl-2 flex flex-wrap gap-2">
-                          <button
-                            onClick={() => handleCompleteMeeting(meeting)}
-                            className="text-xs px-3 py-1.5 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors font-medium"
-                          >
-                            Complete
-                          </button>
-                          <button
-                            onClick={() => handleCancelMeeting(meeting)}
-                            className="text-xs px-3 py-1.5 rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors font-medium"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleUpdateMeeting(meeting)}
-                            className="text-xs px-3 py-1.5 rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors font-medium"
-                          >
-                            Update Meeting
-                          </button>
-                        </div>
+                      {meeting.meetingType === 'online' && meeting.meetingLink && (
+                         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm truncate">
+                           <a href={meeting.meetingLink} target="_blank" rel="noreferrer" className="text-[#99B562] font-mono font-medium hover:underline">
+                             {meeting.meetingLink}
+                           </a>
+                         </div>
                       )}
                     </div>
-                  ))
-                ) : null}
+
+                    {/* Actions Footer */}
+                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <div className="flex gap-3">
+                        {meeting.status === "scheduled" && (
+                          <>
+                            <button onClick={() => handleCompleteMeeting(meeting)} className="text-xs font-bold text-slate-500 hover:text-[#99B562] uppercase tracking-wider transition-colors">Complete</button>
+                            <span className="text-slate-300">|</span>
+                            <button onClick={() => handleCancelMeeting(meeting)} className="text-xs font-bold text-slate-500 hover:text-red-500 uppercase tracking-wider transition-colors">Cancel</button>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={() => handleUpdateMeeting(meeting)} className="text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 p-2 rounded-md transition-colors" title="Edit">
+                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button onClick={() => handleDeleteMeeting(meeting)} className="text-slate-500 hover:text-red-600 bg-slate-50 hover:bg-red-50 p-2 rounded-md transition-colors" title="Delete">
+                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      {/* --- SCHEDULE CREATE MODAL --- */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setIsCreateModalOpen(false)}></div>
+          
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-start bg-slate-50">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Update Meeting</h3>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Edit details and confirm to update this meeting.
-                </p>
+                <h2 className="text-xl font-bold text-slate-900">Schedule Encounter</h2>
+                <p className="text-sm text-slate-500 mt-1">Initialize a new meeting configuration block.</p>
               </div>
-              <button
-                type="button"
-                onClick={closeEditModal}
-                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                aria-label="Close update meeting modal"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  ></path>
-                </svg>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-900 p-2 rounded-md transition-colors bg-white border border-slate-200 hover:bg-slate-100">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+               <div className="sm:col-span-2">
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Event Header <span className="text-red-500">*</span></label>
+                 <input type="text" name="title" required value={formData.title} onChange={handleChange} placeholder="e.g. Discovery & Sync" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
+
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Target Client <span className="text-red-500">*</span></label>
+                 <input type="text" name="clientName" required value={formData.clientName} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
+
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Contact Email <span className="text-red-500">*</span></label>
+                 <input type="email" name="clientEmail" required value={formData.clientEmail} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
+
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Date <span className="text-red-500">*</span></label>
+                 <input type="date" name="meetingDate" required value={formData.meetingDate} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
+
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Time <span className="text-red-500">*</span></label>
+                 <input type="time" name="meetingTime" required value={formData.meetingTime} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
+
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Medium</label>
+                 <select name="meetingType" value={formData.meetingType} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors bg-white cursor-pointer">
+                   <option value="online">Virtual / Online</option>
+                   <option value="offline">In-Person / Offline</option>
+                 </select>
+               </div>
+
+               {formData.meetingType === "online" && (
+                 <div className="sm:col-span-2">
+                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">URI Meeting Link</label>
+                   <input type="text" name="meetingLink" value={formData.meetingLink || ""} onChange={handleChange} placeholder="https://meet.google.com/..." className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+                 </div>
+               )}
+
+               <div className="sm:col-span-2">
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Discussion Agenda</label>
+                 <textarea name="agenda" rows={3} value={formData.agenda || ""} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 resize-none transition-colors" />
+               </div>
+
+               <div className="sm:col-span-2">
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Internal Notes</label>
+                 <textarea name="notes" rows={2} value={formData.notes || ""} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 resize-none transition-colors" />
+               </div>
+               
+               <div className="sm:col-span-2 pt-6 mt-2 border-t border-slate-200 flex justify-end gap-4">
+                 <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-3 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors border border-transparent hover:border-slate-300 rounded-lg">Discard</button>
+                 <button type="submit" className="px-6 py-3 rounded-lg text-base font-bold text-white bg-[#99B562] hover:bg-[#85a052] transition-colors shadow-sm">Commit Schedule</button>
+               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- EDIT MODAL --- */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="absolute inset-0" onClick={closeEditModal}></div>
+          
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-start bg-slate-50">
               <div>
-                <label className="block font-medium text-gray-700 mb-1">Meeting Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  required
-                  value={editFormData.title}
-                  onChange={handleEditChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                />
+                <h2 className="text-xl font-bold text-slate-900">Modify Encounter</h2>
+                <p className="text-sm text-slate-500 mt-1">Edit attributes for the existing block.</p>
               </div>
+              <button onClick={closeEditModal} className="text-slate-400 hover:text-slate-900 p-2 rounded-md transition-colors bg-white border border-slate-200 hover:bg-slate-100">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
 
-              <div>
-                <label className="block font-medium text-gray-700 mb-1">Client Name *</label>
-                <input
-                  type="text"
-                  name="clientName"
-                  required
-                  value={editFormData.clientName}
-                  onChange={handleEditChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                />
-              </div>
+            <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+               <div className="sm:col-span-2">
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Event Header <span className="text-red-500">*</span></label>
+                 <input type="text" name="title" required value={editFormData.title} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
 
-              <div>
-                <label className="block font-medium text-gray-700 mb-1">Client Email *</label>
-                <input
-                  type="email"
-                  name="clientEmail"
-                  required
-                  value={editFormData.clientEmail}
-                  onChange={handleEditChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                />
-              </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Target Client <span className="text-red-500">*</span></label>
+                 <input type="text" name="clientName" required value={editFormData.clientName} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-gray-700 mb-1">Date *</label>
-                  <input
-                    type="date"
-                    name="meetingDate"
-                    required
-                    value={editFormData.meetingDate}
-                    onChange={handleEditChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block font-medium text-gray-700 mb-1">Time *</label>
-                  <input
-                    type="time"
-                    name="meetingTime"
-                    required
-                    value={editFormData.meetingTime}
-                    onChange={handleEditChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                  />
-                </div>
-              </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Contact Email <span className="text-red-500">*</span></label>
+                 <input type="email" name="clientEmail" required value={editFormData.clientEmail} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
 
-              <div>
-                <label className="block font-medium text-gray-700 mb-1">Meeting Type</label>
-                <select
-                  name="meetingType"
-                  value={editFormData.meetingType}
-                  onChange={handleEditChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors"
-                >
-                  <option value="online">Online</option>
-                  <option value="offline">Offline</option>
-                </select>
-              </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Date <span className="text-red-500">*</span></label>
+                 <input type="date" name="meetingDate" required value={editFormData.meetingDate} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
 
-              <div>
-                <label className="block font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  name="status"
-                  value={editFormData.status || "scheduled"}
-                  onChange={handleEditChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none bg-white transition-colors"
-                >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Time <span className="text-red-500">*</span></label>
+                 <input type="time" name="meetingTime" required value={editFormData.meetingTime} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+               </div>
 
-              {editFormData.meetingType === "online" && (
-                <div className="md:col-span-2">
-                  <label className="block font-medium text-gray-700 mb-1">Meeting Link</label>
-                  <input
-                    type="text"
-                    name="meetingLink"
-                    value={editFormData.meetingLink || ""}
-                    onChange={handleEditChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors"
-                  />
-                </div>
-              )}
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Medium</label>
+                 <select name="meetingType" value={editFormData.meetingType} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors bg-white cursor-pointer">
+                   <option value="online">Virtual / Online</option>
+                   <option value="offline">In-Person / Offline</option>
+                 </select>
+               </div>
 
-              <div className="md:col-span-2">
-                <label className="block font-medium text-gray-700 mb-1">Agenda</label>
-                <textarea
-                  name="agenda"
-                  rows={2}
-                  value={editFormData.agenda || ""}
-                  onChange={handleEditChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
-                />
-              </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Action State</label>
+                 <select name="status" value={editFormData.status || "scheduled"} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors bg-white cursor-pointer">
+                   <option value="scheduled">Active Scheduled</option>
+                   <option value="completed">Completed</option>
+                   <option value="cancelled">Cancelled</option>
+                 </select>
+               </div>
 
-              <div className="md:col-span-2">
-                <label className="block font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  name="notes"
-                  rows={3}
-                  value={editFormData.notes || ""}
-                  onChange={handleEditChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] outline-none transition-colors resize-none"
-                />
-              </div>
+               {editFormData.meetingType === "online" && (
+                 <div className="sm:col-span-2">
+                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">URI Meeting Link</label>
+                   <input type="text" name="meetingLink" value={editFormData.meetingLink || ""} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 transition-colors" />
+                 </div>
+               )}
 
-              <div className="md:col-span-2 pt-4 mt-2 border-t border-gray-100 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg bg-[#99B562] hover:bg-[#8da857] text-white font-medium transition-colors shadow-sm"
-                >
-                  Update Meeting
-                </button>
-              </div>
+               <div className="sm:col-span-2">
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Discussion Agenda</label>
+                 <textarea name="agenda" rows={3} value={editFormData.agenda || ""} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 resize-none transition-colors" />
+               </div>
+
+               <div className="sm:col-span-2">
+                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Internal Notes</label>
+                 <textarea name="notes" rows={2} value={editFormData.notes || ""} onChange={handleEditChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/30 resize-none transition-colors" />
+               </div>
+               
+               <div className="sm:col-span-2 pt-6 mt-2 border-t border-slate-200 flex justify-end gap-4">
+                 <button type="button" onClick={closeEditModal} className="px-5 py-3 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors border border-transparent hover:border-slate-300 rounded-lg">Discard Changes</button>
+                 <button type="submit" className="px-6 py-3 rounded-lg text-base font-bold text-white bg-[#99B562] hover:bg-[#85a052] transition-colors shadow-sm">Update Block</button>
+               </div>
             </form>
           </div>
         </div>

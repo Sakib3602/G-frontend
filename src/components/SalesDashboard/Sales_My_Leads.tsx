@@ -35,7 +35,7 @@ export interface IMeeting {
   meetingLink?: string;
   agenda?: string;
   notes?: string;
-  status?: "scheduled" | "completed" | "cancelled" ;
+  status?: "scheduled" | "completed" | "cancelled";
   schedulerId: string;
 }
 
@@ -43,32 +43,19 @@ export interface IMeeting {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Contacted":
-      return "bg-orange-400 text-white";
+      return "bg-orange-50 text-orange-700 border-orange-200";
     case "New Lead":
-      return "bg-blue-500 text-white";
+      return "bg-blue-50 text-blue-700 border-blue-200";
     case "Attempted to contact":
-      return "bg-pink-400 text-white";
+      return "bg-pink-50 text-pink-700 border-pink-200";
     case "In Progress":
-      return "bg-purple-500 text-white";
+      return "bg-purple-50 text-purple-700 border-purple-200";
     case "Qualified":
-      return "bg-emerald-500 text-white";
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
     case "Unqualified":
-      return "bg-red-500 text-white";
+      return "bg-red-50 text-red-700 border-red-200";
     default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-const getScoreColor = (score: string) => {
-  switch (score) {
-    case "3":
-      return "bg-green-100 text-gray-800";
-    case "2":
-      return "bg-orange-100 text-gray-800";
-    case "1":
-      return "bg-yellow-100 text-gray-800";
-    default:
-      return "bg-white text-gray-800";
+      return "bg-slate-100 text-slate-700 border-slate-200";
   }
 };
 
@@ -80,6 +67,7 @@ const statusOptions = [
   "In Progress",
   "Unqualified",
 ];
+
 // form
 const createMeetingForm = (lead?: LeadData | null): IMeeting => ({
   title: "",
@@ -105,20 +93,18 @@ export default function Sales_My_Leads() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [sortBy, setSortBy] = useState("Newest");
+  
+  // Meeting Modal State
   const [meetingLead, setMeetingLead] = useState<LeadData | null>(null);
   const [meetingForm, setMeetingForm] = useState<IMeeting>(createMeetingForm());
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [isMeetingConflict, setIsMeetingConflict] = useState(false);
 
-
+  // Details Modal State
+  const [selectedLeadDetails, setSelectedLeadDetails] = useState<LeadData | null>(null);
 
   const queryClient = useQueryClient();
-
-  const {userData} = useUserData()
-
-
-
-  
+  const { userData } = useUserData();
 
   // --- Data Fetching ---
   const {
@@ -132,7 +118,6 @@ export default function Sales_My_Leads() {
       return res.data.leads as LeadData[];
     },
   });
-  
 
   // --- Search, Filter, and Sort Logic ---
   const processedLeads = useMemo(() => {
@@ -176,32 +161,19 @@ export default function Sales_My_Leads() {
     return result;
   }, [leadsData, searchQuery, filterStatus, sortBy]);
 
-  //  download as CSV
+  // download as CSV
   const downloadCSV = () => {
     if (!leadsData || leadsData.length === 0) return;
-
-    // 1️⃣ Create CSV header
     const header = Object.keys(leadsData[0]).join(",") + "\n";
-
-    // 2️⃣ Map rows
     const rows = leadsData
-      .map((row) =>
-        Object.values(row)
-          .map((value) => `"${value}"`) // wrap values in quotes
-          .join(","),
-      )
+      .map((row) => Object.values(row).map((value) => `"${value}"`).join(","))
       .join("\n");
-
-    // 3️⃣ Combine header + rows
     const csvContent = header + rows;
-
-    // 4️⃣ Create blob and trigger download
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
-    link.download = "export.csv";
+    link.download = `My-leads-${new Date().toISOString().split("T")[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -218,9 +190,7 @@ export default function Sales_My_Leads() {
       !meetingForm.meetingDate ||
       !meetingForm.meetingTime
     ) {
-      setMeetingError(
-        "Please complete the required fields before submitting the meeting.",
-      );
+      setMeetingError("Please complete the required fields before submitting the meeting.");
       return;
     }
 
@@ -228,10 +198,7 @@ export default function Sales_My_Leads() {
     const payload: IMeeting = {
       ...meetingForm,
       leadId: resolvedLeadId,
-      meetingLink:
-        meetingForm.meetingType === "online"
-          ? meetingForm.meetingLink?.trim() || undefined
-          : undefined,
+      meetingLink: meetingForm.meetingType === "online" ? meetingForm.meetingLink?.trim() || undefined : undefined,
       agenda: meetingForm.agenda?.trim() || undefined,
       notes: meetingForm.notes?.trim() || undefined,
       status: meetingForm.status || "scheduled",
@@ -239,21 +206,14 @@ export default function Sales_My_Leads() {
     };
 
     setMeetingError(null);
-
-    // console.log("Meeting scheduled:", payload);
     mutationUpformeeting.mutate(payload);
-
-    // TODO: API call to save meeting
     setMeetingLead(null);
     setMeetingForm(createMeetingForm());
   };
 
   const mutationUpformeeting = useMutation({
     mutationFn: async (meetingData: IMeeting) => {
-      const res = await axiosSales.post(
-        "/api/v1/sales/meetings/create-meeting",
-        meetingData,
-      );
+      const res = await axiosSales.post("/api/v1/sales/meetings/create-meeting", meetingData);
       return res.data;
     },
     onSuccess: () => {
@@ -262,13 +222,8 @@ export default function Sales_My_Leads() {
     },
   });
 
-  const handleMeetingFormChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
+  const handleMeetingFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-
     setMeetingForm((prev) => {
       if (name === "meetingType") {
         return {
@@ -277,14 +232,12 @@ export default function Sales_My_Leads() {
           meetingLink: value === "online" ? prev.meetingLink : "",
         };
       }
-
       if (name === "status") {
         return {
           ...prev,
           status: value as IMeeting["status"],
         };
       }
-
       return {
         ...prev,
         [name]: value,
@@ -292,44 +245,33 @@ export default function Sales_My_Leads() {
     });
   };
 
-  const openMeetingPopup = (lead: LeadData, source: "fix" | "confirm") => {
-    console.log("Meeting popup opened:", { source, lead });
-    console.log("Selected lead ID:", lead._id || lead.id);
+  const openMeetingPopup = (lead: LeadData) => {
     MutationForCkMeeting.mutate(lead._id || lead.id);
     setMeetingError(null);
     setMeetingLead(lead);
     setMeetingForm(createMeetingForm(lead));
   };
 
-  // kaj baki meeting conflit check koira show kora ........
- 
-
   const MutationForCkMeeting = useMutation({
     mutationFn: async (leadId: string) => {
-      const res = await axiosSales.get(
-        `/api/v1/sales/meetings/check-meeting/${leadId}`,
-      );
+      const res = await axiosSales.get(`/api/v1/sales/meetings/check-meeting/${leadId}`);
       return res.data;
     },
     onSuccess: (data) => {
-      console.log("Check meeting response:", data.meeting);
       setIsMeetingConflict(data.meeting);
     },
   });
 
   const handleInlineStatusChange = (leadId: string, newStatus: string) => {
-    console.log(`Lead ID: ${leadId} | New Status: ${newStatus}`);
     MutationUpForStatusUpdate.mutate({ leadId, status: newStatus });
-
   };
 
-  // status update
   const MutationUpForStatusUpdate = useMutation({
     mutationFn: async ({ leadId, status }: { leadId: string; status: string }) => {
       const res = await axiosSales.put(`/api/v1/sales/update-lead-status/${leadId}`, { status });
       return res.data;
     },
-    onSuccess: ()=>{
+    onSuccess: () => {
       setShowNotiStatusUpdate(true);
       queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
     }
@@ -338,27 +280,25 @@ export default function Sales_My_Leads() {
   // --- Loading / Error States ---
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600 font-medium">Loading leads...</span>
+      <div className="flex flex-col justify-center items-center min-h-screen bg-white">
+        <div className="w-5 h-5 border-2 border-slate-200 border-t-[#99B562] rounded-full animate-spin"></div>
+        <span className="mt-3 text-xs tracking-wider text-slate-400 uppercase font-medium">Fetching Directory...</span>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="p-6 mt-10 max-w-lg mx-auto bg-red-50 border border-red-200 rounded-lg text-center text-red-600">
-        <p className="font-semibold">Error fetching leads data.</p>
-        <p className="text-sm mt-1">
-          Please check your connection and try again.
-        </p>
+      <div className="p-8 max-w-md mx-auto mt-20 border border-red-100 rounded-lg text-center bg-white">
+        <p className="text-sm font-semibold text-red-600">Connection Failed</p>
+        <p className="text-xs text-slate-400 mt-1">Unable to interface with the ledger backend.</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 space-y-2">
         {showNoti && (
           <Notification
             type="success"
@@ -366,620 +306,378 @@ export default function Sales_My_Leads() {
             message="Your meeting has been scheduled successfully."
             showIcon={true}
             duration={3000}
-            onClose={() => {
-              setShowNoti(false);
-            }}
+            onClose={() => setShowNoti(false)}
           />
         )}
         {showNotiStatusUpdate && (
           <Notification
             type="success"
             title="Status Updated!"
-            message="Lead status has been updated successfully."
+            message="Lead operational status has synced cleanly."
             showIcon={true}
             duration={3000}
-            onClose={() => {
-              setShowNotiStatusUpdate(false);
-            }}
+            onClose={() => setShowNotiStatusUpdate(false)}
           />
         )}
       </div>
 
-      <div className="poppins-regular w-full min-h-screen bg-gray-50/50 p-6 font-sans">
-        {/* --- HEADER SECTION --- */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              My Leads
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Review your assigned leads, update status, and schedule follow-ups.
-            </p>
-            <p className="text-xs font-medium text-gray-600 mt-2">
-              Total Leads: <span className="text-gray-900">{leadsData.length}</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={downloadCSV}
-              className="cursor-pointer px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
-            >
-              Export CSV
-            </button>
-            <Link to={"/dashboard/sales/create-leads"}>
-              <button className="px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm">
-                + Add New Lead
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {/* --- CONTROLS SECTION (Search, Filter, Sort) --- */}
-        <div className="mb-6 p-4 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center">
-          {/* Search Bar */}
-          <div className="relative w-full lg:max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg
-                className="h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+      <div className="w-full min-h-screen bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans text-slate-900 antialiased">
+        <div className="max-w-[1400px] mx-auto">
+          
+          {/* --- MINIMAL HEADER --- */}
+          <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
+            <div>
+              <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">CRM Directory</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Assigned Leads</h1>
+              <p className="text-sm text-slate-500 mt-1">Total active entries: <span className="font-semibold text-slate-800">{leadsData.length}</span></p>
             </div>
-            <input
-              type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-              placeholder="Search leads by name, company, or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={downloadCSV}
+                className="px-4 py-2 bg-white border border-slate-200 rounded text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-xs"
+              >
+                Export CSV Data
+              </button>
+              <Link to={"/dashboard/sales/create-leads"}>
+                <button className="px-4 py-2 bg-[#99B562] rounded text-xs font-semibold text-white hover:bg-[#85a052] transition-colors shadow-xs flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
+                  New Lead Entry
+                </button>
+              </Link>
+            </div>
           </div>
 
-          {/* Filter & Sort Dropdowns */}
-          <div className="flex w-full lg:w-auto gap-3">
-            {/* Filter */}
-            <div className="flex items-center gap-2 flex-1 lg:flex-none">
-              <label className="text-sm font-medium text-gray-600 hidden sm:block">
-                Status:
-              </label>
+          {/* --- CONTROLS SECTION --- */}
+          <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between items-center">
+            {/* Search Bar */}
+            <div className="relative w-full lg:max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-md text-sm bg-white placeholder-slate-400 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
+                placeholder="Search queries..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Filter & Sort Dropdowns */}
+            <div className="flex w-full lg:w-auto gap-3">
               <select
-                className="w-full block pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg bg-gray-50 hover:bg-white cursor-pointer transition-colors"
+                className="block w-full lg:w-auto pl-3 pr-8 py-2 text-sm border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 shadow-xs cursor-pointer appearance-none"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
-                <option value="All">All Statuses</option>
+                <option value="All">Filter: All Statuses</option>
                 <option value="New Lead">New Lead</option>
-                <option value="Attempted to contact">
-                  Attempted to contact
-                </option>
+                <option value="Attempted to contact">Attempted</option>
                 <option value="Contacted">Contacted</option>
-                
               </select>
-            </div>
 
-            {/* Sort */}
-            <div className="flex items-center gap-2 flex-1 lg:flex-none">
-              <label className="text-sm font-medium text-gray-600 hidden sm:block">
-                Sort:
-              </label>
               <select
-                className="w-full block pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg bg-gray-50 hover:bg-white cursor-pointer transition-colors"
+                className="block w-full lg:w-auto pl-3 pr-8 py-2 text-sm border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 shadow-xs cursor-pointer appearance-none"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
-                <option value="Newest">All</option>
+                <option value="Newest">Sort: Default</option>
                 <option value="Name (A-Z)">Name (A-Z)</option>
                 <option value="Name (Z-A)">Name (Z-A)</option>
-                <option value="Score (High to Low)">Score (High to Low)</option>
-                <option value="Score (Low to High)">Score (Low to High)</option>
+                <option value="Score (High to Low)">Score: Highest</option>
+                <option value="Score (Low to High)">Score: Lowest</option>
               </select>
             </div>
           </div>
-        </div>
 
-        {/* --- TABLE SECTION --- */}
-        <div className="overflow-x-auto bg-white border border-gray-200 shadow-sm">
-          <table className="min-w-full border-collapse border border-gray-200 text-sm text-center whitespace-nowrap">
-            <thead className="bg-white border-b border-gray-200">
-              <tr>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 text-left">
-                  Lead
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-[1%] whitespace-nowrap">
-                  Fix Meeting
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-40 ">
-                  Status
-                </th>
-                
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-40">
-                  Indications
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600">
-                  Company Name
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-24">
-                  Lead score
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600">
-                  Email
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600">
-                  Phone
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-32">
-                  Title
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600">
-                  Specific role
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-24">
-                  Region
-                </th>
-                <th className="p-3 border-r border-gray-200 font-medium text-gray-600 w-32">
-                  Service
-                </th>
-                
-                
-              </tr>
-            </thead>
-            <tbody>
-              {processedLeads.length === 0 && !isLoading && (
+          {/* --- MINIMAL TABLE SECTION --- */}
+          <div className="overflow-x-auto bg-white border border-slate-200 shadow-sm rounded-lg">
+            <table className="min-w-full text-sm text-left whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <td
-                    colSpan={12}
-                    className="p-8 text-center text-gray-500 border-r border-gray-200"
-                  >
-                    No leads found matching your criteria.
-                  </td>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Lead Registry</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500 w-[1%]">Operations</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500 w-44">Pipeline Status</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Enterprise</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Email Address</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Contact No.</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Service Category</th>
                 </tr>
-              )}
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {processedLeads.length === 0 && !isLoading && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400 text-xs">No records matched your search parameters.</td>
+                  </tr>
+                )}
 
-              {processedLeads.map((lead) => (
-                <tr
-                  key={lead.id}
-                  className="border-b border-gray-200 hover:bg-gray-50 group"
-                >
-                  <td className="p-2 border-r border-gray-200 text-left">
-                    <div className="flex items-center justify-between">
-                      <a
-                        href={lead.profileUrl}
-                        className="text-gray-800 hover:underline"
+                {processedLeads.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <td className="px-5 py-3">
+                      <button 
+                        onClick={() => setSelectedLeadDetails(lead)}
+                        className="font-semibold text-slate-800 hover:text-[#99B562] transition-colors focus:outline-none flex items-center gap-2"
                       >
                         {lead.leadName}
-                      </a>
-                      <button className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
+                        <svg className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-[#99B562]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                       </button>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="p-1 border-r border-gray-200 w-[1%] whitespace-nowrap">
-                    <div className="flex items-center justify-center">
+                    <td className="px-5 py-3 w-[1%]">
                       <button
-                        onClick={() => openMeetingPopup(lead, "confirm")}
-                        className="inline-flex w-fit whitespace-nowrap px-2.5 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors"
+                        onClick={() => openMeetingPopup(lead)}
+                        className="whitespace-nowrap px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition-all shadow-xs"
                       >
-                        Confirm
+                        Schedule
                       </button>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* --- CHANGED: Status is now an invisible dropdown filling the colored cell --- */}
-                  <td
-                    className={`p-0 border-r border-gray-200 w-40 min-w-40 max-w-40 ${getStatusColor(lead.status)} relative`}
-                  >
-                    <select
-                      value={lead.status}
-                      onChange={(e) =>
-                        handleInlineStatusChange(lead._id, e.target.value)
-                      }
-                      className={`w-full h-full min-h-10 appearance-none bg-transparent outline-none cursor-pointer text-center font-medium pr-6 px-2 ${getStatusColor(lead.status)}`}
-                    >
-                      {statusOptions.map((opt) => (
-                        <option
-                          key={opt}
-                          value={opt}
-                          className="bg-white text-gray-800 text-left"
+                    <td className="px-5 py-3 w-44">
+                      <div className={`relative w-full rounded border px-2 py-1 flex items-center ${getStatusColor(lead.status)}`}>
+                        <select
+                          value={lead.status}
+                          onChange={(e) => handleInlineStatusChange(lead._id, e.target.value)}
+                          className="w-full appearance-none bg-transparent outline-none cursor-pointer text-xs font-semibold pr-4"
                         >
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                    {/* Small absolute icon to indicate it's a dropdown, styling respects text color */}
-                    <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center px-1">
-                      <svg
-                        className="fill-current h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
-                  </td>
+                          {statusOptions.map((opt) => (
+                            <option key={opt} value={opt} className="bg-white text-slate-800">{opt}</option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                          <svg className="fill-current h-3 w-3 opacity-60" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                        </div>
+                      </div>
+                    </td>
 
-                  <td
-                    className={`p-2 border-r border-gray-200 ${lead.indications === "Existing Account" ? "bg-green-100" : "bg-white"} text-gray-700`}
-                  >
-                    {lead.indications}
-                  </td>
-                  <td className="p-2 border-r border-gray-200 text-gray-700">
-                    {lead.companyName}
-                  </td>
-                  <td
-                    className={`p-2 border-r border-gray-200 ${getScoreColor(lead.leadScore)} font-medium`}
-                  >
-                    {lead.leadScore}
-                  </td>
-                  <td className="p-2 border-r border-gray-200">
-                    <a
-                      href={`mailto:${lead.email}`}
-                      className="text-blue-500 hover:underline"
-                    >
-                      {lead.email}
-                    </a>
-                  </td>
-                  <td className="p-2 border-r border-gray-200 text-gray-600">
-                    {lead.phone}
-                  </td>
-                  <td
-                    className={`p-2 border-r border-gray-200 bg-teal-400 text-white`}
-                  >
-                    {lead.title}
-                  </td>
-                  <td className="p-2 border-r border-gray-200 text-gray-700">
-                    {lead.specificRole}
-                  </td>
-                  <td
-                    className={`p-2 border-r border-gray-200 bg-purple-400 text-white`}
-                  >
-                    {lead.region}
-                  </td>
-                  <td className="p-2 border-r border-gray-200 text-gray-700">
-                    {lead.ServiceNeed || "Graphic"}
-                  </td>
-                </tr>
-              ))}
-
-              {!isLoading && (
-                <tr>
-                  <td colSpan={12} className="p-0 border-t border-gray-200">
-                    <Link
-                      to={"/dashboard/sales/create-leads"}
-                      className="block w-full p-2 text-left text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      + Add lead
-                    </Link>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <td className="px-5 py-3 text-slate-600 font-medium text-xs">{lead.companyName || '—'}</td>
+                    
+                    <td className="px-5 py-3">
+                      <a href={`mailto:${lead.email}`} className="text-slate-500 hover:text-slate-900 text-xs font-mono transition-colors">
+                        {lead.email || '—'}
+                      </a>
+                    </td>
+                    
+                    <td className="px-5 py-3 text-slate-500 text-xs font-mono">{lead.phone || '—'}</td>
+                    
+                    <td className="px-5 py-3">
+                      <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider">
+                        {lead.ServiceNeed || "General"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* --- FIX MEETING MODAL --- */}
-      {meetingLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl relative overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
-            <div className="absolute top-0 left-0 w-full h-1 bg-[#99B562]"></div>
-            <div className="px-6 sm:px-8 pt-6 pb-4 flex justify-between items-start border-b border-slate-100 bg-linear-to-br from-slate-50 to-white">
+      {/* --- LEAD DETAILS MODAL --- */}
+      {selectedLeadDetails && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="absolute inset-0" onClick={() => setSelectedLeadDetails(null)}></div>
+          
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
+            
+            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">
-                  Schedule Meeting
-                </h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  Create a meeting record for{" "}
-                  <span className="font-semibold text-slate-800">
-                    {meetingLead.leadName}
-                  </span>{" "}
-                  with a clearer, wider form layout.
-                </p>
+                <h2 className="text-lg font-bold text-slate-900">{selectedLeadDetails.leadName}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">{selectedLeadDetails.title || 'Executive'} {selectedLeadDetails.companyName && `at ${selectedLeadDetails.companyName}`}</p>
               </div>
-              <button
-                onClick={() => {
-                  setMeetingError(null);
-                  setMeetingLead(null);
-                }}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-100"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+              <button onClick={() => setSelectedLeadDetails(null)} className="text-slate-400 hover:text-slate-900 p-1 rounded transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
-            <form
-              onSubmit={handleMeetingSubmit}
-              className="flex-1 overflow-y-auto"
-              noValidate
-            >
-              <div className="px-6 sm:px-8 py-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
-                <aside className="xl:col-span-4 space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-                        Lead Summary
-                      </h3>
-                      <span className="rounded-full bg-[#99B562]/15 px-3 py-1 text-xs font-semibold text-[#6f8348]">
-                        {meetingLead.status}
-                      </span>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+              {/* Top Meta Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                 <div className="bg-white border border-slate-200 rounded-lg p-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                    <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.status}</p>
+                 </div>
+                 <div className="bg-white border border-slate-200 rounded-lg p-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Score</p>
+                    <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                      {selectedLeadDetails.leadScore}
+                      <svg className="w-3 h-3 text-amber-400 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    </p>
+                 </div>
+                 <div className="bg-white border border-slate-200 rounded-lg p-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Territory</p>
+                    <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.region || '—'}</p>
+                 </div>
+                 <div className="bg-white border border-slate-200 rounded-lg p-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Owner</p>
+                    <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.owner || '—'}</p>
+                 </div>
+              </div>
+
+              {/* Extended Details Grids */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">Contact Profile</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">Email Address</p>
+                      <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.email || '—'}</p>
                     </div>
-                    <div className="space-y-3 text-sm text-slate-600">
-                      <p>
-                        <span className="font-semibold text-slate-900">
-                          Company:
-                        </span>{" "}
-                        {meetingLead.companyName}
-                      </p>
-                      <p>
-                        <span className="font-semibold text-slate-900">
-                          Owner:
-                        </span>{" "}
-                        {meetingLead.owner || "N/A"}
-                      </p>
-                      <p>
-                        <span className="font-semibold text-slate-900">
-                          Region:
-                        </span>{" "}
-                        {meetingLead.region}
-                      </p>
-                      <p>
-                        <span className="font-semibold text-slate-900">
-                          Score:
-                        </span>{" "}
-                        {meetingLead.leadScore}
-                      </p>
-                      <p>
-                        <span className="font-semibold text-slate-900">
-                          Role:
-                        </span>{" "}
-                        {meetingLead.title}
-                      </p>
-                      <p>
-                        <span className="font-semibold text-slate-900">
-                          Phone:
-                        </span>{" "}
-                        {meetingLead.phone}
-                      </p>
-                      <p className="break-all">
-                        <span className="font-semibold text-slate-900">
-                          Email:
-                        </span>{" "}
-                        {meetingLead.email}
-                      </p>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">Phone Number</p>
+                      <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.phone || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">LinkedIn / Profile URL</p>
+                      {selectedLeadDetails.profileUrl ? (
+                        <a href={selectedLeadDetails.profileUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline">View Profile</a>
+                      ) : (
+                        <p className="text-sm text-slate-800">—</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">Business Context</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">Specific Role</p>
+                      <p className="text-sm text-slate-800">{selectedLeadDetails.specificRole || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">Service Need</p>
+                      <p className="text-sm text-slate-800">{selectedLeadDetails.ServiceNeed || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">Indications / Notes</p>
+                      <p className="text-sm text-slate-600 italic bg-white border border-slate-200 p-2 rounded mt-1">{selectedLeadDetails.indications || 'No descriptive entries.'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- FIX MEETING MODAL --- */}
+      {meetingLead && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl relative overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
+            
+            <div className="px-6 py-5 flex justify-between items-start border-b border-slate-100 bg-slate-50/50">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Schedule Encounter</h2>
+                <p className="text-xs text-slate-500 mt-1">Configuring calendar parameters for <span className="font-bold text-slate-800">{meetingLead.leadName}</span>.</p>
+              </div>
+              <button onClick={() => { setMeetingError(null); setMeetingLead(null); }} className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleMeetingSubmit} className="flex-1 overflow-y-auto" noValidate>
+              <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* Left Meta Side */}
+                <aside className="lg:col-span-4 space-y-4">
+                  <div className="border border-slate-200 rounded-lg p-4 bg-white">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-2">Target Meta</p>
+                    <div className="space-y-3 text-xs">
+                      <p><span className="text-slate-400 font-bold block mb-0.5">Enterprise</span> <span className="font-medium text-slate-800">{meetingLead.companyName || '—'}</span></p>
+                      <p><span className="text-slate-400 font-bold block mb-0.5">Title</span> <span className="font-medium text-slate-800">{meetingLead.title || '—'}</span></p>
+                      <p><span className="text-slate-400 font-bold block mb-0.5">Email</span> <span className="font-mono text-slate-800">{meetingLead.email || '—'}</span></p>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-[#99B562]/30 bg-[#99B562]/10 p-5">
-                    <h3 className="text-sm font-bold text-[#587132] uppercase tracking-wide">
-                      Attached Lead ID
-                    </h3>
-                    <p className="mt-2 break-all text-sm font-medium text-[#587132]">
-                      {meetingLead._id || meetingLead.id}
-                    </p>
-                    {/* <p className="mt-2 text-xs text-[#6f8348]">This is linked automatically and logged in the console when you confirm the meeting.</p> */}
-                  </div>
                   {isMeetingConflict && (
-                    <div className="rounded-2xl border border-red/30 bg-red-400 p-5">
-                      <h3 className="text-sm font-bold text-white uppercase tracking-wide">
-                        ALLREADY YOU FIX A SCHEDULE.
+                    <div className="border border-amber-200 rounded-lg p-4 bg-amber-50">
+                      <h3 className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Schedule Conflict
                       </h3>
+                      <p className="text-xs text-amber-700">A prior engagement is already logged for this pipeline target.</p>
                     </div>
                   )}
                 </aside>
 
-                <div className="xl:col-span-8 space-y-5">
+                {/* Right Form Side */}
+                <div className="lg:col-span-8 space-y-4">
                   {meetingError && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                    <div className="border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 rounded">
                       {meetingError}
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Meeting Title
-                      </label>
-                      <input
-                        type="text"
-                        name="title"
-                        value={meetingForm.title}
-                        onChange={handleMeetingFormChange}
-                        placeholder="Example: Discovery call and pricing review"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Event Header</label>
+                      <input type="text" name="title" value={meetingForm.title} onChange={handleMeetingFormChange} placeholder="e.g. Discovery & Sync" className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Client Name
-                      </label>
-                      <input
-                        type="text"
-                        name="clientName"
-                        value={meetingForm.clientName}
-                        onChange={handleMeetingFormChange}
-                        placeholder="Client name"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
-                      />
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Host/Client Full Name</label>
+                      <input type="text" name="clientName" value={meetingForm.clientName} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Client Email
-                      </label>
-                      <input
-                        type="text"
-                        name="clientEmail"
-                        value={meetingForm.clientEmail}
-                        onChange={handleMeetingFormChange}
-                        placeholder="Client email"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
-                      />
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Notification Email</label>
+                      <input type="text" name="clientEmail" value={meetingForm.clientEmail} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 font-mono focus:outline-none focus:border-[#99B562] transition-colors" />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Meeting Date
-                      </label>
-                      <input
-                        type="date"
-                        name="meetingDate"
-                        value={meetingForm.meetingDate}
-                        onChange={handleMeetingFormChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
-                      />
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Target Date</label>
+                      <input type="date" name="meetingDate" value={meetingForm.meetingDate} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Meeting Time
-                      </label>
-                      <input
-                        type="time"
-                        name="meetingTime"
-                        value={meetingForm.meetingTime}
-                        onChange={handleMeetingFormChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
-                      />
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Timestamp</label>
+                      <input type="time" name="meetingTime" value={meetingForm.meetingTime} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Meeting Type
-                      </label>
-                      <select
-                        name="meetingType"
-                        value={meetingForm.meetingType}
-                        onChange={handleMeetingFormChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white cursor-pointer"
-                      >
-                        <option value="online">Online</option>
-                        <option value="offline">Offline</option>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Medium</label>
+                      <select name="meetingType" value={meetingForm.meetingType} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors bg-white">
+                        <option value="online">Virtual / Online</option>
+                        <option value="offline">In-Person / Offline</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Status
-                      </label>
-                      <select
-                        name="status"
-                        value={meetingForm.status || "scheduled"}
-                        onChange={handleMeetingFormChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white cursor-pointer"
-                      >
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Action State</label>
+                      <select name="status" value={meetingForm.status || "scheduled"} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors bg-white">
+                        <option value="scheduled">Active Scheduled</option>
+                        <option value="completed">Mark Completed</option>
                         <option value="cancelled">Cancelled</option>
-                        
                       </select>
                     </div>
 
                     {meetingForm.meetingType === "online" && (
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                          Meeting Link
-                        </label>
-                        <input
-                          type="text"
-                          name="meetingLink"
-                          value={meetingForm.meetingLink || ""}
-                          onChange={handleMeetingFormChange}
-                          placeholder="https://meet.google.com/..."
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] bg-white"
-                        />
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">URI Meeting Link</label>
+                        <input type="text" name="meetingLink" value={meetingForm.meetingLink || ""} onChange={handleMeetingFormChange} placeholder="https://meet..." className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 font-mono focus:outline-none focus:border-[#99B562] transition-colors" />
                       </div>
                     )}
 
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Agenda
-                      </label>
-                      <textarea
-                        name="agenda"
-                        rows={4}
-                        placeholder="Outline what will be covered in this meeting."
-                        value={meetingForm.agenda || ""}
-                        onChange={handleMeetingFormChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] resize-none bg-white"
-                      />
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Discussion Agenda</label>
+                      <textarea name="agenda" rows={3} value={meetingForm.agenda || ""} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors" />
                     </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Notes
-                      </label>
-                      <textarea
-                        name="notes"
-                        rows={4}
-                        placeholder="Add internal notes, action items, or follow-up context."
-                        value={meetingForm.notes || ""}
-                        onChange={handleMeetingFormChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#99B562]/40 focus:border-[#99B562] resize-none bg-white"
-                      />
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Internal Notes</label>
+                      <textarea name="notes" rows={2} value={meetingForm.notes || ""} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="px-6 sm:px-8 py-5 border-t border-slate-100 bg-white sticky bottom-0">
-                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMeetingError(null);
-                      setMeetingLead(null);
-                    }}
-                    className="px-5 py-3 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  {
-                    isMeetingConflict ?  <button
-                    type="submit"
-                    className="px-6 py-3 bg-red-400 rounded-xl text-sm font-semibold text-white hover:bg-[#88a154] transition-colors shadow-sm"
-                  >
-                    Make Another Meeting
-                  </button> :  <button
-                    type="submit"
-                    className="px-6 py-3 bg-[#99B562] rounded-xl text-sm font-semibold text-white hover:bg-[#88a154] transition-colors shadow-sm"
-                  >
-                    Confirm Meeting
-                  </button>
-                  }
-                 
-                </div>
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 sticky bottom-0">
+                <button type="button" onClick={() => { setMeetingError(null); setMeetingLead(null); }} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+                  Abort
+                </button>
+                <button type="submit" className={`px-5 py-2 rounded text-xs font-bold text-white transition-colors shadow-xs ${isMeetingConflict ? "bg-amber-500 hover:bg-amber-600" : "bg-slate-900 hover:bg-slate-800"}`}>
+                  {isMeetingConflict ? "Force Additional Meeting" : "Commit Schedule"}
+                </button>
               </div>
             </form>
           </div>

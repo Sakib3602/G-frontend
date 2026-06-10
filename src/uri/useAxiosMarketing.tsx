@@ -3,7 +3,7 @@ import axios from "axios";
 
  
  const axiosMarketing = axios.create({
-    baseURL: "http://localhost:5000/api/v1/marketing",  
+    baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1/marketing`,  
  })
 
 const useAxiosMarketing = () => {

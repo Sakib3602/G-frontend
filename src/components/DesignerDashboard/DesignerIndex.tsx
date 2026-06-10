@@ -58,8 +58,9 @@ const DesignerIndex = () => {
     const filteredCompletedTasks = completedTasks.filter((task) => isTaskInSelectedMonth(task.updatedAt, monthFilter));
     const overdueTrueCount = completedTasks.filter((task) => task.remainingDate?.isOverdue === true).length;
     const overdueFalseCount = completedTasks.filter((task) => task.remainingDate?.isOverdue === false).length;
+    const totalTasks = summary.total ?? 0;
 
-    const completionRate = summary.total > 0 ? Math.round((completedTasks.length / summary.total) * 100) : 0;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
 
     return (
         <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
@@ -109,7 +110,7 @@ const DesignerIndex = () => {
                                         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total tasks</div>
                                         <div className="rounded-full border border-slate-200 p-2 text-slate-500"><ListTodo className="h-4 w-4" /></div>
                                     </div>
-                                    <div className="mt-3 text-3xl font-semibold text-slate-900">{summary.total}</div>
+                                    <div className="mt-3 text-3xl font-semibold text-slate-900">{totalTasks}</div>
                                     <div className="mt-2 text-xs text-slate-500">All tasks in the current dataset</div>
                                 </div>
 

@@ -1,5 +1,5 @@
 
-import { ArrowUpRight, CheckCircle2, Clock3, LayoutGrid, Trash2 } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, Clock3, LayoutGrid } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import useAxiosMarketing from '@/uri/useAxiosMarketing';
 import { useState } from 'react';
