@@ -11,7 +11,8 @@ import {
   LayersPlus,
   WorkflowIcon,
   Timer,
-  Pin
+  Pin,
+  MessageCircle
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
@@ -56,6 +57,7 @@ const Sales_Home = () => {
     { name: 'Qualified Deals', path: '/dashboard/sales/qualified', icon:  WorkflowIcon  },
     { name: 'Unqualified Deals', path: '/dashboard/sales/unqualified', icon: CircleX },
     { name: 'Assigned Leads', path: '/dashboard/sales/assigned', icon: Pin },
+    { name: 'WhatsApp', path: '/dashboard/sales/whatsapp', icon: MessageCircle },
   ];
 
   return (

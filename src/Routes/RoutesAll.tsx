@@ -36,6 +36,7 @@ import DesignerRunningWorks from "@/components/DesignerDashboard/DesignerRunning
 import AdminHome from "@/components/AdminDashboard/AdminHome";
 import Sales_AssignedTask from "@/components/SalesDashboard/Sales_AssignedTask";
 import DesignerIndex from "@/components/DesignerDashboard/DesignerIndex";
+import Whatsapp from "@/components/SalesDashboard/WhatsApp";
 const RoutesAll = () => {
     return <Routes>
               <Route path="/" element={<App />}>
@@ -56,6 +57,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/sales/qualified" element={<Sales_Qualified />} />
               <Route path="/dashboard/sales/unqualified" element={<Sales_Unqualified />} />
               <Route path="/dashboard/sales/assigned" element={<Sales_AssignedTask />} />
+              <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
               </Route>
               {/* sales dashboard end */}
               {/* marketing dashboard start */}
