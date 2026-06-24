@@ -46,7 +46,7 @@ const Login: React.FC = () => {
 
   // 2. Submit handler
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
-    setUnverifiedUser(null);
+     setUnverifiedUser(null);
     setLoginError(null);
     try {
       const result = await signIn(data.email, data.password);

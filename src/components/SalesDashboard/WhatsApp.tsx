@@ -3,8 +3,8 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useUserData } from './Sales_Hook/User_Data';
 
-const socket = io('https://g-backend-2-0juv.onrender.com');
-const API = `https://g-backend-2-0juv.onrender.com/api/v1/whatsapp`;
+const socket = io('https://g-backend-fxp6.onrender.com');
+const API = `https://g-backend-fxp6.onrender.com/api/v1/whatsapp`;
 
 interface Message {
   _id?: string;

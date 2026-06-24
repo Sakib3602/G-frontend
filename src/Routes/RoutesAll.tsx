@@ -37,6 +37,9 @@ import AdminHome from "@/components/AdminDashboard/AdminHome";
 import Sales_AssignedTask from "@/components/SalesDashboard/Sales_AssignedTask";
 import DesignerIndex from "@/components/DesignerDashboard/DesignerIndex";
 import Whatsapp from "@/components/SalesDashboard/WhatsApp";
+import Sales_Emails from "@/components/SalesDashboard/Sales_Emails";
+import ContentCalenderClient from "@/components/MarketingDashboard/ContentCalenderClient";
+
 const RoutesAll = () => {
     return <Routes>
               <Route path="/" element={<App />}>
@@ -58,6 +61,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/sales/unqualified" element={<Sales_Unqualified />} />
               <Route path="/dashboard/sales/assigned" element={<Sales_AssignedTask />} />
               <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
+              <Route path="/dashboard/sales/emails" element={<Sales_Emails/>} />
               </Route>
               {/* sales dashboard end */}
               {/* marketing dashboard start */}
@@ -72,6 +76,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing/add-task" element={<MarketingAddTask />} />
               <Route path="/dashboard/marketing/assigned-tasks" element={<MarketingPendingTask />} />
               <Route path="/dashboard/marketing/complete-tasks" element={<MarketingCompleteTasks />} />
+              <Route path="/dashboard/marketing/content-calendar" element={<ContentCalenderClient />} />
               </Route>
               {/* marketing dashboard end */}
               {/* designer dashboard start */}
