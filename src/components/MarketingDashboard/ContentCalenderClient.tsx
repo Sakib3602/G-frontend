@@ -1,9 +1,10 @@
 "use client";
 
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
+import Alert from "./Alert/Alert";
 
 type ClientStatus = "running" | "done";
 
@@ -14,24 +15,10 @@ interface ClientAgreement {
   status: ClientStatus;
 }
 
-const initialClients: ClientAgreement[] = [
-  { id: "1", name: "Sunrise Apparel Co.", agreementDate: "2026-01-12", status: "running" },
-  { id: "2", name: "Bluewave Tech", agreementDate: "2026-01-20", status: "running" },
-  { id: "3", name: "Greenfield Organics", agreementDate: "2026-02-03", status: "running" },
-  { id: "4", name: "Nova Fitness Studio", agreementDate: "2026-02-15", status: "running" },
-  { id: "5", name: "Maple & Co. Bakery", agreementDate: "2026-02-28", status: "running" },
-  { id: "6", name: "Pixel Forge Studios", agreementDate: "2026-03-05", status: "running" },
-  { id: "7", name: "Harbor Real Estate", agreementDate: "2026-03-18", status: "done" },
-  { id: "8", name: "Crimson Coffee House", agreementDate: "2026-03-30", status: "done" },
-  { id: "9", name: "Lunar Skincare", agreementDate: "2026-04-09", status: "done" },
-  { id: "10", name: "Atlas Logistics", agreementDate: "2026-04-22", status: "done" },
-  { id: "11", name: "Velvet & Vine Florists", agreementDate: "2026-05-02", status: "done" },
-  { id: "12", name: "Northstar Consulting", agreementDate: "2026-05-14", status: "done" },
-];
-
 const formatDate = (dateString: string) => {
   if (!dateString) return "";
   const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -40,7 +27,6 @@ const formatDate = (dateString: string) => {
 };
 
 const ContentCalenderClient = () => {
-  const [clients, setClients] = useState<ClientAgreement[]>(initialClients);
   const [name, setName] = useState("");
   const [agreementDate, setAgreementDate] = useState("");
   const [error, setError] = useState("");
@@ -49,10 +35,78 @@ const ContentCalenderClient = () => {
   const [runningSearch, setRunningSearch] = useState("");
   const [doneSearch, setDoneSearch] = useState("");
 
-  const axiosMarketing = useAxiosMarketing();
 
+  const STATUS_TO_BACKEND: Record<ClientStatus, string> = {
+    running: "ACTIVE",
+    done: "DONE",
+  };
+  const CANCELLED_STATUS = "INACTIVE";
+
+  const axiosMarketing = useAxiosMarketing();
   const { userData } = useUserDataMarketing();
-  
+  const queryClient = useQueryClient();
+
+  const { data: clientData = [], isLoading } = useQuery({
+    queryKey: ["getAllClients", userData?._id],
+    queryFn: async () => {
+      const res = await axiosMarketing.get(`/getClients/${userData?._id}`);
+
+      const payload = res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? [];
+      return Array.isArray(payload) ? payload : [];
+    },
+    enabled: !!userData?._id,
+  });
+
+
+  const clients: ClientAgreement[] = (clientData || [])
+    .map((item: any) => {
+      const id = item._id ?? item.id ?? String(Math.random());
+      const rawStatus = item.status;
+      const status: ClientStatus | null =
+        rawStatus === STATUS_TO_BACKEND.running
+          ? "running"
+          : rawStatus === STATUS_TO_BACKEND.done
+          ? "done"
+          : null;
+
+      return {
+        id,
+        name: item.name ?? "",
+        agreementDate: item.agreementDate ?? item.createdAt ?? "",
+        status,
+      };
+    })
+    .filter((client: { status: ClientStatus | null }) => client.status !== null) as ClientAgreement[];
+
+    const [add , setAdd] = useState(false);
+  const mutationAdd = useMutation({
+    mutationFn: async (data: { name: string; agreementDate: string }) => {
+      const res = await axiosMarketing.post(`/create-client/${userData?._id}`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+      setAdd(true);
+      queryClient.invalidateQueries({ queryKey: ["getAllClients", userData?._id] });
+    },
+  });
+
+
+  const [statusCNG, setStatusCNG] = useState(false);
+
+  const mutationStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await axiosMarketing.patch(`/update-client/${id}`, { status });
+      return res.data;
+    },
+    onSuccess: () => {
+      setStatusCNG(true);
+      queryClient.invalidateQueries({ queryKey: ["getAllClients", userData?._id] });
+    },
+    onError: (err) => {
+      console.error("Status change failed:", err);
+      alert("Couldn't update status. Please try again.");
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,44 +116,25 @@ const ContentCalenderClient = () => {
       return;
     }
 
-    const newClient: ClientAgreement = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      agreementDate,
-      status: "running",
-    };
+    mutationAdd.mutate({ name: name.trim(), agreementDate });
 
-    mutationAdd.mutate({ name: newClient.name, agreementDate: newClient.agreementDate });
-
-    setClients((prev) => [newClient, ...prev]);
     setName("");
     setAgreementDate("");
     setError("");
   };
-
-  const mutationAdd = useMutation({
-    mutationFn: async (data: { name: string; agreementDate: string }) => {
-      const res = await axiosMarketing.post(`/create-client/${userData?._id}`, data);
-      return res.data;
-    },
-    onSuccess: () => {
-        alert("Client added successfully!");
-    } 
-  })
 
   const handleClientClick = (client: ClientAgreement) => {
     console.log(client.id);
     setActiveId(client.id);
   };
 
-  const toggleStatus = (id: string) => {
-    setClients((prev) =>
-      prev.map((client) =>
-        client.id === id
-          ? { ...client, status: client.status === "running" ? "done" : "running" }
-          : client
-      )
-    );
+  const handleMarkDone = (id: string) => {
+    mutationStatus.mutate({ id, status: STATUS_TO_BACKEND.done });
+  };
+
+  const handleCancel = (id: string) => {
+
+    mutationStatus.mutate({ id, status: CANCELLED_STATUS });
   };
 
   const runningClients = clients.filter(
@@ -121,7 +156,7 @@ const ContentCalenderClient = () => {
     search: string,
     onSearch: (value: string) => void,
     emptyLabel: string,
-    actionLabel?: string,
+    showMarkDone?: boolean,
     dimmed?: boolean
   ) => (
     <div>
@@ -177,7 +212,11 @@ const ContentCalenderClient = () => {
           </span>
         </div>
 
-        {list.length === 0 ? (
+        {isLoading ? (
+          <p className="px-4 py-6 text-center text-sm text-slate-400">
+            Loading clients...
+          </p>
+        ) : list.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-slate-400">
             {emptyLabel}
           </p>
@@ -211,7 +250,7 @@ const ContentCalenderClient = () => {
                   {client.name}
                 </span>
 
-                <span className="flex items-center gap-3">
+                <span className="flex items-center gap-2">
                   <span
                     className={`text-sm ${
                       dimmed ? "text-slate-400" : "text-slate-500"
@@ -219,17 +258,30 @@ const ContentCalenderClient = () => {
                   >
                     {formatDate(client.agreementDate)}
                   </span>
-                  {actionLabel && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleStatus(client.id);
-                      }}
-                      className="rounded-md border border-slate-300/70 bg-white/60 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-400 hover:text-indigo-600"
-                    >
-                      {actionLabel}
-                    </button>
+
+                  {showMarkDone && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkDone(client.id);
+                        }}
+                        className="rounded-md border border-slate-300/70 bg-white/60 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-400 hover:text-indigo-600"
+                      >
+                        Mark done
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancel(client.id);
+                        }}
+                        className="rounded-md border border-rose-300/70 bg-white/60 px-2 py-1 text-[11px] font-medium text-rose-500 transition hover:border-rose-400 hover:bg-rose-50"
+                      >
+                        Cancel
+                      </button>
+                    </>
                   )}
                 </span>
               </li>
@@ -241,6 +293,15 @@ const ContentCalenderClient = () => {
   );
 
   return (
+    <>
+
+    {
+      statusCNG && <Alert title="Status Changed" message="Client status has been updated." onClose={() => setStatusCNG(false)}></Alert>
+    }
+    {
+      add && <Alert title="Client Added" message="New client has been added successfully." onClose={() => setAdd(false)}></Alert>
+    }
+   
     <div className="min-h-full w-full px-4 py-10">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6">
@@ -296,9 +357,10 @@ const ContentCalenderClient = () => {
 
           <button
             type="submit"
-            className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 sm:w-auto"
+            disabled={mutationAdd.isPending}
+            className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto"
           >
-            Add client
+            {mutationAdd.isPending ? "Adding..." : "Add client"}
           </button>
         </form>
 
@@ -310,7 +372,7 @@ const ContentCalenderClient = () => {
             runningSearch,
             setRunningSearch,
             "No running clients match your search.",
-            "Mark done"
+            true
           )}
 
           {renderTable(
@@ -320,12 +382,13 @@ const ContentCalenderClient = () => {
             doneSearch,
             setDoneSearch,
             "No completed clients match your search.",
-            undefined,
+            false,
             true
           )}
         </div>
       </div>
     </div>
+    </>
   );
 };
 
