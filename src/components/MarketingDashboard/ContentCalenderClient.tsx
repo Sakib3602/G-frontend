@@ -1,6 +1,9 @@
 "use client";
 
+import useAxiosMarketing from "@/uri/useAxiosMarketing";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 
 type ClientStatus = "running" | "done";
 
@@ -46,6 +49,11 @@ const ContentCalenderClient = () => {
   const [runningSearch, setRunningSearch] = useState("");
   const [doneSearch, setDoneSearch] = useState("");
 
+  const axiosMarketing = useAxiosMarketing();
+
+  const { userData } = useUserDataMarketing();
+  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -61,11 +69,23 @@ const ContentCalenderClient = () => {
       status: "running",
     };
 
+    mutationAdd.mutate({ name: newClient.name, agreementDate: newClient.agreementDate });
+
     setClients((prev) => [newClient, ...prev]);
     setName("");
     setAgreementDate("");
     setError("");
   };
+
+  const mutationAdd = useMutation({
+    mutationFn: async (data: { name: string; agreementDate: string }) => {
+      const res = await axiosMarketing.post(`/create-client/${userData?._id}`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+        alert("Client added successfully!");
+    } 
+  })
 
   const handleClientClick = (client: ClientAgreement) => {
     console.log(client.id);
