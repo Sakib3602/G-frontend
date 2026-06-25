@@ -187,8 +187,8 @@ const MarketingHome = () => {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto  bg-[#F8FAFC]">
-          <div className="min-h-screen w-full bg-white relative">
+       <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+  <div className="min-h-full w-full bg-white relative">
             {/* Noise Texture (Darker Dots) Background */}
             <div
               className="absolute inset-0 z-0"

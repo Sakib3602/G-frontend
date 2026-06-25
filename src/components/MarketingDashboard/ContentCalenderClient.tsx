@@ -3,6 +3,7 @@
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import Alert from "./Alert/Alert";
 
@@ -35,7 +36,6 @@ const ContentCalenderClient = () => {
   const [runningSearch, setRunningSearch] = useState("");
   const [doneSearch, setDoneSearch] = useState("");
 
-
   const STATUS_TO_BACKEND: Record<ClientStatus, string> = {
     running: "ACTIVE",
     done: "DONE",
@@ -45,18 +45,17 @@ const ContentCalenderClient = () => {
   const axiosMarketing = useAxiosMarketing();
   const { userData } = useUserDataMarketing();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: clientData = [], isLoading } = useQuery({
     queryKey: ["getAllClients", userData?._id],
     queryFn: async () => {
       const res = await axiosMarketing.get(`/getClients/${userData?._id}`);
-
       const payload = res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? [];
       return Array.isArray(payload) ? payload : [];
     },
     enabled: !!userData?._id,
   });
-
 
   const clients: ClientAgreement[] = (clientData || [])
     .map((item: any) => {
@@ -78,7 +77,7 @@ const ContentCalenderClient = () => {
     })
     .filter((client: { status: ClientStatus | null }) => client.status !== null) as ClientAgreement[];
 
-    const [add , setAdd] = useState(false);
+  const [add, setAdd] = useState(false);
   const mutationAdd = useMutation({
     mutationFn: async (data: { name: string; agreementDate: string }) => {
       const res = await axiosMarketing.post(`/create-client/${userData?._id}`, data);
@@ -89,7 +88,6 @@ const ContentCalenderClient = () => {
       queryClient.invalidateQueries({ queryKey: ["getAllClients", userData?._id] });
     },
   });
-
 
   const [statusCNG, setStatusCNG] = useState(false);
 
@@ -123,9 +121,11 @@ const ContentCalenderClient = () => {
     setError("");
   };
 
+  // Clicking a client row navigates to the client detail page, carrying
+  // the specific client id in the route.
   const handleClientClick = (client: ClientAgreement) => {
-    console.log(client.id);
     setActiveId(client.id);
+    navigate(`/dashboard/marketing/content-calendar-main/${client.id}`);
   };
 
   const handleMarkDone = (id: string) => {
@@ -133,7 +133,6 @@ const ContentCalenderClient = () => {
   };
 
   const handleCancel = (id: string) => {
-
     mutationStatus.mutate({ id, status: CANCELLED_STATUS });
   };
 
@@ -294,100 +293,107 @@ const ContentCalenderClient = () => {
 
   return (
     <>
+      {statusCNG && (
+        <Alert
+          title="Status Changed"
+          message="Client status has been updated."
+          onClose={() => setStatusCNG(false)}
+        ></Alert>
+      )}
+      {add && (
+        <Alert
+          title="Client Added"
+          message="New client has been added successfully."
+          onClose={() => setAdd(false)}
+        ></Alert>
+      )}
 
-    {
-      statusCNG && <Alert title="Status Changed" message="Client status has been updated." onClose={() => setStatusCNG(false)}></Alert>
-    }
-    {
-      add && <Alert title="Client Added" message="New client has been added successfully." onClose={() => setAdd(false)}></Alert>
-    }
-   
-    <div className="min-h-full w-full px-4 py-10">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Content Calendar
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Log a new client agreement, then track them through running and
-            completed work.
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl border border-white/50 bg-white/25 p-5 shadow-xl shadow-slate-900/10 backdrop-blur-2xl backdrop-saturate-150"
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="clientName"
-                className="text-xs font-medium uppercase tracking-wide text-slate-600"
-              >
-                Client name
-              </label>
-              <input
-                id="clientName"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Sunrise Apparel Co."
-                className="rounded-lg border border-slate-300/70 bg-white/50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:bg-white/70 focus:ring-2 focus:ring-indigo-200"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="agreementDate"
-                className="text-xs font-medium uppercase tracking-wide text-slate-600"
-              >
-                Agreement date
-              </label>
-              <input
-                id="agreementDate"
-                type="date"
-                value={agreementDate}
-                onChange={(e) => setAgreementDate(e.target.value)}
-                className="rounded-lg border border-slate-300/70 bg-white/50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white/70 focus:ring-2 focus:ring-indigo-200"
-              />
-            </div>
+      <div className="min-h-full w-full px-4 py-10">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Content Calendar
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Log a new client agreement, then track them through running and
+              completed work.
+            </p>
           </div>
 
-          {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={mutationAdd.isPending}
-            className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto"
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-2xl border border-white/50 bg-white/25 p-5 shadow-xl shadow-slate-900/10 backdrop-blur-2xl backdrop-saturate-150"
           >
-            {mutationAdd.isPending ? "Adding..." : "Add client"}
-          </button>
-        </form>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="clientName"
+                  className="text-xs font-medium uppercase tracking-wide text-slate-600"
+                >
+                  Client name
+                </label>
+                <input
+                  id="clientName"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Sunrise Apparel Co."
+                  className="rounded-lg border border-slate-300/70 bg-white/50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:bg-white/70 focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          {renderTable(
-            "Running clients",
-            runningClients.length,
-            runningClients,
-            runningSearch,
-            setRunningSearch,
-            "No running clients match your search.",
-            true
-          )}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="agreementDate"
+                  className="text-xs font-medium uppercase tracking-wide text-slate-600"
+                >
+                  Agreement date
+                </label>
+                <input
+                  id="agreementDate"
+                  type="date"
+                  value={agreementDate}
+                  onChange={(e) => setAgreementDate(e.target.value)}
+                  className="rounded-lg border border-slate-300/70 bg-white/50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white/70 focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+            </div>
 
-          {renderTable(
-            "Work done",
-            doneClients.length,
-            doneClients,
-            doneSearch,
-            setDoneSearch,
-            "No completed clients match your search.",
-            false,
-            true
-          )}
+            {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={mutationAdd.isPending}
+              className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto"
+            >
+              {mutationAdd.isPending ? "Adding..." : "Add client"}
+            </button>
+          </form>
+
+          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+            {renderTable(
+              "Running clients",
+              runningClients.length,
+              runningClients,
+              runningSearch,
+              setRunningSearch,
+              "No running clients match your search.",
+              true
+            )}
+
+            {renderTable(
+              "Work done",
+              doneClients.length,
+              doneClients,
+              doneSearch,
+              setDoneSearch,
+              "No completed clients match your search.",
+              false,
+              true
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };

@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import { auth } from "../firebase.init";
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword,signOut,type User,type UserCredential } from "firebase/auth";
+import useAxiosPublic from "@/uri/useAxiosPublic";
 
 interface AuthContextType {
   person: User | null;
@@ -29,9 +30,32 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return signOut(auth);
   };
 
+   const axiosPublic = useAxiosPublic();
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setPerson(user);
+
+      if (user) {
+        // User login ase - idToken niye backend e pathao
+        try {
+          const idToken = await user.getIdToken();
+          console.log("User logged in, sending idToken to backend:", idToken);
+          const res = await axiosPublic.post("/api/auth/login", { idToken });
+          console.log("Backend login success:", res.data);
+        } catch (error : any) {
+          console.error("Backend login failed:", error.message);
+        }
+      } else {
+        // User logout hoise - backend cookie clear korte bolo
+        try {
+          await axiosPublic.post("/api/auth/logout");
+          console.log("Backend logout success");
+        } catch (error : any) {
+          console.error("Backend logout failed:", error.message);
+        }
+      }
+
       setLoading(false);
     });
 

@@ -39,6 +39,7 @@ import DesignerIndex from "@/components/DesignerDashboard/DesignerIndex";
 import Whatsapp from "@/components/SalesDashboard/WhatsApp";
 import Sales_Emails from "@/components/SalesDashboard/Sales_Emails";
 import ContentCalenderClient from "@/components/MarketingDashboard/ContentCalenderClient";
+import ContentCalMain from "@/components/MarketingDashboard/ContentCalMain";
 
 const RoutesAll = () => {
     return <Routes>
@@ -77,6 +78,7 @@ const RoutesAll = () => {
               <Route path="/dashboard/marketing/assigned-tasks" element={<MarketingPendingTask />} />
               <Route path="/dashboard/marketing/complete-tasks" element={<MarketingCompleteTasks />} />
               <Route path="/dashboard/marketing/content-calendar" element={<ContentCalenderClient />} />
+              <Route path="/dashboard/marketing/content-calendar-main/:id" element={<ContentCalMain />} />
               </Route>
               {/* marketing dashboard end */}
               {/* designer dashboard start */}
