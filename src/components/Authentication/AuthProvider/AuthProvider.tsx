@@ -9,10 +9,12 @@ interface AuthContextType {
   createUser: (email: string, password: string) => Promise<UserCredential>;
   signIn: (email: string, password: string) => Promise<UserCredential>;
   logOut: () => Promise<void>;
+  role: string | null;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [person, setPerson] = useState<User | null>(null);
 
@@ -40,9 +42,10 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // User login ase - idToken niye backend e pathao
         try {
           const idToken = await user.getIdToken();
-          console.log("User logged in, sending idToken to backend:", idToken);
-          const res = await axiosPublic.post("/api/auth/login", { idToken });
-          console.log("Backend login success:", res.data);
+          
+        const res = await axiosPublic.post("/api/auth/login", { idToken });
+         setRole(res.data.user.role);
+          
         } catch (error : any) {
           console.error("Backend login failed:", error.message);
         }
@@ -50,7 +53,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // User logout hoise - backend cookie clear korte bolo
         try {
           await axiosPublic.post("/api/auth/logout");
-          console.log("Backend logout success");
+          
         } catch (error : any) {
           console.error("Backend logout failed:", error.message);
         }
@@ -68,7 +71,8 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     createUser,
     signIn,
     loading,
-    logOut
+    logOut,
+    role,
   };
   return <AuthContext.Provider value={info}>{children}</AuthContext.Provider>;
 };

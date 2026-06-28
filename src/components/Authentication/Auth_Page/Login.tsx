@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { AuthContext } from "../AuthProvider/AuthProvider";
 import { sendEmailVerification, type User } from "firebase/auth";
 import Notification from "@/components/ui/toast";
-import useAxiosPublic from "@/uri/useAxiosPublic";
+
 // import { AnimatePresence } from "framer-motion";
 
 // 1. Updated FormValues for Login only

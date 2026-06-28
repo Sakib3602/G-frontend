@@ -1,10 +1,7 @@
-
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { Navigate, useLocation } from "react-router";
 
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
-import { useUserDataDesigner } from "./HOOK/user_data_designer";
-
 
 const DesignerPrivate = ({ children }: { children: React.ReactNode }) => {
   const auth = useContext(AuthContext);
@@ -13,31 +10,33 @@ const DesignerPrivate = ({ children }: { children: React.ReactNode }) => {
   }
   //   const Navigate = useNavigate();
   const location = useLocation();
-  const { person, loading , logOut} = auth;
+  const { person, loading, logOut, role } = auth;
 
-  
+  useEffect(() => {
+    if (!loading && person && role && role !== "designer" && role !== "web") {
+      logOut();
+    }
+  }, [loading, person, role, logOut]);
 
-  const {userData, isLoading} = useUserDataDesigner()
-
-    if (loading || isLoading) {
+  if (loading) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-black">
-      <div className="relative flex h-20 w-20 items-center justify-center">
-        {/* বাইরের স্পিনিং রিং */}
-        <div className="absolute h-full w-full animate-spin rounded-full border-4 border-white/10 border-t-amber-600"></div>
-        
-        {/* ভেতরের পালসিং লোগো বা ডট */}
-        <div className="h-10 w-10 animate-pulse rounded-full bg-amber-600/20 flex items-center justify-center shadow-[0_0_24px_rgba(217,119,6,0.35)]">
-          <div className="h-4 w-4 rounded-full bg-amber-600"></div>
+        <div className="relative flex h-20 w-20 items-center justify-center">
+          {/* বাইরের স্পিনিং রিং */}
+          <div className="absolute h-full w-full animate-spin rounded-full border-4 border-white/10 border-t-amber-600"></div>
+
+          {/* ভেতরের পালসিং লোগো বা ডট */}
+          <div className="h-10 w-10 animate-pulse rounded-full bg-amber-600/20 flex items-center justify-center shadow-[0_0_24px_rgba(217,119,6,0.35)]">
+            <div className="h-4 w-4 rounded-full bg-amber-600"></div>
+          </div>
         </div>
+
+        {/* লোডিং টেক্সট */}
+        <h2 className="mt-6 text-lg font-semibold text-amber-600 animate-pulse">
+          Preparing your dashboard...
+        </h2>
+        <p className="text-sm text-white/60">Please wait a moment</p>
       </div>
-      
-      {/* লোডিং টেক্সট */}
-      <h2 className="mt-6 text-lg font-semibold text-amber-600 animate-pulse">
-        Preparing your dashboard...
-      </h2>
-      <p className="text-sm text-white/60">Please wait a moment</p>
-    </div>
     );
   }
 
@@ -45,19 +44,10 @@ const DesignerPrivate = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-    const X = async()=>{
-        await logOut();
-    }
+  if (role !== "designer" && role !== "web") {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-    if (userData?.role !== "designer" && userData?.role !== "web") {
-      X();
-      return <Navigate to="/login" state={{ from: location }} replace />;
-    }
-
-
-
-  
-  
   return children;
 };
 
