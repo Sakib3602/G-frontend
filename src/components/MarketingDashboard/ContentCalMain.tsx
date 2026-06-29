@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
+
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -26,12 +27,14 @@ interface CalendarItem {
   contentDate?: string;
   deliveryDate?: string;
   creativeTeam?: string;
+  creativeTeamId?: string;
   postType?: string;
   postHeadline?: string;
   platforms?: Platform[];
   status: ItemStatus;
   deliveryLink?: string;
   notes?: string;
+  reportSent?: boolean;
 }
 
 interface CalendarDoc {
@@ -39,6 +42,11 @@ interface CalendarDoc {
   title: string;
   startDate: string;
   endDate: string;
+}
+
+interface UserOption {
+  _id: string;
+  name: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────
@@ -76,9 +84,15 @@ const STATUS_STYLES: Record<ItemStatus, string> = {
   SCHEDULED: "bg-cyan-100 text-cyan-700",
 };
 
+
+const EXCLUDED_FROM_OVERDUE_CHECK: ItemStatus[] = [
+  "DELIVERED",
+  "CANCELLED",
+  "PUBLISHED",
+];
+
 const PLATFORMS: Platform[] = ["FACEBOOK", "INSTAGRAM", "LINKEDIN", "YOUTUBE"];
 
-// single letter short labels for compact display
 const PLATFORM_SHORT: Record<Platform, string> = {
   FACEBOOK: "FB",
   INSTAGRAM: "IG",
@@ -109,6 +123,21 @@ const fmt = (d?: string) => {
 const fmtInput = (d?: string) => {
   if (!d) return "";
   return new Date(d).toISOString().slice(0, 10);
+};
+
+
+const isOverdueMissingDelivery = (item: CalendarItem) => {
+  if (!item.deliveryDate) return false;
+  if (item.deliveryLink && item.deliveryLink.trim() !== "") return false;
+  if (EXCLUDED_FROM_OVERDUE_CHECK.includes(item.status)) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const deliveryDate = new Date(item.deliveryDate);
+  deliveryDate.setHours(0, 0, 0, 0);
+
+  return deliveryDate < today;
 };
 
 const WEEK_SIZE = 6;
@@ -218,6 +247,56 @@ const PostTypeCell = ({
   );
 };
 
+// ─── Creative Team Dropdown (now backed by real users from the API) ──
+
+const TeamCell = ({
+  value,
+  users,
+  onSave,
+}: {
+  value: string;
+  users: UserOption[];
+  onSave: (user: UserOption) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-1 rounded border border-slate-200 bg-white/80 px-1.5 py-0.5 text-xs text-slate-700 hover:border-indigo-300"
+      >
+        <span className="truncate">{value || <span className="text-slate-300">Team</span>}</span>
+        <span className="shrink-0 text-slate-400">▾</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-7 z-40 max-h-56 w-44 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl">
+          {users.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-slate-400">No users found</p>
+          ) : (
+            users.map((user) => (
+              <button
+                key={user._id}
+                type="button"
+                onClick={() => {
+                  onSave(user);
+                  setOpen(false);
+                }}
+                className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${
+                  user.name === value ? "font-semibold text-indigo-600" : "text-slate-700"
+                }`}
+              >
+                {user.name}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Platform Toggle Cell (compact) ──────────────────────────
 
 const PlatformCell = ({
@@ -316,6 +395,7 @@ const WeekRow = ({ week }: { week: number }) => (
 const ContentCalMain = () => {
   const { id } = useParams();
   const axiosMarketing = useAxiosMarketing();
+
   const queryClient = useQueryClient();
 
   const [title, setTitle] = useState("");
@@ -323,6 +403,11 @@ const ContentCalMain = () => {
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
   const [selectedCalendar, setSelectedCalendar] = useState<CalendarDoc | null>(null);
+
+  // Extra in-session guard so we don't fire the mutation twice for the
+  // same item while waiting for the refetch to land (item.reportSent is
+  // the permanent source of truth; this is just a short-lived safety net).
+  const pendingReportIdsRef = useRef<Set<string>>(new Set());
 
   const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ["client", id],
@@ -349,11 +434,22 @@ const ContentCalMain = () => {
     enabled: !!selectedCalendar,
   });
 
+  // NEW — real users for the Creative Team dropdown, from /api/v1/users.
+  // Adjust the response-shape access (res.data.data vs res.data) to
+  // match what that endpoint actually returns.
+  const { data: users = [] } = useQuery<UserOption[]>({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const res = await axiosMarketing.get("/users");
+      return res.data?.data ?? res.data ?? [];
+    },
+  });
+
   const createCalendarMutation = useMutation({
     mutationFn: async () => {
       const res = await axiosMarketing.post("/create-calendar", {
         creatorId: client?.creatorId,
-        clientId: id,
+        clientId: client?._id,
         title,
         startDate,
         endDate,
@@ -384,6 +480,38 @@ const ContentCalMain = () => {
       queryClient.invalidateQueries({ queryKey: ["calendarItems", selectedCalendar?._id] });
     },
   });
+
+
+  const reportMutation = useMutation({
+    mutationFn: async ({ itemId, creativeTeamId }: { itemId: string; creativeTeamId?: string }) => {
+      const res = await axiosMarketing.post(`/generate-report/${itemId}`, { creativeTeamId });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendarItems", selectedCalendar?._id] });
+    },
+    onError: (err) => {
+      console.error("Failed to trigger missed-delivery report:", err);
+    },
+  });
+
+
+  useEffect(() => {
+    items.forEach((item) => {
+      const alreadyHandled = item.reportSent || pendingReportIdsRef.current.has(item._id);
+      if (isOverdueMissingDelivery(item) && !alreadyHandled) {
+        pendingReportIdsRef.current.add(item._id);
+       const resolvedId =
+        item.creativeTeamId ??
+        users.find((u) => u.name === item.creativeTeam)?._id;
+
+      console.log(`Triggering missed-delivery report for item  (creativeTeamId: ${resolvedId})`
+      );
+        reportMutation.mutate({ itemId: item._id, creativeTeamId: resolvedId });
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
 
   const update = (itemId: string, patch: Partial<CalendarItem>) => {
     updateMutation.mutate({ itemId, patch });
@@ -517,17 +645,17 @@ const ContentCalMain = () => {
             <div className="overflow-x-auto px-4">
               <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1100px" }}>
                 <colgroup>
-                  <col style={{ width: "36px" }} />   {/* # */}
-                  <col style={{ width: "110px" }} />  {/* Schedule Date */}
-                  <col style={{ width: "100px" }} />  {/* Content Date */}
-                  <col style={{ width: "100px" }} />  {/* Delivery Date */}
-                  <col style={{ width: "110px" }} />  {/* Creative Team */}
-                  <col style={{ width: "140px" }} />  {/* Post Type */}
-                  <col style={{ width: "180px" }} />  {/* Post Headline */}
-                  <col style={{ width: "148px" }} />  {/* Platforms — 4×(28+4)=128 +20pad */}
-                  <col style={{ width: "120px" }} />  {/* Status */}
-                  <col style={{ width: "120px" }} />  {/* Delivery Link */}
-                  <col style={{ width: "150px" }} />  {/* Notes */}
+                  <col style={{ width: "36px" }} />
+                  <col style={{ width: "110px" }} />
+                  <col style={{ width: "100px" }} />
+                  <col style={{ width: "100px" }} />
+                  <col style={{ width: "110px" }} />
+                  <col style={{ width: "140px" }} />
+                  <col style={{ width: "180px" }} />
+                  <col style={{ width: "148px" }} />
+                  <col style={{ width: "120px" }} />
+                  <col style={{ width: "120px" }} />
+                  <col style={{ width: "150px" }} />
                 </colgroup>
 
                 <thead className="sticky top-0 z-10 bg-white/90 backdrop-blur">
@@ -560,13 +688,23 @@ const ContentCalMain = () => {
                     const weekNumber = Math.floor(idx / WEEK_SIZE) + 1;
                     const isWeekStart = idx % WEEK_SIZE === 0;
 
+                    // Permanently red once reportSent is true on the
+                    // server — falls back to the live check only before
+                    // that flag has been set (e.g. on the very first
+                    // render before the mutation lands).
+                    const overdue = item.reportSent || isOverdueMissingDelivery(item);
+
                     return (
                       <>
                         {isWeekStart && <WeekRow key={`w-${weekNumber}`} week={weekNumber} />}
 
                         <tr
                           key={item._id}
-                          className="border-b border-slate-100 transition hover:bg-indigo-50/30"
+                          className={`border-b transition ${
+                            overdue
+                              ? "border-rose-200 bg-rose-50/70 hover:bg-rose-100/70"
+                              : "border-slate-100 hover:bg-indigo-50/30"
+                          }`}
                         >
                           <td className="px-3 py-2.5 text-xs text-slate-400">{idx + 1}</td>
 
@@ -593,10 +731,15 @@ const ContentCalMain = () => {
                           </td>
 
                           <td className="px-3 py-2.5">
-                            <EditableCell
+                            <TeamCell
                               value={item.creativeTeam ?? ""}
-                              onSave={(v) => update(item._id, { creativeTeam: v })}
-                              placeholder="Team"
+                              users={users}
+                              onSave={(user) =>
+                                update(item._id, {
+                                  creativeTeam: user.name,
+                                  creativeTeamId: user._id,
+                                })
+                              }
                             />
                           </td>
 
