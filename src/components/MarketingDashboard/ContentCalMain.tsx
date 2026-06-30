@@ -542,7 +542,7 @@ const ContentCalMain = () => {
   return (
     <div className="min-h-full w-full">
 
-      {/* ── Top section with padding ───────────────────────── */}
+      {/* ── Top section with padding ──────────────────────── */}
       <div className="px-8 pt-8 pb-4">
 
         {/* Header */}

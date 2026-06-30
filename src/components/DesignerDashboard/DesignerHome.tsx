@@ -59,6 +59,7 @@ const DesignerHome = () => {
     { name: 'My Tasks', path: '/dashboard/designer/my-tasks', icon: Megaphone },
     { name: 'Running Works', path: '/dashboard/designer/in-progress-tasks', icon: ChartNetwork },
     { name: 'Overdue Tasks', path: '/dashboard/designer/overdue-tasks', icon: LocateOff },
+    { name: 'Content Tasks', path: '/dashboard/designer/content-tasks', icon: LocateOff },
    
   ];
 
