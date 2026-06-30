@@ -116,7 +116,7 @@ const DesignerMyTasks = () => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[240px] text-sm text-gray-500">
+            <div className="flex items-center justify-center min-h-60 text-sm text-gray-500">
                 Loading tasks...
             </div>
         );

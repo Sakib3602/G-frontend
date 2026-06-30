@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-
 import useAxiosDesigner from "@/uri/useAxiosDesigner";
 
 // ─── Types ────────────────────────────────────────────────────
@@ -20,8 +19,7 @@ type ItemStatus =
   | "PAUSED"
   | "DELIVERED"
   | "CANCELLED"
-  | "SCHEDULED"
-  | "ACCEPTED";
+  | "SCHEDULED";
 
 interface CalendarItem {
   _id: string;
@@ -36,6 +34,10 @@ interface CalendarItem {
   deliveryLink?: string;
   notes?: string;
   clientId?: { _id: string; name: string } | string;
+  // Permanent "this item missed its delivery once" flag, set by the
+  // backend's generate-report flow. Once true, it stays true forever —
+  // this is what keeps a row red even after a link is added later.
+  reportSent?: boolean;
 }
 
 interface DashboardStats {
@@ -81,9 +83,11 @@ const fmt = (d?: string) => {
   });
 };
 
-// Matches the backend's overdue rule: deadline passed, no delivery
-// link, and status isn't one of the safe/handled ones.
-const isOverdue = (item: CalendarItem) => {
+// Live check — only used to decide the FIRST time a row should turn
+// red (before the server's reportSent flag has caught up). Once
+// reportSent is true, the row stays red regardless of what this
+// function would return afterwards (see `overdue` below in the table).
+const isOverdueLive = (item: CalendarItem) => {
   if (!item.deliveryDate) return false;
   if (item.deliveryLink && item.deliveryLink.trim() !== "") return false;
   if (SAFE_STATUSES.includes(item.status) || item.status === "CANCELLED") return false;
@@ -288,7 +292,10 @@ const DesignerMyTasksContent = () => {
                 </tr>
               ) : (
                 items.map((item, idx) => {
-                  const overdue = isOverdue(item);
+                  // Permanently red once reportSent is true on the
+                  // server — falls back to the live check only before
+                  // that flag has been set.
+                  const overdue = item.reportSent || isOverdueLive(item);
                   const clientName =
                     typeof item.clientId === "object" ? item.clientId?.name : "";
 
