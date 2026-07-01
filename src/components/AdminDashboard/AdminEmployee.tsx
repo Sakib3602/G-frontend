@@ -31,7 +31,7 @@ const formatRoleLabel = (role: string): string =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 
-  const baseRoleOptions = ["marketing", "sales", "designer", "web"];
+const baseRoleOptions = ["marketing", "sales", "designer", "web"];
 
 const AdminEmployee = () => {
   const axiosAdmin = useAxiosAdmin();
@@ -65,24 +65,33 @@ const AdminEmployee = () => {
 
     console.log("Deleting employee id:", id);
 
-    queryClient.setQueryData<EmployeesResponse | undefined>(
-      ["employees"],
-      (current) => {
-        if (!current) return current;
-        return {
-          ...current,
-          data: current.data.filter((emp) => emp._id !== id),
-        };
-      },
-    );
-    try {
-      // await axiosAdmin.delete(`/users/${id}`);
-    } catch (error) {
-      alert(`Failed to delete employee id: ${id}. Please try again.`);
-    }
+    mutationDelete.mutate({ id });
   };
 
-  
+  const mutationDelete = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const res = await axiosAdmin.delete(`/delete-employee/${id}`);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.setQueryData<EmployeesResponse | undefined>(
+        ["employees"],
+        (current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            data: current.data.filter((emp) => emp._id !== variables.id),
+          };
+        },
+      );
+    },
+    onError: (error, variables) => {
+      alert(`Failed to delete employee id: ${variables.id}. Please try again.`);
+      console.log("Delete failed for id:", variables.id, error);
+    },
+  });
+
+
 
   const handleRoleChange = async (id: string, newRole: string) => {
     console.log("Changing role for employee id:", id);
