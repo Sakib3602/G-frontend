@@ -1,4 +1,3 @@
-
 import App from "@/App";
 import Login from "@/components/Authentication/Auth_Page/Login";
 import Registration from "@/components/Authentication/Auth_Page/Registration";
@@ -31,7 +30,7 @@ import Sales_Qualified from "@/components/SalesDashboard/Sales_Qualified";
 import Sales_Remainder from "@/components/SalesDashboard/Sales_Remainder";
 import Sales_Unqualified from "@/components/SalesDashboard/Sales_Unqualified";
 import SalesPrivateRoute from "@/components/SalesDashboard/SalesPrivateRoute";
-import {Routes, Route } from "react-router";
+import { Routes, Route } from "react-router";
 import DesignerRunningWorks from "@/components/DesignerDashboard/DesignerRunningWorks";
 import AdminHome from "@/components/AdminDashboard/AdminHome";
 import Sales_AssignedTask from "@/components/SalesDashboard/Sales_AssignedTask";
@@ -41,62 +40,155 @@ import Sales_Emails from "@/components/SalesDashboard/Sales_Emails";
 import ContentCalenderClient from "@/components/MarketingDashboard/ContentCalenderClient";
 import ContentCalMain from "@/components/MarketingDashboard/ContentCalMain";
 import DesignerMyTasksContent from "@/components/DesignerDashboard/DesignerMyTasksContent";
+import AdminIndex from "@/components/AdminDashboard/AdminIndex";
+import AdminPrivate from "@/components/AdminDashboard/AdminPrivate";
+import AdminContentCal from "@/components/AdminDashboard/AdminContentCal";
+import AdminEmployee from "@/components/AdminDashboard/AdminEmployee";
 
 const RoutesAll = () => {
-    return <Routes>
-              <Route path="/" element={<App />}>
-                <Route index element={<MAIN_HOME_ROUTES />} />
-                <Route path="/services" element={<Services />} />
-                <Route path="/registration" element={<Registration />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/reset/password" element={<Reset />} />
-              </Route>
-              {/* sales dashboard start */}
-              <Route path="/dashboard/sales" element={<SalesPrivateRoute><Sales_Home></Sales_Home></SalesPrivateRoute>} >
-              <Route index element={<Sales_Index_Element />} />
-              <Route path="/dashboard/sales/create-leads" element={<Sales_Create_Leads />} />
-              <Route path="/dashboard/sales/all-leads" element={<Sales_My_Leads />} />
-              <Route path="/dashboard/sales/meetings" element={<Sales_Meetings />} />
-              <Route path="/dashboard/sales/in-progress" element={<Sales_In_Progress />} />
-              <Route path="/dashboard/sales/remainder" element={<Sales_Remainder />} />
-              <Route path="/dashboard/sales/qualified" element={<Sales_Qualified />} />
-              <Route path="/dashboard/sales/unqualified" element={<Sales_Unqualified />} />
-              <Route path="/dashboard/sales/assigned" element={<Sales_AssignedTask />} />
-              <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
-              <Route path="/dashboard/sales/emails" element={<Sales_Emails/>} />
-              </Route>
-              {/* sales dashboard end */}
-              {/* marketing dashboard start */}
-              <Route path="/dashboard/marketing" element={<MarketingPrivateRoute><MarketingHome></MarketingHome></MarketingPrivateRoute>} >
-              <Route index element={<MarketingIndex></MarketingIndex>} />
-              <Route path="/dashboard/marketing/pending-signatures" element={<PendingSignature />} />
-              <Route path="/dashboard/marketing/remainders-to-signatures" element={<MarketingRemainders />} />
-         
-              <Route path="/dashboard/marketing/create-campaign" element={<MarketingCreateCampaign />} />
-              <Route path="/dashboard/marketing/all-campaigns" element={<MarketingAllCampaign />} />
-              <Route path="/dashboard/marketing/end-campaigns" element={<MarketingEndCampaigns />} />
-              <Route path="/dashboard/marketing/add-task" element={<MarketingAddTask />} />
-              <Route path="/dashboard/marketing/assigned-tasks" element={<MarketingPendingTask />} />
-              <Route path="/dashboard/marketing/complete-tasks" element={<MarketingCompleteTasks />} />
-              <Route path="/dashboard/marketing/content-calendar" element={<ContentCalenderClient />} />
-              <Route path="/dashboard/marketing/content-calendar-main/:id" element={<ContentCalMain />} />
-              </Route>
-              {/* marketing dashboard end */}
-              {/* designer dashboard start */}
-              <Route path="/dashboard/designer" element={<DesignerPrivate><DesignerHome></DesignerHome></DesignerPrivate>} >
-              <Route index element={<DesignerIndex/>} />
-              <Route path="/dashboard/designer/my-tasks" element={<DesignerMyTasks />} />
-              <Route path="/dashboard/designer/in-progress-tasks" element={<DesignerRunningWorks />} />
-              <Route path="/dashboard/designer/overdue-tasks" element={<DesignerOverDueTasks />} />
-              <Route path="/dashboard/designer/content-tasks" element={<DesignerMyTasksContent />} />
-              </Route>
-              {/* designer dashboard end */}
-              {/* Admin dashboard start */}
-              <Route path="/dashboard/admin" element={<AdminHome></AdminHome>} >
-              {/* <Route index element={< />} /> */}
-              </Route>
-              {/* Admin dashboard end */}
-            </Routes>
+  return (
+    <Routes>
+      <Route path="/" element={<App />}>
+        <Route index element={<MAIN_HOME_ROUTES />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/registration" element={<Registration />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset/password" element={<Reset />} />
+      </Route>
+      {/* sales dashboard start */}
+      <Route
+        path="/dashboard/sales"
+        element={
+          <SalesPrivateRoute>
+            <Sales_Home></Sales_Home>
+          </SalesPrivateRoute>
+        }
+      >
+        <Route index element={<Sales_Index_Element />} />
+        <Route
+          path="/dashboard/sales/create-leads"
+          element={<Sales_Create_Leads />}
+        />
+        <Route path="/dashboard/sales/all-leads" element={<Sales_My_Leads />} />
+        <Route path="/dashboard/sales/meetings" element={<Sales_Meetings />} />
+        <Route
+          path="/dashboard/sales/in-progress"
+          element={<Sales_In_Progress />}
+        />
+        <Route
+          path="/dashboard/sales/remainder"
+          element={<Sales_Remainder />}
+        />
+        <Route
+          path="/dashboard/sales/qualified"
+          element={<Sales_Qualified />}
+        />
+        <Route
+          path="/dashboard/sales/unqualified"
+          element={<Sales_Unqualified />}
+        />
+        <Route
+          path="/dashboard/sales/assigned"
+          element={<Sales_AssignedTask />}
+        />
+        <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
+        <Route path="/dashboard/sales/emails" element={<Sales_Emails />} />
+      </Route>
+      {/* sales dashboard end */}
+      {/* marketing dashboard start */}
+      <Route
+        path="/dashboard/marketing"
+        element={
+          <MarketingPrivateRoute>
+            <MarketingHome></MarketingHome>
+          </MarketingPrivateRoute>
+        }
+      >
+        <Route index element={<MarketingIndex></MarketingIndex>} />
+        <Route
+          path="/dashboard/marketing/pending-signatures"
+          element={<PendingSignature />}
+        />
+        <Route
+          path="/dashboard/marketing/remainders-to-signatures"
+          element={<MarketingRemainders />}
+        />
+
+        <Route
+          path="/dashboard/marketing/create-campaign"
+          element={<MarketingCreateCampaign />}
+        />
+        <Route
+          path="/dashboard/marketing/all-campaigns"
+          element={<MarketingAllCampaign />}
+        />
+        <Route
+          path="/dashboard/marketing/end-campaigns"
+          element={<MarketingEndCampaigns />}
+        />
+        <Route
+          path="/dashboard/marketing/add-task"
+          element={<MarketingAddTask />}
+        />
+        <Route
+          path="/dashboard/marketing/assigned-tasks"
+          element={<MarketingPendingTask />}
+        />
+        <Route
+          path="/dashboard/marketing/complete-tasks"
+          element={<MarketingCompleteTasks />}
+        />
+        <Route
+          path="/dashboard/marketing/content-calendar"
+          element={<ContentCalenderClient />}
+        />
+        <Route
+          path="/dashboard/marketing/content-calendar-main/:id"
+          element={<ContentCalMain />}
+        />
+      </Route>
+      {/* marketing dashboard end */}
+      {/* designer dashboard start */}
+      <Route
+        path="/dashboard/designer"
+        element={
+          <DesignerPrivate>
+            <DesignerHome></DesignerHome>
+          </DesignerPrivate>
+        }
+      >
+        <Route index element={<DesignerIndex />} />
+        <Route
+          path="/dashboard/designer/my-tasks"
+          element={<DesignerMyTasks />}
+        />
+        <Route
+          path="/dashboard/designer/in-progress-tasks"
+          element={<DesignerRunningWorks />}
+        />
+        <Route
+          path="/dashboard/designer/overdue-tasks"
+          element={<DesignerOverDueTasks />}
+        />
+        <Route
+          path="/dashboard/designer/content-tasks"
+          element={<DesignerMyTasksContent />}
+        />
+      </Route>
+      {/* designer dashboard end */}
+      {/* Admin dashboard start */}
+
+      <Route path="/dashboard/admin" element={<AdminPrivate><AdminHome></AdminHome></AdminPrivate>}>
+        <Route index element={<AdminIndex />} />
+        <Route path="/dashboard/admin/employees" element={<AdminEmployee />} />
+        <Route path="/dashboard/admin/content-calendar" element={<AdminContentCal />} />
+
+      </Route>
+
+
+      {/* Admin dashboard end */}
+    </Routes>
+  );
 };
 
 export default RoutesAll;

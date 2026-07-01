@@ -2,7 +2,7 @@
 const AdminIndex = () => {
     return (
         <div>
-            index of admin dashboard
+            index of admin dashboard   cdc
         </div>
     );
 };
