@@ -88,30 +88,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
                     </Link>
                   )}
 
-                  <div className="flex items-center gap-3 rounded-full border border-gray-200 bg-white px-3 py-2 shadow-sm">
-                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 ring-1 ring-gray-200">
-                      {person.photoURL ? (
-                        <img
-                          src={person.photoURL}
-                          alt="Profile"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <FaUserShield size={18} />
-                      )}
-                    </div>
-
-                    <div className="min-w-0 hidden xl:block">
-                      <p className="truncate text-sm font-semibold text-gray-900">
-                        {userData?.name || person.displayName || "User"}
-                      </p>
-                      <p className="truncate text-xs text-gray-500">
-                        {userData?.role
-                          ? userData.role.charAt(0).toUpperCase() + userData.role.slice(1)
-                          : "Member"}
-                      </p>
-                    </div>
-                  </div>
+                  
 
 
                   <button
