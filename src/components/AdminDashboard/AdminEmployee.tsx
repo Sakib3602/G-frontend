@@ -121,7 +121,8 @@ const AdminEmployee = () => {
       );
     },
     onError: (error, variables) => {
-      alert(`Failed to change role for employee id: ${variables.id}. Please try again.`);
+      alert(`Failed to change role for employee id: ${variables.id}.  Please try again.`);
+      console.log("Role change failed for id:", variables.id, error);
     },
   });
 

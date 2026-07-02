@@ -42,7 +42,10 @@ const MENU_ITEMS = [
 ];
 
 const AdminHome = () => {
-  const { logOut } = useContext(AuthContext);
+  // const { logOut } = useContext(AuthContext);
+
+  const auth = useContext(AuthContext);
+  const logOut = auth?.logOut;
   const [isOpen, setIsOpen] = useState(true);
 
   return (

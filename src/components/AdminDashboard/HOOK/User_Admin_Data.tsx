@@ -1,4 +1,3 @@
-import React from 'react';
 
 const User_Admin_Data = () => {
     return (
