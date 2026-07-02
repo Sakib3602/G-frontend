@@ -11,7 +11,6 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const { person, logOut } = useContext(AuthContext)!;
   const [showNotification, setShowNotification] = useState(false);
 
@@ -19,13 +18,6 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
     logOut().then(() => {
       setShowNotification(true);
     });
-  };
-
-  const handleMenu = (open: boolean) => {
-    setIsOpen(open);
-    if (typeof window !== "undefined") {
-      document.body.style.overflow = open ? "hidden" : "unset";
-    }
   };
 
   const axiosPub = useAxiosPublic();
@@ -141,19 +133,9 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
               )}
             </div>
 
-            {/* Mobile Hamburger */}
-            <div className="lg:hidden">
-              <button onClick={() => handleMenu(true)} className="flex flex-col gap-1.5 p-2">
-                <span className="block w-6 h-0.5 bg-gray-900"></span>
-                <span className="block w-4 h-0.5 bg-gray-900"></span>
-                <span className="block w-6 h-0.5 bg-gray-900"></span>
-              </button>
-            </div>
           </div>
         </div>
       </nav>
-
-      {/* Mobile Menu remains the same as your previous implementation */}
     </>
   );
 };
