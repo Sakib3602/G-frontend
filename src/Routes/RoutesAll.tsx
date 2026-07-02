@@ -42,8 +42,10 @@ import ContentCalMain from "@/components/MarketingDashboard/ContentCalMain";
 import DesignerMyTasksContent from "@/components/DesignerDashboard/DesignerMyTasksContent";
 import AdminIndex from "@/components/AdminDashboard/AdminIndex";
 import AdminPrivate from "@/components/AdminDashboard/AdminPrivate";
-import AdminContentCal from "@/components/AdminDashboard/AdminContentCal";
 import AdminEmployee from "@/components/AdminDashboard/AdminEmployee";
+import AdminContentCalenderClient from "@/components/AdminDashboard/AdminContentCalenderClient";
+import AdminContentCalMain from "@/components/AdminDashboard/AdminContentCalMain";
+import AdminDelayWorks from "@/components/AdminDashboard/AdminDelayWorks";
 
 const RoutesAll = () => {
   return (
@@ -181,8 +183,9 @@ const RoutesAll = () => {
       <Route path="/dashboard/admin" element={<AdminPrivate><AdminHome></AdminHome></AdminPrivate>}>
         <Route index element={<AdminIndex />} />
         <Route path="/dashboard/admin/employees" element={<AdminEmployee />} />
-        <Route path="/dashboard/admin/content-calendar" element={<AdminContentCal />} />
-
+        <Route path="/dashboard/admin/content-calendar" element={<AdminContentCalenderClient />} />
+        <Route path="/dashboard/admin/content-calendar/:id" element={<AdminContentCalMain />} />
+        <Route path="/dashboard/admin/delay-works" element={<AdminDelayWorks />} />
       </Route>
 
 

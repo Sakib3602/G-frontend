@@ -1,41 +1,107 @@
-import { NavLink, Outlet } from 'react-router';
-import { AuthContext } from '../Authentication/AuthProvider/AuthProvider';
-import { useContext } from 'react';
+import { NavLink, Outlet } from "react-router";
+import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
+import { useContext, useState } from "react";
+import {
+  HiOutlineHome,
+  HiOutlineUsers,
+  HiOutlineCalendar,
+  HiOutlineSpeakerphone,
+  HiOutlineClock,
+  HiOutlineCog,
+  HiOutlineQuestionMarkCircle,
+  HiOutlineLogout,
+  HiChevronDoubleLeft,
+  HiChevronDoubleRight,
+} from "react-icons/hi";
 
 const MENU_ITEMS = [
-  { name: 'Home', path: '/dashboard/admin' },
-  { name: 'All Employees', path: '/dashboard/admin/employees' },
-  { name: 'Content Calendars', path: '/dashboard/admin/content-calendar' },
-  { name: 'Campaigns Requests', path: '/dashboard/admin/campaigns-requests' },
-  { name: 'Delay Works', path: '/dashboard/admin/delay-works' },
-  { name: 'Settings', path: '/settings' },
-  { name: 'Help', path: '/help' },
+  { name: "Home", path: "/dashboard/admin", icon: HiOutlineHome },
+  {
+    name: "All Employees",
+    path: "/dashboard/admin/employees",
+    icon: HiOutlineUsers,
+  },
+  {
+    name: "Content Calendars",
+    path: "/dashboard/admin/content-calendar",
+    icon: HiOutlineCalendar,
+  },
+
+  {
+    name: "Delay Works",
+    path: "/dashboard/admin/delay-works",
+    icon: HiOutlineClock,
+  },
+  {
+    name: "Campaigns Requests",
+    path: "/dashboard/admin/campaigns-requests",
+    icon: HiOutlineSpeakerphone,
+  },
+  { name: "Settings", path: "/settings", icon: HiOutlineCog },
+  { name: "Help", path: "/help", icon: HiOutlineQuestionMarkCircle },
 ];
 
 const AdminHome = () => {
-    const {logOut} = useContext(AuthContext);
+  const { logOut } = useContext(AuthContext);
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <nav className="w-60 border-r border-gray-200 bg-white flex flex-col justify-between">
-        <div className="p-6">
-          <h2 className="text-[#F7941D] text-xl font-bold mb-8">Admin Dashboard</h2>
-          
-          <ul className="space-y-2"> {/* space-y কমিয়ে আরও সুন্দর করা হলো */}
-            {MENU_ITEMS.map(({ name, path }) => (
+      <nav
+        className={`${
+          isOpen ? "w-60" : "w-20"
+        } border-r border-gray-200 bg-white flex flex-col justify-between transition-all duration-300 ease-in-out relative`}
+      >
+        {/* Toggle button - sits on the sidebar edge */}
+        <button
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="absolute -right-3 top-8 z-10 w-6 h-6 flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-[#F7941D] hover:border-[#F7941D] rounded-full shadow-sm transition-colors"
+          aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {isOpen ? (
+            <HiChevronDoubleLeft size={12} />
+          ) : (
+            <HiChevronDoubleRight size={12} />
+          )}
+        </button>
+
+        <div className="p-4">
+          <div
+            className={`flex items-center mb-8 ${isOpen ? "px-2" : "justify-center"}`}
+          >
+            {isOpen ? (
+              <h2 className="text-[#F7941D] text-xl font-bold whitespace-nowrap overflow-hidden">
+                Admin Dashboard
+              </h2>
+            ) : (
+              <span className="text-[#F7941D] text-xl font-bold">A</span>
+            )}
+          </div>
+
+          <ul className="space-y-2">
+            {MENU_ITEMS.map(({ name, path, icon: Icon }) => (
               <li key={name}>
-                <NavLink 
+                <NavLink
                   to={path}
-                  end={path === '/dashboard/admin'} // এখানে end যোগ করা হয়েছে
-                  className={({ isActive }) => 
-                    `block px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
-                      isActive 
-                        ? 'text-[#F7941D] bg-orange-50 font-bold' 
-                        : 'text-gray-600 hover:bg-gray-100'
+                  end={path === "/dashboard/admin"}
+                  title={!isOpen ? name : undefined}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
+                      !isOpen ? "justify-center px-0" : ""
+                    } ${
+                      isActive
+                        ? "text-[#F7941D] bg-orange-50 font-bold"
+                        : "text-gray-600 hover:bg-gray-100"
                     }`
                   }
                 >
-                  {name}
+                  <Icon size={20} className="shrink-0" />
+                  {isOpen && (
+                    <span className="whitespace-nowrap overflow-hidden">
+                      {name}
+                    </span>
+                  )}
                 </NavLink>
               </li>
             ))}
@@ -44,12 +110,25 @@ const AdminHome = () => {
 
         {/* User Profile & Logout Section */}
         <div className="p-4 border-t border-gray-100">
-          <div className="mb-4 px-2">
-            <p className="text-sm font-semibold text-gray-800">Sakib Sarkar Emon</p>
-            <p className="text-xs text-gray-500 truncate">sakib@example.com</p>
-          </div>
-          <button onClick={logOut} className="w-full text-left text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors">
-            Logout
+          {isOpen && (
+            <div className="mb-4 px-2">
+              <p className="text-sm font-semibold text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">
+                Sakib Sarkar Emon
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                sakib@example.com
+              </p>
+            </div>
+          )}
+          <button
+            onClick={logOut}
+            title={!isOpen ? "Logout" : undefined}
+            className={`w-full flex items-center gap-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors ${
+              !isOpen ? "justify-center px-0" : ""
+            }`}
+          >
+            <HiOutlineLogout size={18} className="shrink-0" />
+            {isOpen && <span>Logout</span>}
           </button>
         </div>
       </nav>

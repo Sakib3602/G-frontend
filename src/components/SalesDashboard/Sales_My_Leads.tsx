@@ -100,6 +100,10 @@ export default function Sales_My_Leads() {
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [isMeetingConflict, setIsMeetingConflict] = useState(false);
 
+  // Note Modal State
+  const [noteLead, setNoteLead] = useState<LeadData | null>(null);
+  const [noteText, setNoteText] = useState("");
+
   // Details Modal State
   const [selectedLeadDetails, setSelectedLeadDetails] = useState<LeadData | null>(null);
 
@@ -250,6 +254,46 @@ export default function Sales_My_Leads() {
     setMeetingError(null);
     setMeetingLead(lead);
     setMeetingForm(createMeetingForm(lead));
+  };
+
+  const openNotePopup = (lead: LeadData) => {
+    setNoteLead(lead);
+    setNoteText(lead.indications || "");
+
+  };
+
+  // /update-indications
+  const mutationUpForNote = useMutation({
+  mutationFn: async ({ leadId, indications }: { leadId: string; indications: string }) => {
+    const res = await axiosSales.patch(`/api/v1/sales/update-indications/${leadId}`, { indications });
+    return res.data;
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
+  },
+});
+
+  const handleNoteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!noteLead || !noteText.trim()) return;
+
+    const leadId = noteLead._id || noteLead.id;
+    const nextIndications = noteText.trim();
+
+    mutationUpForNote.mutate(
+      {
+        leadId,
+        indications: nextIndications,
+      },
+      {
+        onSuccess: () => {
+          console.log(nextIndications);
+          setNoteLead(null);
+          setNoteText("");
+        },
+      },
+    );
   };
 
   const MutationForCkMeeting = useMutation({
@@ -424,12 +468,20 @@ export default function Sales_My_Leads() {
                     </td>
 
                     <td className="px-5 py-3 w-[1%]">
-                      <button
-                        onClick={() => openMeetingPopup(lead)}
-                        className="whitespace-nowrap px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition-all shadow-xs"
-                      >
-                        Schedule
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openMeetingPopup(lead)}
+                          className="whitespace-nowrap px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition-all shadow-xs"
+                        >
+                          Schedule
+                        </button>
+                        <button
+                          onClick={() => openNotePopup(lead)}
+                          className="whitespace-nowrap px-3 py-1.5 rounded border border-[#99B562]/30 bg-[#99B562]/10 hover:bg-[#99B562]/15 text-[#6f8a3f] text-[11px] font-bold transition-all shadow-xs"
+                        >
+                          Add Note
+                        </button>
+                      </div>
                     </td>
 
                     <td className="px-5 py-3 w-44">
@@ -677,6 +729,54 @@ export default function Sales_My_Leads() {
                 </button>
                 <button type="submit" className={`px-5 py-2 rounded text-xs font-bold text-white transition-colors shadow-xs ${isMeetingConflict ? "bg-amber-500 hover:bg-amber-600" : "bg-slate-900 hover:bg-slate-800"}`}>
                   {isMeetingConflict ? "Force Additional Meeting" : "Commit Schedule"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- NOTE MODAL --- */}
+      {noteLead && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="absolute inset-0" onClick={() => { setNoteLead(null); setNoteText(""); }}></div>
+
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative z-10 overflow-hidden border border-slate-200">
+            <div className="px-6 py-5 flex justify-between items-start border-b border-slate-100 bg-slate-50/50">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Add Indication / Note</h2>
+                <p className="text-xs text-slate-500 mt-1">Leave a note for <span className="font-bold text-slate-800">{noteLead.leadName}</span>.</p>
+              </div>
+              <button onClick={() => { setNoteLead(null); setNoteText(""); }} className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleNoteSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Note</label>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  rows={5}
+                  placeholder="Add indication / note here..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setNoteLead(null); setNoteText(""); }}
+                  className="px-4 py-2 rounded border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] transition-colors"
+                >
+                  Submit Note
                 </button>
               </div>
             </form>
