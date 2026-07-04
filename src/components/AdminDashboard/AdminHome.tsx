@@ -7,7 +7,6 @@ import {
   HiOutlineCalendar,
   HiOutlineSpeakerphone,
   HiOutlineClock,
-  HiOutlineCog,
   HiOutlineQuestionMarkCircle,
   HiOutlineLogout,
   HiChevronDoubleLeft,
@@ -33,12 +32,17 @@ const MENU_ITEMS = [
     icon: HiOutlineClock,
   },
   {
+    name: "EM Reports",
+    path: "/dashboard/admin/em-reports",
+    icon: HiOutlineClock,
+  },
+  {
     name: "Campaigns Requests",
     path: "/dashboard/admin/campaigns-requests",
     icon: HiOutlineSpeakerphone,
   },
-  { name: "Settings", path: "/settings", icon: HiOutlineCog },
-  { name: "Help", path: "/help", icon: HiOutlineQuestionMarkCircle },
+
+  { name: "Compliance", path: "/compliance", icon: HiOutlineQuestionMarkCircle },
 ];
 
 const AdminHome = () => {

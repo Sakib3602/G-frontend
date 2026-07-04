@@ -4,7 +4,6 @@ import Registration from "@/components/Authentication/Auth_Page/Registration";
 import Reset from "@/components/Authentication/Auth_Page/Reset";
 import Services from "@/components/BasicComponents/Services/Services";
 import DesignerHome from "@/components/DesignerDashboard/DesignerHome";
-// import DesignerIndex from "@/components/DesignerDashboard/DesignerIndex";
 import DesignerMyTasks from "@/components/DesignerDashboard/DesignerMyTasks";
 import DesignerOverDueTasks from "@/components/DesignerDashboard/DesignerOverDueTasks";
 import DesignerPrivate from "@/components/DesignerDashboard/DesignerPrivate";
@@ -46,6 +45,7 @@ import AdminEmployee from "@/components/AdminDashboard/AdminEmployee";
 import AdminContentCalenderClient from "@/components/AdminDashboard/AdminContentCalenderClient";
 import AdminContentCalMain from "@/components/AdminDashboard/AdminContentCalMain";
 import AdminDelayWorks from "@/components/AdminDashboard/AdminDelayWorks";
+import AdminEmReports from "@/components/AdminDashboard/AdminEmReports";
 
 const RoutesAll = () => {
   return (
@@ -186,6 +186,7 @@ const RoutesAll = () => {
         <Route path="/dashboard/admin/content-calendar" element={<AdminContentCalenderClient />} />
         <Route path="/dashboard/admin/content-calendar/:id" element={<AdminContentCalMain />} />
         <Route path="/dashboard/admin/delay-works" element={<AdminDelayWorks />} />
+        <Route path="/dashboard/admin/em-reports" element={<AdminEmReports />} />
       </Route>
 
 
