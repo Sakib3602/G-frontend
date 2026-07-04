@@ -41,6 +41,12 @@ const AdminContentCalenderClient = () => {
   const [doneSearch, setDoneSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // ── NEW: Add Client form state ──────────────────────────────
+  const [name, setName] = useState("");
+  const [agreementDate, setAgreementDate] = useState("");
+  const [formError, setFormError] = useState("");
+  const [addSuccess, setAddSuccess] = useState(false);
+
   const STATUS_TO_BACKEND = { running: "ACTIVE", done: "DONE" };
   const CANCELLED_STATUS = "INACTIVE";
 
@@ -79,6 +85,35 @@ const AdminContentCalenderClient = () => {
       };
     })
     .filter((c: { status: ClientStatus | null }) => c.status !== null) as ClientAgreement[];
+
+  // ── NEW: Add Client mutation ────────────────────────────────
+  const mutationAddClient = useMutation({
+    mutationFn: async (data: { name: string; agreementDate: string }) => {
+      const res = await axiosAdmin.post("/content-calendar/client", data);
+      return res.data;
+    },
+    onSuccess: () => {
+      setName("");
+      setAgreementDate("");
+      setFormError("");
+      setAddSuccess(true);
+      queryClient.invalidateQueries({ queryKey: ["adminAllClients"] });
+      setTimeout(() => setAddSuccess(false), 2500);
+    },
+    onError: () => {
+      setFormError("Client add করা যায়নি। আবার চেষ্টা করুন।");
+    },
+  });
+
+  const handleAddClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError("");
+    if (!name.trim() || !agreementDate) {
+      setFormError("Client name এবং agreement date দুটোই দিতে হবে।");
+      return;
+    }
+    mutationAddClient.mutate({ name: name.trim(), agreementDate });
+  };
 
   const mutationStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -269,6 +304,68 @@ const AdminContentCalenderClient = () => {
             Overview of every client across all marketing employees.
           </p>
         </div>
+
+        {/* ── NEW: Add Client Form (Admin) ──────────────────── */}
+        <form
+          onSubmit={handleAddClient}
+          className="mb-8 rounded-2xl border border-white/50 bg-white/25 p-5 shadow-xl shadow-slate-900/10 backdrop-blur-2xl backdrop-saturate-150"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Add New Client
+            </p>
+            {addSuccess && (
+              <span className="text-xs font-medium text-emerald-600">
+                ✓ Client added successfully
+              </span>
+            )}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="adminClientName"
+                className="text-xs font-medium uppercase tracking-wide text-slate-600"
+              >
+                Client name
+              </label>
+              <input
+                id="adminClientName"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Sunrise Apparel Co."
+                className="rounded-lg border border-slate-300/70 bg-white/50 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:bg-white/70 focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="adminAgreementDate"
+                className="text-xs font-medium uppercase tracking-wide text-slate-600"
+              >
+                Agreement date
+              </label>
+              <input
+                id="adminAgreementDate"
+                type="date"
+                value={agreementDate}
+                onChange={(e) => setAgreementDate(e.target.value)}
+                className="rounded-lg border border-slate-300/70 bg-white/50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white/70 focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+          </div>
+
+          {formError && <p className="mt-3 text-sm text-rose-600">{formError}</p>}
+
+          <button
+            type="submit"
+            disabled={mutationAddClient.isPending}
+            className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto"
+          >
+            {mutationAddClient.isPending ? "Adding..." : "Add client"}
+          </button>
+        </form>
 
         <div className="grid gap-6 sm:grid-cols-2">
           {renderTable(

@@ -50,6 +50,8 @@ const AdminHome = () => {
 
   const auth = useContext(AuthContext);
   const logOut = auth?.logOut;
+
+  const person = auth?.person;
   const [isOpen, setIsOpen] = useState(true);
 
   return (
@@ -120,10 +122,10 @@ const AdminHome = () => {
           {isOpen && (
             <div className="mb-4 px-2">
               <p className="text-sm font-semibold text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">
-                Sakib Sarkar Emon
+                Welcome, Admin
               </p>
               <p className="text-xs text-gray-500 truncate">
-                sakib@example.com
+                {person?.email || "sakib@example.com"}
               </p>
             </div>
           )}
