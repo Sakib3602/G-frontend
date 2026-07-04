@@ -93,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
 
                   <button
                     onClick={handleLogOut}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-rose-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:-translate-y-0.5 hover:from-red-600 hover:to-rose-700"
+                    className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-red-500 to-rose-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:-translate-y-0.5 hover:from-red-600 hover:to-rose-700"
                   >
                     Sign Out
                   </button>
@@ -104,7 +104,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
                     <button className="cursor-pointer px-6 py-2.5 text-sm font-bold rounded-lg text-[#80A33C] border-2 border-[#80A33C] hover:bg-[#80A33C] hover:text-white transition-all">Sign In</button>
                   </Link>
                   <Link to={"/registration"}>
-                    <button className="cursor-pointer px-6 py-2.5 text-sm font-bold rounded-lg text-white bg-gradient-to-r from-[#80A33C] to-[#5a7a28] shadow-lg">Sign Up</button>
+                    <button className="cursor-pointer px-6 py-2.5 text-sm font-bold rounded-lg text-white bg-linear-to-r from-[#80A33C] to-[#5a7a28] shadow-lg">Sign Up</button>
                   </Link>
                 </div>
               )}
