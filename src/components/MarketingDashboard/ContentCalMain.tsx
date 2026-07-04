@@ -213,9 +213,22 @@ const PostTypeCell = ({
   onSave: (v: string) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -259,9 +272,22 @@ const TeamCell = ({
   onSave: (user: UserOption) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -344,10 +370,24 @@ const StatusCell = ({
   onSave: (s: ItemStatus) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
+
   const label = ITEM_STATUSES.find((s) => s.value === status)?.label ?? status;
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -642,7 +682,7 @@ const ContentCalMain = () => {
           {itemsLoading ? (
             <div className="py-12 text-center text-sm text-slate-400">Loading rows...</div>
           ) : (
-            <div className="overflow-x-auto px-4">
+            <div className="overflow-x-auto px-4 pb-20" style={{ overflowY: 'visible' }}>
               <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1100px" }}>
                 <colgroup>
                   <col style={{ width: "36px" }} />
@@ -810,6 +850,13 @@ const ContentCalMain = () => {
           <p className="text-sm text-slate-400">Select a calendar above to view content rows.</p>
         </div>
       )}
+
+      {/* Footer */}
+      <div className="w-full bg-gradient-to-r from-slate-900 to-slate-800 py-16 px-6 text-center mt-12">
+        <p className="text-3xl font-bold text-white tracking-tight">
+          Plan today. Publish tomorrow. Grow forever.
+        </p>
+      </div>
     </div>
   );
 };
