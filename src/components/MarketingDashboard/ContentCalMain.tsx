@@ -84,7 +84,8 @@ const STATUS_STYLES: Record<ItemStatus, string> = {
   SCHEDULED: "bg-cyan-100 text-cyan-700",
 };
 
-
+// Statuses that should NOT be flagged as "missed delivery" even if the
+// delivery date has passed without a delivery link.
 const EXCLUDED_FROM_OVERDUE_CHECK: ItemStatus[] = [
   "DELIVERED",
   "CANCELLED",
@@ -125,11 +126,17 @@ const fmtInput = (d?: string) => {
   return new Date(d).toISOString().slice(0, 10);
 };
 
-
+// Live/dynamic check — used only to decide WHEN to fire the report
+// mutation in the first place. Once item.reportSent is true on the
+// server, the row stays red regardless of what this returns afterwards.
 const isOverdueMissingDelivery = (item: CalendarItem) => {
   if (!item.deliveryDate) return false;
   if (item.deliveryLink && item.deliveryLink.trim() !== "") return false;
   if (EXCLUDED_FROM_OVERDUE_CHECK.includes(item.status)) return false;
+
+  // "No Post" items have nothing to deliver — skip report entirely
+  if (item.postType === "No Post") return false;
+  if ((item.status as string) === "NO_POST") return false;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -213,22 +220,12 @@ const PostTypeCell = ({
   onSave: (v: string) => void;
 }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
+      {open && (
+        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+      )}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -272,22 +269,12 @@ const TeamCell = ({
   onSave: (user: UserOption) => void;
 }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
+      {open && (
+        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+      )}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -370,24 +357,13 @@ const StatusCell = ({
   onSave: (s: ItemStatus) => void;
 }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [open]);
-
   const label = ITEM_STATUSES.find((s) => s.value === status)?.label ?? status;
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
+      {open && (
+        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+      )}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -435,7 +411,7 @@ const WeekRow = ({ week }: { week: number }) => (
 const ContentCalMain = () => {
   const { id } = useParams();
   const axiosMarketing = useAxiosMarketing();
-
+  const axiosUser = useAxiosMarketing();
   const queryClient = useQueryClient();
 
   const [title, setTitle] = useState("");
@@ -480,7 +456,7 @@ const ContentCalMain = () => {
   const { data: users = [] } = useQuery<UserOption[]>({
     queryKey: ["users"],
     queryFn: async () => {
-      const res = await axiosMarketing.get("/users");
+      const res = await axiosUser.get("/users");
       return res.data?.data ?? res.data ?? [];
     },
   });
@@ -489,7 +465,7 @@ const ContentCalMain = () => {
     mutationFn: async () => {
       const res = await axiosMarketing.post("/create-calendar", {
         creatorId: client?.creatorId,
-        clientId: client?._id,
+        clientId: id,
         title,
         startDate,
         endDate,
@@ -521,10 +497,11 @@ const ContentCalMain = () => {
     },
   });
 
-
+  // Backend now reads clientId/calendarId/creativeTeam straight off the
+  // item itself, so no body is needed here anymore.
   const reportMutation = useMutation({
-    mutationFn: async ({ itemId, creativeTeamId }: { itemId: string; creativeTeamId?: string }) => {
-      const res = await axiosMarketing.post(`/generate-report/${itemId}`, { creativeTeamId });
+    mutationFn: async (itemId: string) => {
+      const res = await axiosMarketing.post(`/generate-report/${itemId}`);
       return res.data;
     },
     onSuccess: () => {
@@ -535,19 +512,14 @@ const ContentCalMain = () => {
     },
   });
 
-
+  // Fire the report mutation once per item — guarded by both the
+  // permanent server flag (reportSent) and the short-lived in-session ref.
   useEffect(() => {
     items.forEach((item) => {
       const alreadyHandled = item.reportSent || pendingReportIdsRef.current.has(item._id);
       if (isOverdueMissingDelivery(item) && !alreadyHandled) {
         pendingReportIdsRef.current.add(item._id);
-       const resolvedId =
-        item.creativeTeamId ??
-        users.find((u) => u.name === item.creativeTeam)?._id;
-
-      console.log(`Triggering missed-delivery report for item  (creativeTeamId: ${resolvedId})`
-      );
-        reportMutation.mutate({ itemId: item._id, creativeTeamId: resolvedId });
+        reportMutation.mutate(item._id);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -582,7 +554,7 @@ const ContentCalMain = () => {
   return (
     <div className="min-h-full w-full">
 
-      {/* ── Top section with padding ──────────────────────── */}
+      {/* ── Top section with padding ───────────────────────── */}
       <div className="px-8 pt-8 pb-4">
 
         {/* Header */}
@@ -682,7 +654,7 @@ const ContentCalMain = () => {
           {itemsLoading ? (
             <div className="py-12 text-center text-sm text-slate-400">Loading rows...</div>
           ) : (
-            <div className="overflow-x-auto px-4 pb-20" style={{ overflowY: 'visible' }}>
+            <div className="overflow-x-auto px-4">
               <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1100px" }}>
                 <colgroup>
                   <col style={{ width: "36px" }} />
@@ -850,13 +822,6 @@ const ContentCalMain = () => {
           <p className="text-sm text-slate-400">Select a calendar above to view content rows.</p>
         </div>
       )}
-
-      {/* Footer */}
-      <div className="w-full bg-gradient-to-r from-slate-900 to-slate-800 py-16 px-6 text-center mt-12">
-        <p className="text-3xl font-bold text-white tracking-tight">
-          Plan today. Publish tomorrow. Grow forever.
-        </p>
-      </div>
     </div>
   );
 };

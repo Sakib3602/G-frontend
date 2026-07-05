@@ -1,9 +1,14 @@
 import React from "react";
+import { Helmet } from "react-helmet";
 import { Link } from "react-router";
 
 const Hero: React.FC = () => {
   return (
     <section className="relative bg-white pt-16 pb-24 overflow-hidden">
+      <Helmet>
+              <meta charSet="utf-8" />
+              <title>Genesys | CRM</title>
+            </Helmet>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row items-center gap-16">
           

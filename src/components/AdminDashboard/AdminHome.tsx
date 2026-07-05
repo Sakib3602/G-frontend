@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useContext, useState } from "react";
+import { Helmet } from "react-helmet";
 import {
   HiOutlineHome,
   HiOutlineUsers,
@@ -42,7 +43,11 @@ const MENU_ITEMS = [
     icon: HiOutlineSpeakerphone,
   },
 
-  { name: "Compliance", path: "/compliance", icon: HiOutlineQuestionMarkCircle },
+  {
+    name: "Compliance",
+    path: "/compliance",
+    icon: HiOutlineQuestionMarkCircle,
+  },
 ];
 
 const AdminHome = () => {
@@ -56,6 +61,10 @@ const AdminHome = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>Welcome Admin</title>
+      </Helmet>
       {/* Sidebar */}
       <nav
         className={`${

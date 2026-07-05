@@ -13,6 +13,7 @@ import {
   TimerReset,
   CheckCircle,
 } from "lucide-react";
+import { Helmet } from "react-helmet";
 import { Link, Outlet, useLocation } from "react-router";
 
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
@@ -79,6 +80,10 @@ const MarketingHome = () => {
 
   return (
     <div className="poppins-regular flex h-screen bg-[#F8FAFC] text-slate-800">
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>Genesys - Marketing Dashboard</title>
+      </Helmet>
       {/* Sidebar */}
       <aside
         className={`${isSidebarOpen ? "w-64" : "w-20"}
@@ -187,8 +192,8 @@ const MarketingHome = () => {
         </header>
 
         {/* Content */}
-       <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
-  <div className="min-h-full w-full bg-white relative">
+        <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+          <div className="min-h-full w-full bg-white relative">
             {/* Noise Texture (Darker Dots) Background */}
             <div
               className="absolute inset-0 z-0"

@@ -19,6 +19,7 @@ type ItemStatus =
   | "PAUSED"
   | "DELIVERED"
   | "CANCELLED"
+  | "NO POST"
   | "SCHEDULED";
 
 interface CalendarItem {
@@ -71,6 +72,7 @@ const ITEM_STATUSES: { value: ItemStatus; label: string }[] = [
   { value: "DELIVERED", label: "Delivered" },
   { value: "CANCELLED", label: "Cancelled" },
   { value: "SCHEDULED", label: "Scheduled" },
+  { value: "NO POST", label: "No Post" },
 ];
 
 const STATUS_STYLES: Record<ItemStatus, string> = {
@@ -84,6 +86,7 @@ const STATUS_STYLES: Record<ItemStatus, string> = {
   DELIVERED: "bg-blue-100 text-blue-700",
   CANCELLED: "bg-red-100 text-red-600",
   SCHEDULED: "bg-cyan-100 text-cyan-700",
+  "NO POST": "bg-gray-100 text-gray-600",
 };
 
 const EXCLUDED_FROM_OVERDUE_CHECK: ItemStatus[] = [
@@ -91,6 +94,7 @@ const EXCLUDED_FROM_OVERDUE_CHECK: ItemStatus[] = [
   "CANCELLED",
   "PUBLISHED",
   "ACCEPTED",
+  "NO POST",
 ];
 
 const PLATFORMS: Platform[] = ["FACEBOOK", "INSTAGRAM", "LINKEDIN", "YOUTUBE"];
@@ -125,6 +129,11 @@ const fmt = (d?: string) => {
 const fmtInput = (d?: string) => {
   if (!d) return "";
   return new Date(d).toISOString().slice(0, 10);
+};
+
+const isEndDateValid = (start: string, end: string) => {
+  if (!start || !end) return true;
+  return end > start;
 };
 
 const isOverdueLive = (item: CalendarItem) => {
@@ -195,8 +204,26 @@ const EditableCell = ({
 
 const PostTypeCell = ({ value, onSave }: { value: string; onSave: (v: string) => void }) => {
   const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+      if (!wrapperRef.current) return;
+      const target = event.target as Node;
+      if (!wrapperRef.current.contains(target)) setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, []);
+
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -229,8 +256,26 @@ const TeamCell = ({
   onSave: (user: UserOption) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+      if (!wrapperRef.current) return;
+      const target = event.target as Node;
+      if (!wrapperRef.current.contains(target)) setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, []);
+
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -277,9 +322,27 @@ const PlatformCell = ({ selected, onSave }: { selected: Platform[]; onSave: (p: 
 
 const StatusCell = ({ status, onSave }: { status: ItemStatus; onSave: (s: ItemStatus) => void }) => {
   const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+      if (!wrapperRef.current) return;
+      const target = event.target as Node;
+      if (!wrapperRef.current.contains(target)) setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, []);
+
   const label = ITEM_STATUSES.find((s) => s.value === status)?.label ?? status;
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)}
         className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[status]}`}
       >{label}</button>
@@ -413,7 +476,7 @@ const AdminContentCalMain = () => {
     e.preventDefault();
     setDateError("");
     if (!title || !startDate || !endDate) { setDateError("সব field পূরণ করুন।"); return; }
-    if (new Date(endDate) <= new Date(startDate)) { setDateError("End date অবশ্যই start date এর পরে হতে হবে।"); return; }
+    if (!isEndDateValid(startDate, endDate)) { setDateError("End date অবশ্যই start date এর পরে হতে হবে।"); return; }
     createCalendarMutation.mutate();
   };
 
@@ -446,23 +509,47 @@ const AdminContentCalMain = () => {
         {/* Create Calendar Form */}
         <div className="mb-6 rounded-xl border border-white/50 bg-white/60 p-4 shadow-md backdrop-blur-xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">New Calendar</p>
-          <form onSubmit={handleCreateCalendar} className="flex flex-wrap gap-2">
+          <form onSubmit={handleCreateCalendar} className="flex flex-wrap items-end gap-3">
             <input type="text" placeholder="e.g. June–July 2026" value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-56 rounded-lg border border-slate-300/70 bg-white/70 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
             />
-            <input type="date" value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setDateError(""); }}
-              className="rounded-lg border border-slate-300/70 bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
-            />
-            <input type="date" value={endDate} min={startDate || undefined}
-              onChange={(e) => { setEndDate(e.target.value); setDateError(""); }}
-              className={`rounded-lg border bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 ${
-                dateError && endDate && new Date(endDate) <= new Date(startDate)
-                  ? "border-rose-400 focus:border-rose-400 focus:ring-rose-200"
-                  : "border-slate-300/70 focus:border-indigo-400 focus:ring-indigo-200"
-              }`}
-            />
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500">Start date</label>
+              <input type="date" value={startDate} max={endDate || undefined}
+                onChange={(e) => {
+                  const nextStartDate = e.target.value;
+                  setStartDate(nextStartDate);
+                  if (endDate && !isEndDateValid(nextStartDate, endDate)) {
+                    setEndDate("");
+                  }
+                  setDateError("");
+                }}
+                className="rounded-lg border border-slate-300/70 bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500">End date</label>
+              <input type="date" value={endDate} min={startDate || undefined}
+                onChange={(e) => {
+                  const nextEndDate = e.target.value;
+                  setEndDate(nextEndDate);
+                  if (startDate && !isEndDateValid(startDate, nextEndDate)) {
+                    setDateError("End date অবশ্যই start date এর পরে হতে হবে।");
+                  } else {
+                    setDateError("");
+                  }
+                }}
+                className={`rounded-lg border bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 ${
+                  dateError && endDate && !isEndDateValid(startDate, endDate)
+                    ? "border-rose-400 focus:border-rose-400 focus:ring-rose-200"
+                    : "border-slate-300/70 focus:border-indigo-400 focus:ring-indigo-200"
+                }`}
+              />
+            </div>
+
             <button type="submit" disabled={createCalendarMutation.isPending}
               className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
             >
@@ -505,7 +592,7 @@ const AdminContentCalMain = () => {
           {itemsLoading ? (
             <div className="py-12 text-center text-sm text-slate-400">Loading rows...</div>
           ) : (
-            <div className="overflow-x-auto px-4">
+            <div className="overflow-x-auto overflow-y-visible px-4 pb-8">
               <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1100px" }}>
                 <colgroup>
                   <col style={{ width: "36px" }} />
@@ -579,6 +666,9 @@ const AdminContentCalMain = () => {
                       </>
                     );
                   })}
+                  <tr aria-hidden="true">
+                    <td colSpan={11} className="h-7 p-0"></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
