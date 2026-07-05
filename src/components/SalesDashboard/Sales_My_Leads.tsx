@@ -98,7 +98,7 @@ export default function Sales_My_Leads() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
-  const [sortBy, setSortBy] = useState("Newest");
+
 
   // Meeting Modal State
   const [meetingLead, setMeetingLead] = useState<LeadData | null>(null);
@@ -127,7 +127,7 @@ export default function Sales_My_Leads() {
   } = useInfiniteQuery<LeadsPage>({
     queryKey: ["my-leads", userData?._id],
     queryFn: async ({ pageParam }) => {
-      const res = await axiosSales.get(`/api/v1/sales/get-my-leads/${userData._id}`, {
+      const res = await axiosSales.get(`/api/v1/sales/get-my-leads/${userData._id}?status=new`, {
         params: { cursor: pageParam, limit: 20 },
       });
       return res.data; // { data, nextCursor, hasMore }
@@ -164,25 +164,25 @@ export default function Sales_My_Leads() {
     }
 
     // 3. Apply Sorting
-    switch (sortBy) {
-      case "Name (A-Z)":
-        result.sort((a, b) => a.leadName.localeCompare(b.leadName));
-        break;
-      case "Name (Z-A)":
-        result.sort((a, b) => b.leadName.localeCompare(a.leadName));
-        break;
-      case "Score (High to Low)":
-        result.sort((a, b) => Number(b.leadScore) - Number(a.leadScore));
-        break;
-      case "Score (Low to High)":
-        result.sort((a, b) => Number(a.leadScore) - Number(b.leadScore));
-        break;
-      default:
-        break;
-    }
+    // switch (sortBy) {
+    //   case "Name (A-Z)":
+    //     result.sort((a, b) => a.leadName.localeCompare(b.leadName));
+    //     break;
+    //   case "Name (Z-A)":
+    //     result.sort((a, b) => b.leadName.localeCompare(a.leadName));
+    //     break;
+    //   case "Score (High to Low)":
+    //     result.sort((a, b) => Number(b.leadScore) - Number(a.leadScore));
+    //     break;
+    //   case "Score (Low to High)":
+    //     result.sort((a, b) => Number(a.leadScore) - Number(b.leadScore));
+    //     break;
+    //   default:
+    //     break;
+    // }
 
     return result;
-  }, [leadsData, searchQuery, filterStatus, sortBy]);
+  }, [leadsData, searchQuery, filterStatus]);
 
   // download as CSV
   const downloadCSV = () => {
@@ -444,7 +444,7 @@ export default function Sales_My_Leads() {
                 <option value="Contacted">Contacted</option>
               </select>
 
-              <select
+              {/* <select
                 className="block w-full lg:w-auto pl-3 pr-8 py-2 text-sm border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 shadow-xs cursor-pointer appearance-none"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -454,7 +454,7 @@ export default function Sales_My_Leads() {
                 <option value="Name (Z-A)">Name (Z-A)</option>
                 <option value="Score (High to Low)">Score: Highest</option>
                 <option value="Score (Low to High)">Score: Lowest</option>
-              </select>
+              </select> */}
             </div>
           </div>
 

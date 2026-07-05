@@ -45,17 +45,18 @@ const MENU_ITEMS = [
     path: "/dashboard/admin/campaigns",
     icon: HiOutlineSpeakerphone,
   },
+  {
+    name: "Add Task",
+    path: "/dashboard/admin/add-task",
+    icon: HiOutlineQuestionMarkCircle,
+  },
 
   {
     name: "Compliance",
     path: "/compliance",
     icon: HiOutlineQuestionMarkCircle,
   },
-  {
-    name: "Compliance",
-    path: "/compliance",
-    icon: HiOutlineQuestionMarkCircle,
-  },
+  
 ];
 
 const AdminHome = () => {
