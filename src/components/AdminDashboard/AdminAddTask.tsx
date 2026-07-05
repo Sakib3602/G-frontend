@@ -5,7 +5,7 @@ import {
   User,
   AlignLeft,
   Briefcase,
-  Users,
+
   Clock,
   CheckCircle2,
   AlertTriangle,
@@ -213,6 +213,7 @@ const AdminAddTask: React.FC = () => {
   const tasks = activeTab === "pending" ? pendingTasks : completedTasks;
   const isTasksLoading = activeTab === "pending" ? isPendingLoading : isCompletedLoading;
 
+
   return (
     <>
       {showNotification && (
@@ -222,6 +223,10 @@ const AdminAddTask: React.FC = () => {
           onClose={() => setShowNotification(false)}
         />
       )}
+
+      {
+        isLoading && <div className="flex items-center justify-center h-screen">Loading....</div>
+      }
 
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
         {/* Header */}
