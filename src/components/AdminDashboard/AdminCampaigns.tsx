@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
+import { Bounce, ToastContainer, toast } from "react-toastify";
 
 // আপনার ডেটা অনুযায়ী ইন্টারফেস
 interface CampaignData {
@@ -61,13 +62,36 @@ const AdminCampaigns = () => {
     },
 
     onSuccess: () => {
-        alert("Campaign status updated successfully!");
+      toast("Status updated successfully!", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
       refetch();
     },
   });
 
   return (
     <div className="p-6">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">
           Campaign Management

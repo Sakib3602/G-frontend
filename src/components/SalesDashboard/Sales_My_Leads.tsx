@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import useAxiosSales from "@/uri/useAxiosSales";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import Notification from "../ui/toast";
 
@@ -37,6 +37,12 @@ export interface IMeeting {
   notes?: string;
   status?: "scheduled" | "completed" | "cancelled";
   schedulerId: string;
+}
+
+interface LeadsPage {
+  data: LeadData[];
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 // Utility functions for dynamic cell colors
@@ -93,7 +99,7 @@ export default function Sales_My_Leads() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [sortBy, setSortBy] = useState("Newest");
-  
+
   // Meeting Modal State
   const [meetingLead, setMeetingLead] = useState<LeadData | null>(null);
   const [meetingForm, setMeetingForm] = useState<IMeeting>(createMeetingForm());
@@ -110,22 +116,35 @@ export default function Sales_My_Leads() {
   const queryClient = useQueryClient();
   const { userData } = useUserData();
 
-  // --- Data Fetching ---
+  // --- Data Fetching (cursor-based pagination) ---
   const {
-    data: leadsData = [],
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
     isError,
-  } = useQuery<LeadData[]>({
-    queryKey: ["all-sales-leads"],
-    queryFn: async () => {
-      const res = await axiosSales.get(`/api/v1/sales/get-my-leads/${userData._id}`);
-      return res.data.leads as LeadData[];
+  } = useInfiniteQuery<LeadsPage>({
+    queryKey: ["my-leads", userData?._id],
+    queryFn: async ({ pageParam }) => {
+      const res = await axiosSales.get(`/api/v1/sales/get-my-leads/${userData._id}`, {
+        params: { cursor: pageParam, limit: 20 },
+      });
+      return res.data; // { data, nextCursor, hasMore }
     },
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: !!userData?._id,
   });
+
+  // Flatten all fetched pages into a single leads array
+  const leadsData: LeadData[] = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data) ?? [];
+  }, [data]);
 
   // --- Search, Filter, and Sort Logic ---
   const processedLeads = useMemo(() => {
-    if (!leadsData) return [];
+    if (!leadsData.length) return [];
     let result = [...leadsData];
 
     // 1. Apply Search
@@ -222,11 +241,13 @@ export default function Sales_My_Leads() {
     },
     onSuccess: () => {
       setShowNoti(true);
-      queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["my-leads"] });
     },
   });
 
-  const handleMeetingFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleMeetingFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setMeetingForm((prev) => {
       if (name === "meetingType") {
@@ -259,19 +280,17 @@ export default function Sales_My_Leads() {
   const openNotePopup = (lead: LeadData) => {
     setNoteLead(lead);
     setNoteText(lead.indications || "");
-
   };
 
-  // /update-indications
   const mutationUpForNote = useMutation({
-  mutationFn: async ({ leadId, indications }: { leadId: string; indications: string }) => {
-    const res = await axiosSales.patch(`/api/v1/sales/update-indications/${leadId}`, { indications });
-    return res.data;
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
-  },
-});
+    mutationFn: async ({ leadId, indications }: { leadId: string; indications: string }) => {
+      const res = await axiosSales.patch(`/api/v1/sales/update-indications/${leadId}`, { indications });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-leads"] });
+    },
+  });
 
   const handleNoteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,7 +307,6 @@ export default function Sales_My_Leads() {
       },
       {
         onSuccess: () => {
-          console.log(nextIndications);
           setNoteLead(null);
           setNoteText("");
         },
@@ -317,8 +335,8 @@ export default function Sales_My_Leads() {
     },
     onSuccess: () => {
       setShowNotiStatusUpdate(true);
-      queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["my-leads"] });
+    },
   });
 
   // --- Loading / Error States ---
@@ -367,13 +385,15 @@ export default function Sales_My_Leads() {
 
       <div className="w-full min-h-screen bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans text-slate-900 antialiased">
         <div className="max-w-[1400px] mx-auto">
-          
+
           {/* --- MINIMAL HEADER --- */}
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
             <div>
               <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">CRM Directory</p>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Assigned Leads</h1>
-              <p className="text-sm text-slate-500 mt-1">Total active entries: <span className="font-semibold text-slate-800">{leadsData.length}</span></p>
+              <p className="text-sm text-slate-500 mt-1">
+                Total loaded entries: <span className="font-semibold text-slate-800">{leadsData.length}</span>
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -384,7 +404,9 @@ export default function Sales_My_Leads() {
               </button>
               <Link to={"/dashboard/sales/create-leads"}>
                 <button className="px-4 py-2 bg-[#99B562] rounded text-xs font-semibold text-white hover:bg-[#85a052] transition-colors shadow-xs flex items-center gap-2">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path>
+                  </svg>
                   New Lead Entry
                 </button>
               </Link>
@@ -396,7 +418,9 @@ export default function Sales_My_Leads() {
             {/* Search Bar */}
             <div className="relative w-full lg:max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
               <input
                 type="text"
@@ -451,19 +475,33 @@ export default function Sales_My_Leads() {
               <tbody className="divide-y divide-slate-100">
                 {processedLeads.length === 0 && !isLoading && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400 text-xs">No records matched your search parameters.</td>
+                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400 text-xs">
+                      No records matched your search parameters.
+                    </td>
                   </tr>
                 )}
 
                 {processedLeads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-slate-50/80 transition-colors group">
+                  <tr key={lead._id || lead.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-5 py-3">
-                      <button 
+                      <button
                         onClick={() => setSelectedLeadDetails(lead)}
                         className="font-semibold text-slate-800 hover:text-[#99B562] transition-colors focus:outline-none flex items-center gap-2"
                       >
                         {lead.leadName}
-                        <svg className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-[#99B562]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        <svg
+                          className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-[#99B562]"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          ></path>
+                        </svg>
                       </button>
                     </td>
 
@@ -492,25 +530,29 @@ export default function Sales_My_Leads() {
                           className="w-full appearance-none bg-transparent outline-none cursor-pointer text-xs font-semibold pr-4"
                         >
                           {statusOptions.map((opt) => (
-                            <option key={opt} value={opt} className="bg-white text-slate-800">{opt}</option>
+                            <option key={opt} value={opt} className="bg-white text-slate-800">
+                              {opt}
+                            </option>
                           ))}
                         </select>
                         <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-                          <svg className="fill-current h-3 w-3 opacity-60" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                          <svg className="fill-current h-3 w-3 opacity-60" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                          </svg>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-5 py-3 text-slate-600 font-medium text-xs">{lead.companyName || '—'}</td>
-                    
+                    <td className="px-5 py-3 text-slate-600 font-medium text-xs">{lead.companyName || "—"}</td>
+
                     <td className="px-5 py-3">
                       <a href={`mailto:${lead.email}`} className="text-slate-500 hover:text-slate-900 text-xs font-mono transition-colors">
-                        {lead.email || '—'}
+                        {lead.email || "—"}
                       </a>
                     </td>
-                    
-                    <td className="px-5 py-3 text-slate-500 text-xs font-mono">{lead.phone || '—'}</td>
-                    
+
+                    <td className="px-5 py-3 text-slate-500 text-xs font-mono">{lead.phone || "—"}</td>
+
                     <td className="px-5 py-3">
                       <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider">
                         {lead.ServiceNeed || "General"}
@@ -520,6 +562,19 @@ export default function Sales_My_Leads() {
                 ))}
               </tbody>
             </table>
+
+            {/* --- LOAD MORE (cursor pagination) --- */}
+            {hasNextPage && (
+              <div className="flex justify-center py-4 border-t border-slate-100">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isFetchingNextPage ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -528,41 +583,46 @@ export default function Sales_My_Leads() {
       {selectedLeadDetails && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="absolute inset-0" onClick={() => setSelectedLeadDetails(null)}></div>
-          
+
           <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
-            
             <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">{selectedLeadDetails.leadName}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{selectedLeadDetails.title || 'Executive'} {selectedLeadDetails.companyName && `at ${selectedLeadDetails.companyName}`}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {selectedLeadDetails.title || "Executive"} {selectedLeadDetails.companyName && `at ${selectedLeadDetails.companyName}`}
+                </p>
               </div>
               <button onClick={() => setSelectedLeadDetails(null)} className="text-slate-400 hover:text-slate-900 p-1 rounded transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
               {/* Top Meta Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                 <div className="bg-white border border-slate-200 rounded-lg p-3">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                    <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.status}</p>
-                 </div>
-                 <div className="bg-white border border-slate-200 rounded-lg p-3">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Score</p>
-                    <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
-                      {selectedLeadDetails.leadScore}
-                      <svg className="w-3 h-3 text-amber-400 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                    </p>
-                 </div>
-                 <div className="bg-white border border-slate-200 rounded-lg p-3">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Territory</p>
-                    <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.region || '—'}</p>
-                 </div>
-                 <div className="bg-white border border-slate-200 rounded-lg p-3">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Owner</p>
-                    <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.owner || '—'}</p>
-                 </div>
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.status}</p>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Score</p>
+                  <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                    {selectedLeadDetails.leadScore}
+                    <svg className="w-3 h-3 text-amber-400 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                  </p>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Territory</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.region || "—"}</p>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Owner</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.owner || "—"}</p>
+                </div>
               </div>
 
               {/* Extended Details Grids */}
@@ -572,16 +632,18 @@ export default function Sales_My_Leads() {
                   <div className="space-y-3">
                     <div>
                       <p className="text-[10px] uppercase text-slate-400 font-bold">Email Address</p>
-                      <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.email || '—'}</p>
+                      <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.email || "—"}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase text-slate-400 font-bold">Phone Number</p>
-                      <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.phone || '—'}</p>
+                      <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.phone || "—"}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase text-slate-400 font-bold">LinkedIn / Profile URL</p>
                       {selectedLeadDetails.profileUrl ? (
-                        <a href={selectedLeadDetails.profileUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline">View Profile</a>
+                        <a href={selectedLeadDetails.profileUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline">
+                          View Profile
+                        </a>
                       ) : (
                         <p className="text-sm text-slate-800">—</p>
                       )}
@@ -594,15 +656,17 @@ export default function Sales_My_Leads() {
                   <div className="space-y-3">
                     <div>
                       <p className="text-[10px] uppercase text-slate-400 font-bold">Specific Role</p>
-                      <p className="text-sm text-slate-800">{selectedLeadDetails.specificRole || '—'}</p>
+                      <p className="text-sm text-slate-800">{selectedLeadDetails.specificRole || "—"}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase text-slate-400 font-bold">Service Need</p>
-                      <p className="text-sm text-slate-800">{selectedLeadDetails.ServiceNeed || '—'}</p>
+                      <p className="text-sm text-slate-800">{selectedLeadDetails.ServiceNeed || "—"}</p>
                     </div>
                     <div>
                       <p className="text-[10px] uppercase text-slate-400 font-bold">Indications / Notes</p>
-                      <p className="text-sm text-slate-600 italic bg-white border border-slate-200 p-2 rounded mt-1">{selectedLeadDetails.indications || 'No descriptive entries.'}</p>
+                      <p className="text-sm text-slate-600 italic bg-white border border-slate-200 p-2 rounded mt-1">
+                        {selectedLeadDetails.indications || "No descriptive entries."}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -616,35 +680,59 @@ export default function Sales_My_Leads() {
       {meetingLead && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl relative overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
-            
             <div className="px-6 py-5 flex justify-between items-start border-b border-slate-100 bg-slate-50/50">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Schedule Encounter</h2>
-                <p className="text-xs text-slate-500 mt-1">Configuring calendar parameters for <span className="font-bold text-slate-800">{meetingLead.leadName}</span>.</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Configuring calendar parameters for <span className="font-bold text-slate-800">{meetingLead.leadName}</span>.
+                </p>
               </div>
-              <button onClick={() => { setMeetingError(null); setMeetingLead(null); }} className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <button
+                onClick={() => {
+                  setMeetingError(null);
+                  setMeetingLead(null);
+                }}
+                className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
               </button>
             </div>
 
             <form onSubmit={handleMeetingSubmit} className="flex-1 overflow-y-auto" noValidate>
               <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
                 {/* Left Meta Side */}
                 <aside className="lg:col-span-4 space-y-4">
                   <div className="border border-slate-200 rounded-lg p-4 bg-white">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-2">Target Meta</p>
                     <div className="space-y-3 text-xs">
-                      <p><span className="text-slate-400 font-bold block mb-0.5">Enterprise</span> <span className="font-medium text-slate-800">{meetingLead.companyName || '—'}</span></p>
-                      <p><span className="text-slate-400 font-bold block mb-0.5">Title</span> <span className="font-medium text-slate-800">{meetingLead.title || '—'}</span></p>
-                      <p><span className="text-slate-400 font-bold block mb-0.5">Email</span> <span className="font-mono text-slate-800">{meetingLead.email || '—'}</span></p>
+                      <p>
+                        <span className="text-slate-400 font-bold block mb-0.5">Enterprise</span>{" "}
+                        <span className="font-medium text-slate-800">{meetingLead.companyName || "—"}</span>
+                      </p>
+                      <p>
+                        <span className="text-slate-400 font-bold block mb-0.5">Title</span>{" "}
+                        <span className="font-medium text-slate-800">{meetingLead.title || "—"}</span>
+                      </p>
+                      <p>
+                        <span className="text-slate-400 font-bold block mb-0.5">Email</span>{" "}
+                        <span className="font-mono text-slate-800">{meetingLead.email || "—"}</span>
+                      </p>
                     </div>
                   </div>
 
                   {isMeetingConflict && (
                     <div className="border border-amber-200 rounded-lg p-4 bg-amber-50">
                       <h3 className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          ></path>
+                        </svg>
                         Schedule Conflict
                       </h3>
                       <p className="text-xs text-amber-700">A prior engagement is already logged for this pipeline target.</p>
@@ -655,40 +743,74 @@ export default function Sales_My_Leads() {
                 {/* Right Form Side */}
                 <div className="lg:col-span-8 space-y-4">
                   {meetingError && (
-                    <div className="border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 rounded">
-                      {meetingError}
-                    </div>
+                    <div className="border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 rounded">{meetingError}</div>
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Event Header</label>
-                      <input type="text" name="title" value={meetingForm.title} onChange={handleMeetingFormChange} placeholder="e.g. Discovery & Sync" className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
+                      <input
+                        type="text"
+                        name="title"
+                        value={meetingForm.title}
+                        onChange={handleMeetingFormChange}
+                        placeholder="e.g. Discovery & Sync"
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors"
+                      />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Host/Client Full Name</label>
-                      <input type="text" name="clientName" value={meetingForm.clientName} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
+                      <input
+                        type="text"
+                        name="clientName"
+                        value={meetingForm.clientName}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors"
+                      />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Notification Email</label>
-                      <input type="text" name="clientEmail" value={meetingForm.clientEmail} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 font-mono focus:outline-none focus:border-[#99B562] transition-colors" />
+                      <input
+                        type="text"
+                        name="clientEmail"
+                        value={meetingForm.clientEmail}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 font-mono focus:outline-none focus:border-[#99B562] transition-colors"
+                      />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Target Date</label>
-                      <input type="date" name="meetingDate" value={meetingForm.meetingDate} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
+                      <input
+                        type="date"
+                        name="meetingDate"
+                        value={meetingForm.meetingDate}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors"
+                      />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Timestamp</label>
-                      <input type="time" name="meetingTime" value={meetingForm.meetingTime} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors" />
+                      <input
+                        type="time"
+                        name="meetingTime"
+                        value={meetingForm.meetingTime}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors"
+                      />
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Medium</label>
-                      <select name="meetingType" value={meetingForm.meetingType} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors bg-white">
+                      <select
+                        name="meetingType"
+                        value={meetingForm.meetingType}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors bg-white"
+                      >
                         <option value="online">Virtual / Online</option>
                         <option value="offline">In-Person / Offline</option>
                       </select>
@@ -696,7 +818,12 @@ export default function Sales_My_Leads() {
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Action State</label>
-                      <select name="status" value={meetingForm.status || "scheduled"} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors bg-white">
+                      <select
+                        name="status"
+                        value={meetingForm.status || "scheduled"}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors bg-white"
+                      >
                         <option value="scheduled">Active Scheduled</option>
                         <option value="completed">Mark Completed</option>
                         <option value="cancelled">Cancelled</option>
@@ -706,28 +833,59 @@ export default function Sales_My_Leads() {
                     {meetingForm.meetingType === "online" && (
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">URI Meeting Link</label>
-                        <input type="text" name="meetingLink" value={meetingForm.meetingLink || ""} onChange={handleMeetingFormChange} placeholder="https://meet..." className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 font-mono focus:outline-none focus:border-[#99B562] transition-colors" />
+                        <input
+                          type="text"
+                          name="meetingLink"
+                          value={meetingForm.meetingLink || ""}
+                          onChange={handleMeetingFormChange}
+                          placeholder="https://meet..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 font-mono focus:outline-none focus:border-[#99B562] transition-colors"
+                        />
                       </div>
                     )}
 
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Discussion Agenda</label>
-                      <textarea name="agenda" rows={3} value={meetingForm.agenda || ""} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors" />
+                      <textarea
+                        name="agenda"
+                        rows={3}
+                        value={meetingForm.agenda || ""}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
+                      />
                     </div>
 
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Internal Notes</label>
-                      <textarea name="notes" rows={2} value={meetingForm.notes || ""} onChange={handleMeetingFormChange} className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors" />
+                      <textarea
+                        name="notes"
+                        rows={2}
+                        value={meetingForm.notes || ""}
+                        onChange={handleMeetingFormChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 sticky bottom-0">
-                <button type="button" onClick={() => { setMeetingError(null); setMeetingLead(null); }} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMeetingError(null);
+                    setMeetingLead(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                >
                   Abort
                 </button>
-                <button type="submit" className={`px-5 py-2 rounded text-xs font-bold text-white transition-colors shadow-xs ${isMeetingConflict ? "bg-amber-500 hover:bg-amber-600" : "bg-slate-900 hover:bg-slate-800"}`}>
+                <button
+                  type="submit"
+                  className={`px-5 py-2 rounded text-xs font-bold text-white transition-colors shadow-xs ${
+                    isMeetingConflict ? "bg-amber-500 hover:bg-amber-600" : "bg-slate-900 hover:bg-slate-800"
+                  }`}
+                >
                   {isMeetingConflict ? "Force Additional Meeting" : "Commit Schedule"}
                 </button>
               </div>
@@ -739,16 +897,32 @@ export default function Sales_My_Leads() {
       {/* --- NOTE MODAL --- */}
       {noteLead && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="absolute inset-0" onClick={() => { setNoteLead(null); setNoteText(""); }}></div>
+          <div
+            className="absolute inset-0"
+            onClick={() => {
+              setNoteLead(null);
+              setNoteText("");
+            }}
+          ></div>
 
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative z-10 overflow-hidden border border-slate-200">
             <div className="px-6 py-5 flex justify-between items-start border-b border-slate-100 bg-slate-50/50">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Add Indication / Note</h2>
-                <p className="text-xs text-slate-500 mt-1">Leave a note for <span className="font-bold text-slate-800">{noteLead.leadName}</span>.</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Leave a note for <span className="font-bold text-slate-800">{noteLead.leadName}</span>.
+                </p>
               </div>
-              <button onClick={() => { setNoteLead(null); setNoteText(""); }} className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <button
+                onClick={() => {
+                  setNoteLead(null);
+                  setNoteText("");
+                }}
+                className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
               </button>
             </div>
 
@@ -767,15 +941,15 @@ export default function Sales_My_Leads() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setNoteLead(null); setNoteText(""); }}
+                  onClick={() => {
+                    setNoteLead(null);
+                    setNoteText("");
+                  }}
                   className="px-4 py-2 rounded border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] transition-colors"
-                >
+                <button type="submit" className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] transition-colors">
                   Submit Note
                 </button>
               </div>
