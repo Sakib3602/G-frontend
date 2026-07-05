@@ -12,7 +12,10 @@ import {
   HiOutlineLogout,
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
+
 } from "react-icons/hi";
+
+import { IoDocumentTextSharp } from "react-icons/io5";
 
 const MENU_ITEMS = [
   { name: "Home", path: "/dashboard/admin", icon: HiOutlineHome },
@@ -35,14 +38,19 @@ const MENU_ITEMS = [
   {
     name: "EM Reports",
     path: "/dashboard/admin/em-reports",
-    icon: HiOutlineClock,
+    icon: IoDocumentTextSharp,
   },
   {
     name: "Campaigns Requests",
-    path: "/dashboard/admin/campaigns-requests",
+    path: "/dashboard/admin/campaigns",
     icon: HiOutlineSpeakerphone,
   },
 
+  {
+    name: "Compliance",
+    path: "/compliance",
+    icon: HiOutlineQuestionMarkCircle,
+  },
   {
     name: "Compliance",
     path: "/compliance",

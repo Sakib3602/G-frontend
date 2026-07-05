@@ -46,6 +46,7 @@ import AdminContentCalenderClient from "@/components/AdminDashboard/AdminContent
 import AdminContentCalMain from "@/components/AdminDashboard/AdminContentCalMain";
 import AdminDelayWorks from "@/components/AdminDashboard/AdminDelayWorks";
 import AdminEmReports from "@/components/AdminDashboard/AdminEmReports";
+import AdminCampaigns from "@/components/AdminDashboard/AdminCampaigns";
 
 const RoutesAll = () => {
   return (
@@ -187,6 +188,7 @@ const RoutesAll = () => {
         <Route path="/dashboard/admin/content-calendar/:id" element={<AdminContentCalMain />} />
         <Route path="/dashboard/admin/delay-works" element={<AdminDelayWorks />} />
         <Route path="/dashboard/admin/em-reports" element={<AdminEmReports />} />
+        <Route path="/dashboard/admin/campaigns" element={<AdminCampaigns />} />
       </Route>
 
 
