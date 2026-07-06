@@ -10,6 +10,7 @@ import {
   Wallet,
   Loader2,
   PlayCircle,
+  Rocket,
 } from "lucide-react";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +27,7 @@ export interface Campaign {
   targetLeads: number;
   totalBudget: number;
   revenue?: number;
-  adminApproval?: "pending" | "approved" | "rejected";
+  adminApproval?: "pending" | "approved" | "rejected" | "running";
 }
 
 type ApiCampaign = Partial<Campaign> & {
@@ -35,10 +36,15 @@ type ApiCampaign = Partial<Campaign> & {
   totalRevenue?: number;
 };
 
-type CampaignStatusFilter = "all" | "approved" | "pending" | "rejected";
+type CampaignStatusFilter = "all" | "approved" | "pending" | "rejected" | "running";
 
 const normalizeStatus = (status?: string): Campaign["adminApproval"] => {
-  if (status === "approved" || status === "pending" || status === "rejected") {
+  if (
+    status === "approved" ||
+    status === "pending" ||
+    status === "rejected" ||
+    status === "running"
+  ) {
     return status;
   }
   return "pending";
@@ -93,6 +99,7 @@ const MarketingAllCampaign = () => {
   const approvedCount = campaigns.filter((c) => c.adminApproval === "approved").length;
   const pendingCount = campaigns.filter((c) => c.adminApproval === "pending").length;
   const rejectedCount = campaigns.filter((c) => c.adminApproval === "rejected").length;
+  const runningCount = campaigns.filter((c) => c.adminApproval === "running").length;
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
@@ -160,6 +167,12 @@ const MarketingAllCampaign = () => {
             <XCircle className="w-3.5 h-3.5" /> Rejected
           </span>
         );
+      case "running":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            <Rocket className="w-3.5 h-3.5" /> Running
+          </span>
+        );
       default:
         return <span className="text-slate-400">-</span>;
     }
@@ -181,7 +194,7 @@ const MarketingAllCampaign = () => {
       </div>
 
       {/* Top Summary Cards */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
         <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 p-5 shadow-sm backdrop-blur-md">
           <div>
             <p className="text-sm font-medium text-slate-500">Approved Campaigns</p>
@@ -199,6 +212,16 @@ const MarketingAllCampaign = () => {
           </div>
           <div className="rounded-xl bg-amber-100/65 p-3 text-amber-600 backdrop-blur-sm">
             <Clock className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 p-5 shadow-sm backdrop-blur-md">
+          <div>
+            <p className="text-sm font-medium text-slate-500">Running</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{runningCount}</p>
+          </div>
+          <div className="rounded-xl bg-blue-100/65 p-3 text-blue-600 backdrop-blur-sm">
+            <Rocket className="w-6 h-6" />
           </div>
         </div>
 
@@ -238,6 +261,7 @@ const MarketingAllCampaign = () => {
             <option value="all">All Status</option>
             <option value="approved">Approved</option>
             <option value="pending">Pending</option>
+            <option value="running">Running</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
