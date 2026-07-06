@@ -13,8 +13,9 @@ import {
   Rocket,
 } from "lucide-react";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
+import { Bounce, toast, ToastContainer } from "react-toastify";
 
 // TypeScript Interfaces
 export interface Campaign {
@@ -39,19 +40,19 @@ type ApiCampaign = Partial<Campaign> & {
 type CampaignStatusFilter = "all" | "approved" | "pending" | "rejected" | "running";
 
 const normalizeStatus = (status?: string): Campaign["adminApproval"] => {
+  const value = String(status ?? "pending").toLowerCase();
   if (
-    status === "approved" ||
-    status === "pending" ||
-    status === "rejected" ||
-    status === "running"
+    value === "approved" ||
+    value === "pending" ||
+    value === "rejected" ||
+    value === "running"
   ) {
-    return status;
+    return value;
   }
   return "pending";
 };
 
 const mapCampaign = (campaign: ApiCampaign): Campaign => {
-  const parsedStatus = String(campaign.adminApproval ?? "pending").toLowerCase();
   return {
     id: String(campaign.id ?? campaign._id ?? ""),
     campaignName: String(campaign.campaignName ?? "Untitled Campaign"),
@@ -62,7 +63,7 @@ const mapCampaign = (campaign: ApiCampaign): Campaign => {
     targetLeads: Number(campaign.targetLeads ?? 0),
     totalBudget: Number(campaign.totalBudget ?? 0),
     revenue: Number(campaign.revenue ?? campaign.totalRevenue ?? 0),
-    adminApproval: normalizeStatus(parsedStatus),
+    adminApproval: normalizeStatus(campaign.adminApproval),
   };
 };
 
@@ -84,11 +85,14 @@ const MarketingAllCampaign = () => {
     isLoading,
     isError,
     error,
+    refetch,
   } = useQuery<Campaign[]>({
     queryKey: ["allCampaigns", userData?._id],
     enabled: Boolean(userData?._id),
     queryFn: async () => {
-      const res = await axiosMarketing.get(`/campaigns/all-campaigns/${userData?._id}`);
+      const res = await axiosMarketing.get(
+        `/campaigns/all-campaigns/${userData?._id}`,
+      );
       const payload = (res.data?.data ?? res.data) as ApiCampaign[];
       if (!Array.isArray(payload)) return [];
       return payload.map(mapCampaign);
@@ -96,17 +100,27 @@ const MarketingAllCampaign = () => {
   });
 
   // Summary cards
-  const approvedCount = campaigns.filter((c) => c.adminApproval === "approved").length;
-  const pendingCount = campaigns.filter((c) => c.adminApproval === "pending").length;
-  const rejectedCount = campaigns.filter((c) => c.adminApproval === "rejected").length;
-  const runningCount = campaigns.filter((c) => c.adminApproval === "running").length;
+  const approvedCount = campaigns.filter(
+    (c) => c.adminApproval === "approved",
+  ).length;
+  const pendingCount = campaigns.filter(
+    (c) => c.adminApproval === "pending",
+  ).length;
+  const rejectedCount = campaigns.filter(
+    (c) => c.adminApproval === "rejected",
+  ).length;
+  const runningCount = campaigns.filter(
+    (c) => c.adminApproval === "running",
+  ).length;
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
-      const isStatusMatched = filterStatus === "all" ? true : campaign.adminApproval === filterStatus;
+      const isStatusMatched =
+        filterStatus === "all" ? true : campaign.adminApproval === filterStatus;
       const query = searchTerm.trim().toLowerCase();
       const isSearchMatched =
-        campaign.campaignName.toLowerCase().includes(query) || campaign.channel.toLowerCase().includes(query);
+        campaign.campaignName.toLowerCase().includes(query) ||
+        campaign.channel.toLowerCase().includes(query);
 
       return isStatusMatched && isSearchMatched;
     });
@@ -122,12 +136,36 @@ const MarketingAllCampaign = () => {
     setFilterStatus(value);
   };
 
+  // /status-change
+  const mutationUpdateStatus = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const res = await axiosMarketing.patch(`/campaigns/status-change/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      refetch();
+      toast("Let's work!", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    },
+  });
+
   // "Start Work" বাটনে ক্লিক করলে
   const handleStartWork = (campaign: Campaign) => {
     console.log("running", {
       campaignId: campaign.id,
       campaignName: campaign.campaignName,
     });
+
+    mutationUpdateStatus.mutate({ id: campaign.id });
   };
 
   if (isLoading) {
@@ -141,7 +179,8 @@ const MarketingAllCampaign = () => {
   if (isError) {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-        Failed to load campaigns. {error instanceof Error ? error.message : "Please try again."}
+        Failed to load campaigns.{" "}
+        {error instanceof Error ? error.message : "Please try again."}
       </div>
     );
   }
@@ -180,12 +219,28 @@ const MarketingAllCampaign = () => {
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl space-y-6 p-6">
-      
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       {/* Page Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Campaign Management</h1>
-          <p className="mt-1 text-sm text-slate-500">Monitor status, performance, and revenue updates in one place.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Campaign Management
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Monitor status, performance, and revenue updates in one place.
+          </p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50/60 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md">
           <Wallet className="h-3.5 w-3.5 text-slate-500" />
@@ -197,8 +252,12 @@ const MarketingAllCampaign = () => {
       <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
         <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 p-5 shadow-sm backdrop-blur-md">
           <div>
-            <p className="text-sm font-medium text-slate-500">Approved Campaigns</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{approvedCount}</p>
+            <p className="text-sm font-medium text-slate-500">
+              Approved Campaigns
+            </p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">
+              {approvedCount}
+            </p>
           </div>
           <div className="rounded-xl bg-emerald-100/65 p-3 text-emerald-600 backdrop-blur-sm">
             <CheckCircle2 className="w-6 h-6" />
@@ -207,8 +266,12 @@ const MarketingAllCampaign = () => {
 
         <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 p-5 shadow-sm backdrop-blur-md">
           <div>
-            <p className="text-sm font-medium text-slate-500">Pending Approval</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{pendingCount}</p>
+            <p className="text-sm font-medium text-slate-500">
+              Pending Approval
+            </p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">
+              {pendingCount}
+            </p>
           </div>
           <div className="rounded-xl bg-amber-100/65 p-3 text-amber-600 backdrop-blur-sm">
             <Clock className="w-6 h-6" />
@@ -218,7 +281,9 @@ const MarketingAllCampaign = () => {
         <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 p-5 shadow-sm backdrop-blur-md">
           <div>
             <p className="text-sm font-medium text-slate-500">Running</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{runningCount}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">
+              {runningCount}
+            </p>
           </div>
           <div className="rounded-xl bg-blue-100/65 p-3 text-blue-600 backdrop-blur-sm">
             <Rocket className="w-6 h-6" />
@@ -228,7 +293,9 @@ const MarketingAllCampaign = () => {
         <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 p-5 shadow-sm backdrop-blur-md">
           <div>
             <p className="text-sm font-medium text-slate-500">Rejected</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{rejectedCount}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">
+              {rejectedCount}
+            </p>
           </div>
           <div className="rounded-xl bg-rose-100/65 p-3 text-rose-600 backdrop-blur-sm">
             <XCircle className="w-6 h-6" />
@@ -273,32 +340,63 @@ const MarketingAllCampaign = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200/70 bg-slate-50/60">
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Campaign Name</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Channel</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Budget</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Target Leads</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Revenue</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Action</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Campaign Name
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Channel
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Duration
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Budget
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Target Leads
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Revenue
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredCampaigns.map((campaign) => (
-                <tr key={campaign.id} className="transition-colors hover:bg-slate-50/30">
+                <tr
+                  key={campaign.id}
+                  className="transition-colors hover:bg-slate-50/30"
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-slate-900">{campaign.campaignName}</div>
+                    <div className="text-sm font-medium text-slate-900">
+                      {campaign.campaignName}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="rounded-md border border-slate-200/70 bg-slate-50/60 px-2.5 py-1 text-sm text-slate-600 backdrop-blur-sm">{campaign.channel}</span>
+                    <span className="rounded-md border border-slate-200/70 bg-slate-50/60 px-2.5 py-1 text-sm text-slate-600 backdrop-blur-sm">
+                      {campaign.channel}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-900">{formatDate(campaign.startDate)}</div>
-                    <div className="text-xs text-slate-500">to {formatDate(campaign.endDate)}</div>
+                    <div className="text-sm text-slate-900">
+                      {formatDate(campaign.startDate)}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      to {formatDate(campaign.endDate)}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-slate-900">${campaign.totalBudget}</div>
-                    <div className="text-xs text-slate-500">${campaign.perDayCost} / day</div>
+                    <div className="text-sm font-medium text-slate-900">
+                      ${campaign.totalBudget}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      ${campaign.perDayCost} / day
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-1.5 text-sm text-slate-600">
@@ -309,7 +407,9 @@ const MarketingAllCampaign = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1 text-sm font-medium text-slate-700">
                       <DollarSign className="h-4 w-4 text-slate-500" />
-                      {campaign.revenue && campaign.revenue > 0 ? `$${campaign.revenue.toLocaleString()}` : "--"}
+                      {campaign.revenue && campaign.revenue > 0
+                        ? `$${campaign.revenue.toLocaleString()}`
+                        : "--"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -320,20 +420,31 @@ const MarketingAllCampaign = () => {
                       <button
                         type="button"
                         onClick={() => handleStartWork(campaign)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200/80 bg-blue-50/65 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100/80"
+                        disabled={mutationUpdateStatus.isPending}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200/80 bg-blue-50/65 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <PlayCircle className="h-3.5 w-3.5" />
+                        {mutationUpdateStatus.isPending &&
+                        mutationUpdateStatus.variables?.id === campaign.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <PlayCircle className="h-3.5 w-3.5" />
+                        )}
                         Start Work
                       </button>
                     ) : (
-                      <span className="text-xs text-slate-400">Not available</span>
+                      <span className="text-xs text-slate-400">
+                        Not available
+                      </span>
                     )}
                   </td>
                 </tr>
               ))}
               {filteredCampaigns.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-10 text-center text-sm text-slate-500">
+                  <td
+                    colSpan={9}
+                    className="px-6 py-10 text-center text-sm text-slate-500"
+                  >
                     No campaigns found for your current search/filter.
                   </td>
                 </tr>
@@ -342,7 +453,6 @@ const MarketingAllCampaign = () => {
           </table>
         </div>
       </div>
-
     </div>
   );
 };
