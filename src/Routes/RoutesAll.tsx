@@ -49,6 +49,7 @@ import AdminEmReports from "@/components/AdminDashboard/AdminEmReports";
 import AdminCampaigns from "@/components/AdminDashboard/AdminCampaigns";
 import AdminAddTask from "@/components/AdminDashboard/AdminAddTask";
 import AdminMarketing from "@/components/AdminDashboard/AdminMarketing";
+import AdminMarketingDetails from "@/components/AdminDashboard/AdminMarketingDetails";
 
 const RoutesAll = () => {
   return (
@@ -192,6 +193,7 @@ const RoutesAll = () => {
         <Route path="/dashboard/admin/em-reports" element={<AdminEmReports />} />
         <Route path="/dashboard/admin/campaigns" element={<AdminCampaigns />} />
         <Route path="/dashboard/admin/marketing" element={<AdminMarketing />} />
+        <Route path="/dashboard/admin/marketing/:id" element={<AdminMarketingDetails   />} />
         <Route path="/dashboard/admin/add-task" element={<AdminAddTask />} />
       </Route>
 

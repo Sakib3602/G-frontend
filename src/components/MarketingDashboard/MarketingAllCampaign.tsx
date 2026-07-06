@@ -7,9 +7,9 @@ import {
   XCircle,
   BarChart3,
   DollarSign,
-  X,
   Wallet,
   Loader2,
+  PlayCircle,
 } from "lucide-react";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import { useQuery } from "@tanstack/react-query";
@@ -70,9 +70,6 @@ const formatDate = (value?: string) => {
 const MarketingAllCampaign = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<CampaignStatusFilter>("all");
-  const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [revenueAmount, setRevenueAmount] = useState("");
   const { userData } = useUserDataMarketing();
   const axiosMarketing = useAxiosMarketing();
 
@@ -118,33 +115,12 @@ const MarketingAllCampaign = () => {
     setFilterStatus(value);
   };
 
-  const openRevenueModal = (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setRevenueAmount("");
-    setIsRevenueModalOpen(true);
-  };
-
-  const closeRevenueModal = () => {
-    setIsRevenueModalOpen(false);
-    setSelectedCampaign(null);
-    setRevenueAmount("");
-  };
-
-  const handleRevenueSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const parsedAmount = Number(revenueAmount);
-    if (!selectedCampaign || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      return;
-    }
-
-    console.log("Revenue submitted:", {
-      campaignId: selectedCampaign.id,
-      campaignName: selectedCampaign.campaignName,
-      revenue: parsedAmount,
+  // "Start Work" বাটনে ক্লিক করলে
+  const handleStartWork = (campaign: Campaign) => {
+    console.log("running", {
+      campaignId: campaign.id,
+      campaignName: campaign.campaignName,
     });
-
-    closeRevenueModal();
   };
 
   if (isLoading) {
@@ -163,7 +139,7 @@ const MarketingAllCampaign = () => {
     );
   }
 
-  // স্ট্যাটাস অনুযায়ী ব্যাজের কালার দেওয়ার ফাংশন
+  // স্ট্যাটাস অনুযায়ী ব্যাজের কালার দেওয়ার ফাংশন
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case "approved":
@@ -319,11 +295,11 @@ const MarketingAllCampaign = () => {
                     {campaign.adminApproval === "approved" ? (
                       <button
                         type="button"
-                        onClick={() => openRevenueModal(campaign)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200/80 bg-emerald-50/65 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100/80"
+                        onClick={() => handleStartWork(campaign)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200/80 bg-blue-50/65 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100/80"
                       >
-                        <DollarSign className="h-3.5 w-3.5" />
-                        Add Revenue
+                        <PlayCircle className="h-3.5 w-3.5" />
+                        Start Work
                       </button>
                     ) : (
                       <span className="text-xs text-slate-400">Not available</span>
@@ -342,65 +318,6 @@ const MarketingAllCampaign = () => {
           </table>
         </div>
       </div>
-
-      {/* Revenue Modal */}
-      {isRevenueModalOpen && selectedCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[1px]">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-slate-50/60 p-5 shadow-xl backdrop-blur-md">
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Add Campaign Revenue</h2>
-                <p className="mt-1 text-sm text-slate-500">{selectedCampaign.campaignName}</p>
-              </div>
-              <button
-                type="button"
-                onClick={closeRevenueModal}
-                className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                aria-label="Close modal"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleRevenueSubmit} className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Revenue Amount
-                </label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">$</span>
-                  <input
-                    type="number"
-                    min={1}
-                    step="0.01"
-                    value={revenueAmount}
-                    onChange={(e) => setRevenueAmount(e.target.value)}
-                    placeholder="Enter revenue"
-                    required
-                    className="w-full rounded-xl border border-slate-200/80 bg-slate-50/60 py-2 pl-8 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={closeRevenueModal}
-                  className="rounded-lg border border-slate-300/90 bg-slate-50/60 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                >
-                  Submit Revenue
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );

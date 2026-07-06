@@ -609,7 +609,7 @@ const AdminContentCalMain = () => {
                 </colgroup>
                 <thead className="sticky top-0 z-10 bg-white/90 backdrop-blur">
                   <tr className="border-b-2 border-slate-200">
-                    {["#","Schedule Date","Delivery Date-DT","CAPTION Date","Creative Team","Post Type","Post Headline","Platforms","Status","Delivery Link","Notes"].map((h) => (
+                    {["#","Schedule Date","Delivery Date- CT","Caption Date","Creative Team","Post Type","Post Headline","Platforms","Status","Delivery Link","Notes"].map((h) => (
                       <th key={h} className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{h}</th>
                     ))}
                   </tr>
