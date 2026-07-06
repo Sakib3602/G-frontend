@@ -675,8 +675,8 @@ const ContentCalMain = () => {
                     {[
                       "#",
                       "Schedule Date",
-                      "Content Date",
-                      "Delivery Date",
+                      "Delivery Date- CT",
+                      "Caption Date",
                       "Creative Team",
                       "Post Type",
                       "Post Headline",
@@ -723,6 +723,14 @@ const ContentCalMain = () => {
                           <td className="px-3 py-2.5 text-xs font-semibold text-slate-700 whitespace-nowrap">
                             {fmt(item.scheduleDate)}
                           </td>
+                          <td className="px-3 py-2.5">
+                            <EditableCell
+                              type="date"
+                              value={fmtInput(item.deliveryDate)}
+                              onSave={(v) => update(item._id, { deliveryDate: v || undefined })}
+                              placeholder="Set date"
+                            />
+                          </td>
 
                           <td className="px-3 py-2.5">
                             <EditableCell
@@ -733,14 +741,7 @@ const ContentCalMain = () => {
                             />
                           </td>
 
-                          <td className="px-3 py-2.5">
-                            <EditableCell
-                              type="date"
-                              value={fmtInput(item.deliveryDate)}
-                              onSave={(v) => update(item._id, { deliveryDate: v || undefined })}
-                              placeholder="Set date"
-                            />
-                          </td>
+                          
 
                           <td className="px-3 py-2.5">
                             <TeamCell
