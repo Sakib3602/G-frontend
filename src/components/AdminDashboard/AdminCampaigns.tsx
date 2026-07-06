@@ -141,7 +141,7 @@ const AdminCampaigns = () => {
                       {item.marketerId?.email || ""}
                     </div>
                   </td>
-                  <td className="px-6 py-4">{item.totalBudget} BDT</td>
+                  <td className="px-6 py-4">{item.totalBudget} $</td>
                   <td className="px-6 py-4">
                     <select
                       defaultValue={item.adminApproval}

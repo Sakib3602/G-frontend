@@ -609,7 +609,7 @@ const AdminContentCalMain = () => {
                 </colgroup>
                 <thead className="sticky top-0 z-10 bg-white/90 backdrop-blur">
                   <tr className="border-b-2 border-slate-200">
-                    {["#","Schedule Date","Content Date","Delivery Date","Creative Team","Post Type","Post Headline","Platforms","Status","Delivery Link","Notes"].map((h) => (
+                    {["#","Schedule Date","Delivery Date-DT","CAPTION Date","Creative Team","Post Type","Post Headline","Platforms","Status","Delivery Link","Notes"].map((h) => (
                       <th key={h} className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{h}</th>
                     ))}
                   </tr>
@@ -634,11 +634,12 @@ const AdminContentCalMain = () => {
                           <td className="px-3 py-2.5 text-xs text-slate-400">{idx + 1}</td>
                           <td className="px-3 py-2.5 text-xs font-semibold text-slate-700 whitespace-nowrap">{fmt(item.scheduleDate)}</td>
                           <td className="px-3 py-2.5">
-                            <EditableCell type="date" value={fmtInput(item.contentDate)} onSave={(v) => update(item._id, { contentDate: v || undefined })} placeholder="Set date" />
-                          </td>
-                          <td className="px-3 py-2.5">
                             <EditableCell type="date" value={fmtInput(item.deliveryDate)} onSave={(v) => update(item._id, { deliveryDate: v || undefined })} placeholder="Set date" />
                           </td>
+                          <td className="px-3 py-2.5">
+                            <EditableCell type="date" value={fmtInput(item.contentDate)} onSave={(v) => update(item._id, { contentDate: v || undefined })} placeholder="Set date" />
+                          </td>
+                          
                           <td className="px-3 py-2.5">
                             <TeamCell value={item.creativeTeam ?? ""} users={users}
                               onSave={(user) => update(item._id, { creativeTeam: user.name, creativeTeamId: user._id })}

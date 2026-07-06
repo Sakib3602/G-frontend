@@ -12,8 +12,8 @@ import {
   HiOutlineLogout,
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
-
 } from "react-icons/hi";
+import { SiCardmarket } from "react-icons/si";
 
 import { IoDocumentTextSharp } from "react-icons/io5";
 
@@ -44,6 +44,11 @@ const MENU_ITEMS = [
     name: "Campaigns Requests",
     path: "/dashboard/admin/campaigns",
     icon: HiOutlineSpeakerphone,
+  },
+  {
+    name: "Marketing Dept.",
+    path: "/dashboard/admin/marketing",
+    icon: SiCardmarket,
   },
   {
     name: "Add Task",
