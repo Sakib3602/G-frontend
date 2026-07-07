@@ -1,0 +1,46 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+
+            cd ${{ secrets.VPS_PROJECT_PATH }}
+
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            echo "📦 Installing dependencies..."
+            npm install
+
+            echo "🔨 Building project into a temporary folder..."
+            npm run build -- --outDir=dist_new
+
+            echo "✅ Build successful. Switching to new version..."
+
+            if [ -d "dist_old" ]; then
+              rm -rf dist_old
+            fi
+
+            if [ -d "dist" ]; then
+              mv dist dist_old
+            fi
+
+            mv dist_new dist
+
+            echo "🎉 Deploy finished successfully! Site is live with new build."
