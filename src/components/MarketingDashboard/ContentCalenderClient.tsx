@@ -2,7 +2,7 @@
 
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import Alert from "./Alert/Alert";
@@ -41,7 +41,6 @@ const ContentCalenderClient = () => {
     done: "DONE",
   };
 
- 
   const axiosMarketing = useAxiosMarketing();
   const { userData } = useUserDataMarketing();
   const queryClient = useQueryClient();
@@ -91,9 +90,26 @@ const ContentCalenderClient = () => {
 
   const [statusCNG, setStatusCNG] = useState(false);
 
+  // ✅ status change mutation — "Mark as done" বাটনে ক্লিক করলে চলবে
+  const mutationStatus = useMutation({
+    mutationFn: async (clientId: string) => {
+      const res = await axiosMarketing.patch(`/update-client-status/${clientId}`, {
+        status: STATUS_TO_BACKEND.done,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      setStatusCNG(true);
+      queryClient.invalidateQueries({ queryKey: ["getAllClients", userData?._id] });
+    },
+  });
 
+  const handleMarkDone = (e: React.MouseEvent, clientId: string) => {
+    e.stopPropagation(); // row click (navigate) trigger হওয়া থেকে আটকাবে
+    mutationStatus.mutate(clientId);
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
     if (!name.trim() || !agreementDate) {
@@ -108,8 +124,6 @@ const ContentCalenderClient = () => {
     setError("");
   };
 
-  // Clicking a client row navigates to the client detail page, carrying
-  // the specific client id in the route.
   const handleClientClick = (client: ClientAgreement) => {
     setActiveId(client.id);
     navigate(`/dashboard/marketing/content-calendar-main/${client.id}`);
@@ -237,7 +251,16 @@ const ContentCalenderClient = () => {
                     {formatDate(client.agreementDate)}
                   </span>
 
-                  
+                  {showMarkDone && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleMarkDone(e, client.id)}
+                      disabled={mutationStatus.isPending}
+                      className="rounded-md border border-emerald-300/70 bg-emerald-50/70 px-2.5 py-1 text-[11px] font-medium text-emerald-700 transition hover:bg-emerald-100/80 disabled:opacity-60"
+                    >
+                      {mutationStatus.isPending ? "..." : "Mark done"}
+                    </button>
+                  )}
                 </span>
               </li>
             ))}
