@@ -123,10 +123,10 @@ const AdminMarketingDetails = () => {
             {/* Summary Cards */}
             {summary && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                    <SummaryCard label="Total Budget" value={formatCurrency(summary.totalBudget)} prefix="৳" />
+                    <SummaryCard label="Total Budget" value={formatCurrency(summary.totalBudget)} prefix="$" />
                     <SummaryCard label="Target Leads" value={formatCurrency(summary.totalTargetLeads)} />
                     <SummaryCard label="Leads Generated" value={formatCurrency(summary.totalLeadGenerated)} />
-                    <SummaryCard label="Total Revenue" value={formatCurrency(summary.totalRevenue)} prefix="৳" />
+                    <SummaryCard label="Total Revenue" value={formatCurrency(summary.totalRevenue)} prefix="$" />
                     <div
                         className={`rounded-2xl p-5 shadow-sm border flex flex-col justify-between ${
                             isProfit ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"
@@ -143,7 +143,7 @@ const AdminMarketingDetails = () => {
                             </span>
                         </p>
                         <p className={`text-xl font-bold ${isProfit ? "text-emerald-700" : "text-rose-700"}`}>
-                            ৳{formatCurrency(Math.abs(summary.profitOrLoss))}
+                            ${formatCurrency(Math.abs(summary.profitOrLoss))}
                         </p>
                     </div>
                 </div>
@@ -195,13 +195,13 @@ const AdminMarketingDetails = () => {
                                         <td className="p-4 text-xs text-gray-500 whitespace-nowrap">
                                             {formatDate(c.startDate)} → {formatDate(c.endDate)}
                                         </td>
-                                        <td className="p-4 text-sm font-mono">৳{formatCurrency(c.perDayCost)}</td>
-                                        <td className="p-4 text-sm font-mono">৳{formatCurrency(c.totalBudget)}</td>
+                                        <td className="p-4 text-sm font-mono">${formatCurrency(c.perDayCost)}</td>
+                                        <td className="p-4 text-sm font-mono">${formatCurrency(c.totalBudget)}</td>
                                         <td className="p-4 text-sm">
                                             {formatCurrency(c.leadGenerated)}
                                             <span className="text-gray-400"> / {formatCurrency(c.targetLeads)}</span>
                                         </td>
-                                        <td className="p-4 text-sm font-mono">৳{formatCurrency(c.revenue)}</td>
+                                        <td className="p-4 text-sm font-mono">${formatCurrency(c.revenue)}</td>
                                         <td className="p-4">
                                             <span
                                                 className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${
