@@ -12,6 +12,7 @@ import {
   UserPlus,
   TimerReset,
   CheckCircle,
+  ListFilter
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Link, Outlet, useLocation } from "react-router";
@@ -75,6 +76,11 @@ const MarketingHome = () => {
       name: "Content Calendar",
       path: "/dashboard/marketing/content-calendar",
       icon: CalendarDays,
+    },
+    {
+      name: "Tasks",
+      path: "/dashboard/marketing/tasks",
+      icon: ListFilter,
     },
   ];
 

@@ -50,6 +50,7 @@ import AdminCampaigns from "@/components/AdminDashboard/AdminCampaigns";
 import AdminAddTask from "@/components/AdminDashboard/AdminAddTask";
 import AdminMarketing from "@/components/AdminDashboard/AdminMarketing";
 import AdminMarketingDetails from "@/components/AdminDashboard/AdminMarketingDetails";
+import TaskAD from "@/components/MarketingDashboard/TaskAD";
 
 const RoutesAll = () => {
   return (
@@ -151,6 +152,10 @@ const RoutesAll = () => {
         <Route
           path="/dashboard/marketing/content-calendar-main/:id"
           element={<ContentCalMain />}
+        />
+        <Route
+          path="/dashboard/marketing/tasks"
+          element={<TaskAD />}
         />
       </Route>
       {/* marketing dashboard end */}

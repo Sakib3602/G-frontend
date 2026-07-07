@@ -181,7 +181,7 @@ const AdminAddTask: React.FC = () => {
 
   const mutationCreateTask = useMutation({
     mutationFn: async (taskData: TaskFormData) => {
-      const response = await axiosAdmin.post(`/admin/tasks/create`, {
+      const response = await axiosAdmin.post(`/tasks/create`, {
         ...taskData,
         campaignId: taskData.campaignId || null,
       });

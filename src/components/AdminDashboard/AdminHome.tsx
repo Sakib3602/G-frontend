@@ -104,7 +104,7 @@ const AdminHome = () => {
           >
             {isOpen ? (
               <h2 className="text-[#F7941D] text-xl font-bold whitespace-nowrap overflow-hidden">
-                Hack By Sakib
+                Admin Dashboard
               </h2>
             ) : (
               <span className="text-[#F7941D] text-xl font-bold">A</span>
