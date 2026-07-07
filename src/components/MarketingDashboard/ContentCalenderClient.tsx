@@ -40,7 +40,7 @@ const ContentCalenderClient = () => {
     running: "ACTIVE",
     done: "DONE",
   };
-  const CANCELLED_STATUS = "INACTIVE";
+
  
   const axiosMarketing = useAxiosMarketing();
   const { userData } = useUserDataMarketing();
@@ -91,20 +91,7 @@ const ContentCalenderClient = () => {
 
   const [statusCNG, setStatusCNG] = useState(false);
 
-  const mutationStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await axiosMarketing.patch(`/update-client/${id}`, { status });
-      return res.data;
-    },
-    onSuccess: () => {
-      setStatusCNG(true);
-      queryClient.invalidateQueries({ queryKey: ["getAllClients", userData?._id] });
-    },
-    onError: (err) => {
-      console.error("Status change failed:", err);
-      alert("Couldn't update status. Please try again.");
-    },
-  });
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,14 +113,6 @@ const ContentCalenderClient = () => {
   const handleClientClick = (client: ClientAgreement) => {
     setActiveId(client.id);
     navigate(`/dashboard/marketing/content-calendar-main/${client.id}`);
-  };
-
-  const handleMarkDone = (id: string) => {
-    mutationStatus.mutate({ id, status: STATUS_TO_BACKEND.done });
-  };
-
-  const handleCancel = (id: string) => {
-    mutationStatus.mutate({ id, status: CANCELLED_STATUS });
   };
 
   const runningClients = clients.filter(
@@ -258,30 +237,7 @@ const ContentCalenderClient = () => {
                     {formatDate(client.agreementDate)}
                   </span>
 
-                  {showMarkDone && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkDone(client.id);
-                        }}
-                        className="rounded-md border border-slate-300/70 bg-white/60 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-400 hover:text-indigo-600"
-                      >
-                        Mark done
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCancel(client.id);
-                        }}
-                        className="rounded-md border border-rose-300/70 bg-white/60 px-2 py-1 text-[11px] font-medium text-rose-500 transition hover:border-rose-400 hover:bg-rose-50"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  )}
+                  
                 </span>
               </li>
             ))}
