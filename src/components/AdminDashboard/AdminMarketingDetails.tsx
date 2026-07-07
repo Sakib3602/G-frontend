@@ -2,7 +2,7 @@ import { useState } from "react";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router";
-import { FiChevronDown, FiArrowLeft, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
+import { FiChevronDown, FiArrowLeft, FiTrendingUp, FiTrendingDown, FiX } from "react-icons/fi";
 
 interface Marketer {
     _id: string;
@@ -19,7 +19,7 @@ interface Campaign {
     perDayCost: number;
     targetLeads: number;
     totalBudget: number;
-    adminApproval: "pending" | "approved" | "rejected" | "running" | string;
+    adminApproval: "approved" | "running" | "ended" | string;
     marketerId: Marketer | string;
     revenue: number;
     leadGenerated: number;
@@ -43,10 +43,9 @@ interface ApiResponse {
 }
 
 const statusStyles: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-600 border border-amber-200",
     approved: "bg-emerald-50 text-emerald-600 border border-emerald-200",
-    rejected: "bg-rose-50 text-rose-600 border border-rose-200",
     running: "bg-blue-50 text-blue-600 border border-blue-200",
+    ended: "bg-gray-100 text-gray-600 border border-gray-200",
 };
 
 const formatCurrency = (n?: number) => new Intl.NumberFormat("en-BD").format(n || 0);
@@ -64,12 +63,19 @@ const AdminMarketingDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [statusFilter, setStatusFilter] = useState("all");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
     const axiosAdmin = useAxiosAdmin();
 
     const { data, isLoading } = useQuery<ApiResponse>({
-        queryKey: ["campaign-details", id, statusFilter],
+        queryKey: ["campaign-details", id, statusFilter, startDate, endDate],
         queryFn: async () => {
-            const res = await axiosAdmin.get(`/specific-users/${id}?status=${statusFilter}`);
+            const params = new URLSearchParams();
+            params.set("status", statusFilter);
+            if (startDate) params.set("startDate", startDate);
+            if (endDate) params.set("endDate", endDate);
+
+            const res = await axiosAdmin.get(`/specific-users/${id}?${params.toString()}`);
             return res.data;
         },
         enabled: !!id,
@@ -78,11 +84,17 @@ const AdminMarketingDetails = () => {
     const campaigns = data?.data || [];
     const summary = data?.summary;
     const isProfit = (summary?.profitOrLoss ?? 0) >= 0;
+    const hasDateFilter = !!(startDate || endDate);
 
     const marketer =
         campaigns.length > 0 && typeof campaigns[0].marketerId === "object"
             ? (campaigns[0].marketerId as Marketer)
             : null;
+
+    const clearDateFilter = () => {
+        setStartDate("");
+        setEndDate("");
+    };
 
     return (
         <div className="p-6 md:p-8 bg-gray-50 min-h-screen text-[#1E293B]">
@@ -104,21 +116,65 @@ const AdminMarketingDetails = () => {
                     </p>
                 </div>
 
-                <div className="relative w-fit">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="appearance-none bg-white border border-gray-200 text-sm font-semibold px-4 py-2.5 pr-9 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
-                    >
-                        <option value="all">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="running">Running</option>
-                    </select>
-                    <FiChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Date range filter */}
+                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
+                        <div className="flex flex-col">
+                            <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">From</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                max={endDate || undefined}
+                                className="text-sm font-medium text-[#1E293B] focus:outline-none w-[120px] cursor-pointer"
+                            />
+                        </div>
+                        <span className="text-gray-300">→</span>
+                        <div className="flex flex-col">
+                            <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">To</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                min={startDate || undefined}
+                                className="text-sm font-medium text-[#1E293B] focus:outline-none w-[120px] cursor-pointer"
+                            />
+                        </div>
+                        {hasDateFilter && (
+                            <button
+                                onClick={clearDateFilter}
+                                title="Clear date filter"
+                                className="text-gray-400 hover:text-rose-500 transition-colors ml-1"
+                            >
+                                <FiX size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Status filter */}
+                    <div className="relative w-fit">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="appearance-none bg-white border border-gray-200 text-sm font-semibold px-4 py-2.5 pr-9 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="approved">Approved</option>
+                            <option value="running">Running</option>
+                            <option value="ended">Ended</option>
+                        </select>
+                        <FiChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                    </div>
                 </div>
             </div>
+
+            {hasDateFilter && (
+                <p className="text-xs text-gray-500 mb-4 -mt-2">
+                    Showing campaigns starting {startDate ? formatDate(startDate) : "the beginning"}
+                    {" "}to{" "}
+                    {endDate ? formatDate(endDate) : "now"}
+                </p>
+            )}
 
             {/* Summary Cards */}
             {summary && (

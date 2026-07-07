@@ -24,6 +24,8 @@ dist-ssr
 *.sln
 *.sw?
 
-
+<<<<<<< HEAD
+=======
 deploy_key
 deploy_key.pub
+>>>>>>> demo
