@@ -55,6 +55,7 @@ type TaskApi = {
   campaignId?: { _id: string; campaignName: string };
   makerId?: { _id: string; name: string };
   remainingDate: RemainingDatePending | RemainingDateCompleted;
+  url?: string;
 };
 
 type TaskFormData = {
@@ -142,6 +143,9 @@ const AdminAddTask: React.FC = () => {
     },
     enabled: activeTab === "completed",
   });
+
+  console.log("AdminAddTask - pendingTasks:", pendingTasks); // Debugging line
+  console.log("AdminAddTask - completedTasks:", completedTasks); // Debugging line
 
   const overdueCount = useMemo(
     () => pendingTasks.filter((t) => isPendingRemaining(t.remainingDate) && t.remainingDate.isOverdue).length,
@@ -461,6 +465,9 @@ const AdminAddTask: React.FC = () => {
                           {new Date(task.dueDate).toLocaleDateString()} {task.dueTime ?? ""}
                         </span>
                       </p>
+                      {task.url && (
+                        <p className="mt-1.5 text-xs leading-5 text-slate-600">URL: {task?.url}</p>
+                      )}
                       {task.description && (
                         <p className="mt-1.5 text-xs leading-5 text-slate-600">{task.description}</p>
                       )}

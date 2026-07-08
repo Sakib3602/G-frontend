@@ -101,8 +101,16 @@ const TaskAD = () => {
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
         My Marketing Tasks
       </h2>
+      <hr />
 
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {
+            taskData.length === 0 && (
+                <div className="col-span-full text-center text-gray-500 mt-10">
+                    No tasks available.
+                </div>
+            )
+        }
         {taskData.map((task) => (
           <div
             key={task._id}
