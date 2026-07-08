@@ -106,7 +106,7 @@ const AdminDekayWorks = () => {
 
   const mutationUpdateReport = useMutation({
     mutationFn: async (reportId: string) => {
-      const res = await axiosAdmin.patch(`/reports/${reportId}/update-status`);
+      const res = await axiosAdmin.patch(`/reports/${reportId}`);
       return res.data;
     },
     onSuccess: () => {

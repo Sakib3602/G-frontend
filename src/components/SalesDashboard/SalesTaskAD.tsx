@@ -1,4 +1,5 @@
-import useAxiosMarketing from "@/uri/useAxiosMarketing";
+
+import useAxiosSales from "@/uri/useAxiosSales";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import Swal from "sweetalert2"; // SweetAlert ইম্পোর্ট করা হলো
@@ -14,17 +15,17 @@ interface Task {
   status?: string;
 }
 
-const TaskAD = () => {
-  const axiosMar = useAxiosMarketing();
+const SalesTaskAD = () => {
+  const axiosMar = useAxiosSales();
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [workUrl, setWorkUrl] = useState<string>("");
 
-  const { data: taskData = [], isLoading , refetch} = useQuery<Task[]>({
-    queryKey: ["marketing-tasks"],
+  const { data: taskData = [], isLoading ,refetch } = useQuery<Task[]>({
+    queryKey: ["sales-tasks"],
     queryFn: async () => {
-      const res = await axiosMar.get("/tasks/marketing-tasks");
+      const res = await axiosMar.get("/api/v1/sales/tasks-all");
       return res.data;
     },
   });
@@ -76,7 +77,7 @@ const TaskAD = () => {
 
   const mutationDoneWork = useMutation({
     mutationFn: async ({ id, url }: { id: string; url: string }) => {
-      const res = await axiosMar.patch(`/tasks/task-done/${id}`, {
+      const res = await axiosMar.patch(`/api/v1/sales/task-done/${id}`, {
         url,
       });
 
@@ -192,4 +193,4 @@ const TaskAD = () => {
   );
 };
 
-export default TaskAD;
+export default SalesTaskAD;

@@ -12,6 +12,7 @@ import {
   Timer,
   Pin,
   MessageCircle,
+  ClipboardList,
   Mail,
 } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
@@ -81,6 +82,7 @@ const Sales_Home = () => {
       icon: MessageCircle,
     },
     { name: "Emails", path: "/dashboard/sales/emails", icon: Mail },
+    { name: "Tasks", path: "/dashboard/sales/tasks", icon: ClipboardList },
   ];
 
   return (
