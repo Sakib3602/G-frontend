@@ -636,7 +636,7 @@ const ContentCalMain = () => {
 
       {/* ── Table — full width, no side padding ───────────── */}
       {selectedCalendar && (
-        <div className="border-t border-slate-200/60 bg-white/30 backdrop-blur-xl">
+        <div className=" border-t border-slate-200/60 bg-white/30 backdrop-blur-xl">
 
           {/* Table meta bar */}
           <div className="flex items-center justify-between px-8 py-2.5 border-b border-slate-200/60 bg-white/50">

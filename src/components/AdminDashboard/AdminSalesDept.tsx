@@ -11,14 +11,14 @@ interface MarketingUser {
     role: string;
 }
 
-const AdminMarketing = () => {
+const AdminSalesDept = () => {
     const axiosAdmin = useAxiosAdmin();
     const navigate = useNavigate();
 
     const { data: users, isLoading } = useQuery<MarketingUser[]>({
-        queryKey: ["marketing-users"],
+        queryKey: ["sales-users"],
         queryFn: async () => {
-            const res = await axiosAdmin.get("/specific-users?role=marketing");
+            const res = await axiosAdmin.get("/specific-users?role=sales");
             return res.data?.data;
         },
     });
@@ -42,8 +42,8 @@ const AdminMarketing = () => {
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Marketing Access Control</h1>
-                    <p className="text-gray-500 text-sm mt-1">Manage marketing personnel and user roles.</p>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Sales Access Control</h1>
+                    <p className="text-gray-500 text-sm mt-1">Manage sales personnel and user roles.</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-sm text-sm font-medium">
                     Total Users: <span className="font-bold text-blue-600">{users?.length || 0}</span>
@@ -95,7 +95,7 @@ const AdminMarketing = () => {
 
                         {/* Action Button */}
                         <button
-                            onClick={() => navigate(`/dashboard/admin/marketing/${user._id}`)}
+                            onClick={() => navigate(`/dashboard/admin/sales/${user._id}`)}
                             className="w-full cursor-pointer text-sm font-semibold text-gray-700 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         >
                             View Full Record
@@ -107,4 +107,4 @@ const AdminMarketing = () => {
     );
 };
 
-export default AdminMarketing;
+export default AdminSalesDept;

@@ -38,7 +38,7 @@ const SalesPrivateRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // ✅ Shudhu redirect, logOut ALREADY useEffect e handled
+
   if (role !== "sales") {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

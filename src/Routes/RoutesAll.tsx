@@ -52,6 +52,8 @@ import AdminMarketing from "@/components/AdminDashboard/AdminMarketing";
 import AdminMarketingDetails from "@/components/AdminDashboard/AdminMarketingDetails";
 import TaskAD from "@/components/MarketingDashboard/TaskAD";
 import SalesTaskAD from "@/components/SalesDashboard/SalesTaskAD";
+import AdminSalesDept from "@/components/AdminDashboard/AdminSalesDept";
+import AdminSalesDetails from "@/components/AdminDashboard/AdminSalesDetails";
 
 const RoutesAll = () => {
   return (
@@ -202,6 +204,8 @@ const RoutesAll = () => {
         <Route path="/dashboard/admin/marketing" element={<AdminMarketing />} />
         <Route path="/dashboard/admin/marketing/:id" element={<AdminMarketingDetails   />} />
         <Route path="/dashboard/admin/add-task" element={<AdminAddTask />} />
+        <Route path="/dashboard/admin/sales" element={<AdminSalesDept />} />
+        <Route path="/dashboard/admin/sales/:id" element={<AdminSalesDetails />} />
       </Route>
 
 

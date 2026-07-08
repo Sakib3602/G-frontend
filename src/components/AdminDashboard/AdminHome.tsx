@@ -13,7 +13,7 @@ import {
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
 } from "react-icons/hi";
-import { SiCardmarket } from "react-icons/si";
+import { SiCardmarket , SiMoneygram  } from "react-icons/si";
 
 import { IoDocumentTextSharp } from "react-icons/io5";
 
@@ -49,6 +49,11 @@ const MENU_ITEMS = [
     name: "Marketing Dept.",
     path: "/dashboard/admin/marketing",
     icon: SiCardmarket,
+  },
+  {
+    name: "Sales Dept.",
+    path: "/dashboard/admin/sales",
+    icon: SiMoneygram,
   },
   {
     name: "Add Task",
