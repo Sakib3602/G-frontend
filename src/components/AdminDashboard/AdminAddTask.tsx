@@ -234,7 +234,7 @@ const AdminAddTask: React.FC = () => {
 
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
         {/* Header */}
-        <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,_rgba(201,166,70,0.16),_rgba(248,250,252,1)_60%)] px-6 py-8 sm:px-8">
+        <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,rgba(201,166,70,0.16),rgba(248,250,252,1)_60%)] px-6 py-8 sm:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A646]/20 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A22] shadow-sm">
             <span className="h-2 w-2 rounded-full bg-[#C9A646]" />
             Admin task control

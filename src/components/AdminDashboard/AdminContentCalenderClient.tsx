@@ -136,6 +136,11 @@ const AdminContentCalenderClient = () => {
     mutationStatus.mutate({ id, status: CANCELLED_STATUS });
   };
 
+  // ── NEW: Reopen handler ──────────────────────────────────────
+  const handleReopen = (id: string) => {
+    mutationStatus.mutate({ id, status: STATUS_TO_BACKEND.running });
+  };
+
   const handleClientClick = (client: ClientAgreement) => {
     setActiveId(client.id);
     navigate(`/dashboard/admin/content-calendar/${client.id}`);
@@ -260,7 +265,8 @@ const AdminContentCalenderClient = () => {
                     {formatDate(client.agreementDate)}
                   </span>
 
-                  {showActions && (
+                  {/* Actions for "running" status */}
+                  {showActions && client.status === "running" && (
                     <>
                       <button
                         type="button"
@@ -283,6 +289,20 @@ const AdminContentCalenderClient = () => {
                         Cancel
                       </button>
                     </>
+                  )}
+
+                  {/* Action for "done" status */}
+                  {showActions && client.status === "done" && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReopen(client.id);
+                      }}
+                      className="rounded-md border border-emerald-300/70 bg-white/60 px-2 py-1 text-[11px] font-medium text-emerald-600 transition hover:border-emerald-400 hover:bg-emerald-50"
+                    >
+                      Reopen
+                    </button>
                   )}
                 </span>
               </li>
@@ -382,7 +402,7 @@ const AdminContentCalenderClient = () => {
             doneSearch,
             setDoneSearch,
             "No completed clients match your search.",
-            false,
+            true, // Changed to 'true' to show the Reopen button
             true
           )}
         </div>
