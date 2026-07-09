@@ -58,6 +58,7 @@ import AdminVIewLeads from "@/components/AdminDashboard/AdminVIewLeads";
 import AdminViewMeetings from "@/components/AdminDashboard/AdminViewMeetings";
 import SubmitCompliance from "@/components/Compliance/SubmitCompliance";
 import ViewCompliance from "@/components/Compliance/ViewCompliance";
+import ClientCalendarView from "@/components/PublicClient/ClientCalendarView";
 
 const RoutesAll = () => {
   return (
@@ -68,6 +69,7 @@ const RoutesAll = () => {
         <Route path="/registration" element={<Registration />} />
         <Route path="/login" element={<Login />} />
         <Route path="/reset/password" element={<Reset />} />
+        <Route path="/view/calendar/:token" element={<ClientCalendarView />} />
       </Route>
       {/* sales dashboard start */}
       <Route

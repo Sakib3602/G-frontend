@@ -50,6 +50,12 @@ interface UserOption {
   name: string;
 }
 
+interface ShareStatus {
+  shareEnabled: boolean;
+  shareExpiresAt: string | null;
+  shareUrl: string | null;
+}
+
 // ─── Constants ────────────────────────────────────────────────
 
 const POST_TYPES = [
@@ -383,6 +389,12 @@ const AdminContentCalMain = () => {
   const [dateError, setDateError] = useState("");
   const [selectedCalendar, setSelectedCalendar] = useState<CalendarDoc | null>(null);
 
+  // ── Client Share Link state ──
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareExpiry, setShareExpiry] = useState("");
+  const [shareData, setShareData] = useState<{ shareUrl: string; expiresAt: string } | null>(null);
+  const [shareError, setShareError] = useState("");
+
   const pendingReportIdsRef = useRef<Set<string>>(new Set());
 
   const { data: client, isLoading: clientLoading } = useQuery({
@@ -417,6 +429,16 @@ const AdminContentCalMain = () => {
       const res = await axiosAdmin.get("/users");
       return res.data?.data ?? res.data ?? [];
     },
+  });
+
+  // ── Client Share Link — current status for selected calendar ──
+  const { data: shareStatus, refetch: refetchShareStatus } = useQuery<ShareStatus>({
+    queryKey: ["admin-share-status", selectedCalendar?._id],
+    queryFn: async () => {
+      const res = await axiosAdmin.get(`/content-calendar/calendar/${selectedCalendar!._id}/share-status`);
+      return res.data.data;
+    },
+    enabled: !!selectedCalendar,
   });
 
   const createCalendarMutation = useMutation({
@@ -457,6 +479,37 @@ const AdminContentCalMain = () => {
     onError: (err) => console.error("Report trigger failed:", err),
   });
 
+  // ── Client Share Link — generate / revoke mutations ──
+  const generateShareLinkMutation = useMutation({
+    mutationFn: async () => {
+      const res = await axiosAdmin.post(
+        `/content-calendar/calendar/${selectedCalendar!._id}/generate-share-link`,
+        { expiresAt: shareExpiry },
+      );
+      return res.data;
+    },
+    onSuccess: (res) => {
+      setShareData(res.data);
+      setShareError("");
+      refetchShareStatus();
+    },
+    onError: (err: any) => {
+      setShareError(err?.response?.data?.message || "Link generate করা যায়নি।");
+    },
+  });
+
+  const revokeShareLinkMutation = useMutation({
+    mutationFn: async () => {
+      const res = await axiosAdmin.post(`/content-calendar/calendar/${selectedCalendar!._id}/revoke-share-link`);
+      return res.data;
+    },
+    onSuccess: () => {
+      setShareData(null);
+      setShareExpiry("");
+      refetchShareStatus();
+    },
+  });
+
   useEffect(() => {
     items.forEach((item) => {
       const alreadyHandled = item.reportSent || pendingReportIdsRef.current.has(item._id);
@@ -478,6 +531,16 @@ const AdminContentCalMain = () => {
     if (!title || !startDate || !endDate) { setDateError("সব field পূরণ করুন।"); return; }
     if (!isEndDateValid(startDate, endDate)) { setDateError("End date অবশ্যই start date এর পরে হতে হবে।"); return; }
     createCalendarMutation.mutate();
+  };
+
+  const openShareModal = () => {
+    setShareError("");
+    setShareData(
+      shareStatus?.shareEnabled && shareStatus.shareUrl && shareStatus.shareExpiresAt
+        ? { shareUrl: shareStatus.shareUrl, expiresAt: shareStatus.shareExpiresAt }
+        : null,
+    );
+    setShareModalOpen(true);
   };
 
   if (clientLoading) {
@@ -574,6 +637,19 @@ const AdminContentCalMain = () => {
                 >{cal.title}</button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Client Share Link Button */}
+        {selectedCalendar && (
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={openShareModal}
+              className="rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
+            >
+              {shareStatus?.shareEnabled ? "🔗 Manage Client Link" : "🔗 Generate Client Link"}
+            </button>
           </div>
         )}
       </div>
@@ -685,6 +761,87 @@ const AdminContentCalMain = () => {
       {calendars.length > 0 && !selectedCalendar && (
         <div className="px-6 py-16 text-center">
           <p className="text-sm text-slate-400">Select a calendar above to view content rows.</p>
+        </div>
+      )}
+
+      {/* Client Share Link Modal */}
+      {shareModalOpen && selectedCalendar && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setShareModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-slate-900">Client Share Link</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              {selectedCalendar.title} — client login ছাড়া শুধু এই calendar দেখতে পারবে।
+            </p>
+
+            {!shareData ? (
+              <div className="mt-4">
+                <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Access expires at
+                </label>
+                <input
+                  type="datetime-local"
+                  value={shareExpiry}
+                  onChange={(e) => setShareExpiry(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                />
+                {shareError && <p className="mt-2 text-xs text-rose-500">{shareError}</p>}
+                <button
+                  type="button"
+                  disabled={!shareExpiry || generateShareLinkMutation.isPending}
+                  onClick={() => generateShareLinkMutation.mutate()}
+                  className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
+                >
+                  {generateShareLinkMutation.isPending ? "Generating..." : "Generate Link"}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Share this link with the client
+                </label>
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={shareData.shareUrl}
+                    className="w-full truncate rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(shareData.shareUrl)}
+                    className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Expires: {new Date(shareData.expiresAt).toLocaleString()}
+                </p>
+
+                <button
+                  type="button"
+                  disabled={revokeShareLinkMutation.isPending}
+                  onClick={() => revokeShareLinkMutation.mutate()}
+                  className="mt-4 w-full rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
+                >
+                  {revokeShareLinkMutation.isPending ? "Revoking..." : "Revoke Link"}
+                </button>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(false)}
+              className="mt-3 w-full rounded-lg px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
     </div>
