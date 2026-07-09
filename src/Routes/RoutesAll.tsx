@@ -56,6 +56,7 @@ import AdminSalesDept from "@/components/AdminDashboard/AdminSalesDept";
 import AdminSalesDetails from "@/components/AdminDashboard/AdminSalesDetails";
 import AdminVIewLeads from "@/components/AdminDashboard/AdminVIewLeads";
 import AdminViewMeetings from "@/components/AdminDashboard/AdminViewMeetings";
+import SubmitCompliance from "@/components/Compliance/SubmitCompliance";
 
 const RoutesAll = () => {
   return (
@@ -106,6 +107,7 @@ const RoutesAll = () => {
         <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
         <Route path="/dashboard/sales/emails" element={<Sales_Emails />} />
         <Route path="/dashboard/sales/tasks" element={<SalesTaskAD />} />
+        <Route path="/dashboard/sales/compliance" element={<SubmitCompliance />} />
       </Route>
       {/* sales dashboard end */}
       {/* marketing dashboard start */}

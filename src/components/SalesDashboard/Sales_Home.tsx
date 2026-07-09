@@ -14,6 +14,7 @@ import {
   MessageCircle,
   ClipboardList,
   Mail,
+  Shield,
 } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
@@ -37,7 +38,7 @@ const Sales_Home = () => {
       return res.data.data;
     },
   });
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
   // Mock user data
@@ -83,6 +84,7 @@ const Sales_Home = () => {
     },
     { name: "Emails", path: "/dashboard/sales/emails", icon: Mail },
     { name: "Tasks", path: "/dashboard/sales/tasks", icon: ClipboardList },
+    { name: "Compliance", path: "/dashboard/sales/compliance", icon: Shield },
   ];
 
   return (
