@@ -76,7 +76,7 @@ const AdminSalesDept = () => {
                         </div>
 
                         {/* Contact Info */}
-                        <div className="space-y-3 mb-6 flex-grow">
+                        <div className="space-y-3 mb-6 grow">
                             <div className="flex items-center gap-3 text-sm">
                                 <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
                                     <FiMail className="text-gray-500" size={14} />

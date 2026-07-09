@@ -54,6 +54,8 @@ import TaskAD from "@/components/MarketingDashboard/TaskAD";
 import SalesTaskAD from "@/components/SalesDashboard/SalesTaskAD";
 import AdminSalesDept from "@/components/AdminDashboard/AdminSalesDept";
 import AdminSalesDetails from "@/components/AdminDashboard/AdminSalesDetails";
+import AdminVIewLeads from "@/components/AdminDashboard/AdminVIewLeads";
+import AdminViewMeetings from "@/components/AdminDashboard/AdminViewMeetings";
 
 const RoutesAll = () => {
   return (
@@ -206,6 +208,8 @@ const RoutesAll = () => {
         <Route path="/dashboard/admin/add-task" element={<AdminAddTask />} />
         <Route path="/dashboard/admin/sales" element={<AdminSalesDept />} />
         <Route path="/dashboard/admin/sales/:id" element={<AdminSalesDetails />} />
+        <Route path="/dashboard/admin/leads/:id/view" element={<AdminVIewLeads />} />
+        <Route path="/dashboard/admin/meetings/:id/view" element={<AdminViewMeetings />} />
       </Route>
 
 
