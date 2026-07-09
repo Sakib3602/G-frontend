@@ -57,6 +57,7 @@ import AdminSalesDetails from "@/components/AdminDashboard/AdminSalesDetails";
 import AdminVIewLeads from "@/components/AdminDashboard/AdminVIewLeads";
 import AdminViewMeetings from "@/components/AdminDashboard/AdminViewMeetings";
 import SubmitCompliance from "@/components/Compliance/SubmitCompliance";
+import ViewCompliance from "@/components/Compliance/ViewCompliance";
 
 const RoutesAll = () => {
   return (
@@ -224,6 +225,7 @@ const RoutesAll = () => {
         <Route path="/dashboard/admin/sales/:id" element={<AdminSalesDetails />} />
         <Route path="/dashboard/admin/leads/:id/view" element={<AdminVIewLeads />} />
         <Route path="/dashboard/admin/meetings/:id/view" element={<AdminViewMeetings />} />
+        <Route path="/dashboard/admin/compliance" element={<ViewCompliance />} />
       </Route>
 
 

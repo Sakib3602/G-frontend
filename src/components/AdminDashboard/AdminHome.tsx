@@ -16,6 +16,7 @@ import {
 import { SiCardmarket , SiMoneygram  } from "react-icons/si";
 
 import { IoDocumentTextSharp } from "react-icons/io5";
+import { Shield } from "lucide-react";
 
 const MENU_ITEMS = [
   { name: "Home", path: "/dashboard/admin", icon: HiOutlineHome },
@@ -62,9 +63,9 @@ const MENU_ITEMS = [
   },
 
   {
-    name: "Compliance",
-    path: "/compliance",
-    icon: HiOutlineQuestionMarkCircle,
+    name: "Compliance ",
+    path: "/dashboard/admin/compliance",
+    icon: Shield,
   },
   
 ];
