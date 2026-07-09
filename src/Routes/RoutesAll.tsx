@@ -165,6 +165,14 @@ const RoutesAll = () => {
           path="/dashboard/marketing/tasks"
           element={<TaskAD />}
         />
+        <Route
+          path="/dashboard/marketing/tasks"
+          element={<TaskAD />}
+        />
+        <Route
+          path="/dashboard/marketing/compliance"
+          element={<SubmitCompliance />}
+        />
       </Route>
       {/* marketing dashboard end */}
       {/* designer dashboard start */}
@@ -192,6 +200,10 @@ const RoutesAll = () => {
         <Route
           path="/dashboard/designer/content-tasks"
           element={<DesignerMyTasksContent />}
+        />
+        <Route
+          path="/dashboard/designer/compliance"
+          element={<SubmitCompliance />}
         />
       </Route>
       {/* designer dashboard end */}

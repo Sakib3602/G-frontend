@@ -12,7 +12,8 @@ import {
   UserPlus,
   TimerReset,
   CheckCircle,
-  ListFilter
+  ListFilter,
+  Shield
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Link, Outlet, useLocation } from "react-router";
@@ -21,7 +22,7 @@ import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 
 const MarketingHome = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
   const { userData } = useUserDataMarketing();
@@ -81,6 +82,11 @@ const MarketingHome = () => {
       name: "Tasks",
       path: "/dashboard/marketing/tasks",
       icon: ListFilter,
+    },
+    {
+      name: "Compliance",
+      path: "/dashboard/marketing/compliance",
+      icon: Shield,
     },
   ];
 
