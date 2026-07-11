@@ -227,12 +227,12 @@ const Sales_Create_leads = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Email Address <span className="text-red-500">*</span>
+                    Email Address <span className="text-red-500"></span>
                   </label>
                   <input
                     type="email"
                     name="email"
-                    required
+                  
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="liam@enterprise.com"
@@ -277,12 +277,12 @@ const Sales_Create_leads = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Company Name <span className="text-red-500">*</span>
+                    Company Name <span className="text-red-500"></span>
                   </label>
                   <input
                     type="text"
                     name="companyName"
-                    required
+             
                     value={formData.companyName}
                     onChange={handleChange}
                     placeholder="Enterprise Corp"
@@ -308,11 +308,10 @@ const Sales_Create_leads = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Organizational Hierarchy <span className="text-red-500">*</span>
+                    Organizational Hierarchy <span className="text-red-500"></span>
                   </label>
                   <select
                     name="title"
-                    required
                     value={formData.title}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"

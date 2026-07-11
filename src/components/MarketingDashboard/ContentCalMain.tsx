@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
@@ -52,7 +53,7 @@ interface UserOption {
 // ─── Constants ────────────────────────────────────────────────
 
 const POST_TYPES = [
-  "Carousel Static",
+  "Static",
   "Reel",
   "Motion Graphics",
   "Memes (Static)",
@@ -149,6 +150,75 @@ const isOverdueMissingDelivery = (item: CalendarItem) => {
 
 const WEEK_SIZE = 6;
 
+// ─── Dropdown Portal ────────────────────────────────────────────
+// Renders dropdown content into document.body via a portal, positioned
+// with `position: fixed` based on the trigger button's bounding rect.
+// This avoids clipping caused by the table's `overflow-x-auto` wrapper
+// (which was hiding dropdowns opened from the last rows). Automatically
+// flips to open upward when there isn't enough space below.
+
+interface DropdownPortalProps {
+  buttonRef: React.RefObject<HTMLButtonElement>;
+  open: boolean;
+  onClose: () => void;
+  width?: number;
+  children: React.ReactNode;
+}
+
+const DropdownPortal = ({
+  buttonRef,
+  open,
+  onClose,
+  width = 176,
+  children,
+}: DropdownPortalProps) => {
+  const [style, setStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (!open || !buttonRef.current) return;
+
+    const updatePosition = () => {
+      if (!buttonRef.current) return;
+      const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownMaxHeight = 224; // matches max-h-56
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < dropdownMaxHeight && rect.top > spaceBelow;
+
+      setStyle({
+        position: "fixed",
+        left: rect.left,
+        width,
+        ...(openUp
+          ? { bottom: window.innerHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open, buttonRef, width]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div
+        style={style}
+        className="z-50 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl"
+      >
+        {children}
+      </div>
+    </>,
+    document.body
+  );
+};
+
 // ─── Editable Cell ────────────────────────────────────────────
 
 interface EditableCellProps {
@@ -220,13 +290,12 @@ const PostTypeCell = ({
   onSave: (v: string) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="relative">
-      {open && (
-        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-      )}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-1 rounded border border-slate-200 bg-white/80 px-1.5 py-0.5 text-xs text-slate-700 hover:border-indigo-300"
@@ -234,25 +303,23 @@ const PostTypeCell = ({
         <span className="truncate">{value || <span className="text-slate-300">Type</span>}</span>
         <span className="shrink-0 text-slate-400">▾</span>
       </button>
-      {open && (
-        <div className="absolute left-0 top-7 z-40 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-          {POST_TYPES.map((pt) => (
-            <button
-              key={pt}
-              type="button"
-              onClick={() => {
-                onSave(pt);
-                setOpen(false);
-              }}
-              className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${
-                pt === value ? "font-semibold text-indigo-600" : "text-slate-700"
-              }`}
-            >
-              {pt}
-            </button>
-          ))}
-        </div>
-      )}
+      <DropdownPortal buttonRef={buttonRef} open={open} onClose={() => setOpen(false)} width={176}>
+        {POST_TYPES.map((pt) => (
+          <button
+            key={pt}
+            type="button"
+            onClick={() => {
+              onSave(pt);
+              setOpen(false);
+            }}
+            className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${
+              pt === value ? "font-semibold text-indigo-600" : "text-slate-700"
+            }`}
+          >
+            {pt}
+          </button>
+        ))}
+      </DropdownPortal>
     </div>
   );
 };
@@ -269,13 +336,12 @@ const TeamCell = ({
   onSave: (user: UserOption) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="relative">
-      {open && (
-        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-      )}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-1 rounded border border-slate-200 bg-white/80 px-1.5 py-0.5 text-xs text-slate-700 hover:border-indigo-300"
@@ -283,29 +349,27 @@ const TeamCell = ({
         <span className="truncate">{value || <span className="text-slate-300">Team</span>}</span>
         <span className="shrink-0 text-slate-400">▾</span>
       </button>
-      {open && (
-        <div className="absolute left-0 top-7 z-40 max-h-56 w-44 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl">
-          {users.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-slate-400">No users found</p>
-          ) : (
-            users.map((user) => (
-              <button
-                key={user._id}
-                type="button"
-                onClick={() => {
-                  onSave(user);
-                  setOpen(false);
-                }}
-                className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${
-                  user.name === value ? "font-semibold text-indigo-600" : "text-slate-700"
-                }`}
-              >
-                {user.name}
-              </button>
-            ))
-          )}
-        </div>
-      )}
+      <DropdownPortal buttonRef={buttonRef} open={open} onClose={() => setOpen(false)} width={176}>
+        {users.length === 0 ? (
+          <p className="px-3 py-2 text-xs text-slate-400">No users found</p>
+        ) : (
+          users.map((user) => (
+            <button
+              key={user._id}
+              type="button"
+              onClick={() => {
+                onSave(user);
+                setOpen(false);
+              }}
+              className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${
+                user.name === value ? "font-semibold text-indigo-600" : "text-slate-700"
+              }`}
+            >
+              {user.name}
+            </button>
+          ))
+        )}
+      </DropdownPortal>
     </div>
   );
 };
@@ -357,39 +421,36 @@ const StatusCell = ({
   onSave: (s: ItemStatus) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const label = ITEM_STATUSES.find((s) => s.value === status)?.label ?? status;
 
   return (
     <div className="relative">
-      {open && (
-        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-      )}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[status]}`}
       >
         {label}
       </button>
-      {open && (
-        <div className="absolute left-0 top-7 z-40 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-          {ITEM_STATUSES.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              onClick={() => {
-                onSave(s.value);
-                setOpen(false);
-              }}
-              className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-slate-50 ${
-                s.value === status ? "font-semibold text-indigo-600" : "text-slate-700"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <DropdownPortal buttonRef={buttonRef} open={open} onClose={() => setOpen(false)} width={160}>
+        {ITEM_STATUSES.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => {
+              onSave(s.value);
+              setOpen(false);
+            }}
+            className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-slate-50 ${
+              s.value === status ? "font-semibold text-indigo-600" : "text-slate-700"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </DropdownPortal>
     </div>
   );
 };
@@ -552,10 +613,10 @@ const ContentCalMain = () => {
   }
 
   return (
-    <div className="min-h-full w-full">
+    <div className="min-h-full w-full " >
 
       {/* ── Top section with padding ───────────────────────── */}
-      <div className="px-8 pt-8 pb-4">
+      <div className="px-8 pt-8 pb-4 ">
 
         {/* Header */}
         <div className="mb-6">
