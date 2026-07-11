@@ -158,7 +158,7 @@ const WEEK_SIZE = 6;
 // flips to open upward when there isn't enough space below.
 
 interface DropdownPortalProps {
-  buttonRef: React.RefObject<HTMLButtonElement>;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
   open: boolean;
   onClose: () => void;
   width?: number;
