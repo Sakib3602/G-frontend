@@ -100,6 +100,17 @@ const PLATFORM_SHORT: Record<Platform, string> = {
   YOUTUBE: "YT",
 };
 
+// ব্যাকএন্ডের POST_TYPE_OPTIONS এর সাথে হুবহু মিলিয়ে রাখো — নাহলে
+// dropdown এ পাঠানো value backend এ invalid বলে reject হবে।
+const POST_TYPE_OPTIONS = [
+  "IMAGE",
+  "VIDEO",
+  "REEL",
+  "CAROUSEL",
+  "STORY",
+  "ARTICLE",
+];
+
 // ─── Helpers ──────────────────────────────────────────────────
 
 const fmt = (d?: string) => {
@@ -242,6 +253,41 @@ const CreativeTeamCell = ({
       {designers.map((d) => (
         <option key={d._id} value={d._id}>
           {d.name}
+        </option>
+      ))}
+    </select>
+  );
+};
+
+// ─── Post Type Cell (editable only for full-access designer) ──
+
+const PostTypeCell = ({
+  itemId,
+  currentValue,
+  onSave,
+  saving,
+}: {
+  itemId: string;
+  currentValue: string;
+  onSave: (id: string, postType: string) => void;
+  saving: boolean;
+}) => {
+  return (
+    <select
+      value={currentValue || ""}
+      disabled={saving}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (next && next !== currentValue) onSave(itemId, next);
+      }}
+      className="w-full rounded border border-indigo-300 bg-white px-2 py-1 text-xs text-slate-700 outline-none focus:ring-1 focus:ring-indigo-300 disabled:opacity-50"
+    >
+      <option value="" disabled>
+        {currentValue || "Select type"}
+      </option>
+      {POST_TYPE_OPTIONS.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
         </option>
       ))}
     </select>
@@ -405,11 +451,22 @@ const CalendarTable = ({
     },
   });
 
-  const updateCreativeTeamMutation = useMutation({
-    mutationFn: async ({ id, creativeTeamId }: { id: string; creativeTeamId: string }) => {
-      const res = await axiosDesigner.patch(`/api/v1/designer/calendar-item/${id}/creative-team`, {
-        creativeTeamId,
-      });
+  // Creative Team ও Post Type — দুইটাই এই একই endpoint দিয়ে আপডেট হয়,
+  // প্রতিটা কল এ যেকোনো একটা field পাঠানো হয়।
+  const updateFullAccessFieldsMutation = useMutation({
+    mutationFn: async ({
+      id,
+      creativeTeamId,
+      postType,
+    }: {
+      id: string;
+      creativeTeamId?: string;
+      postType?: string;
+    }) => {
+      const res = await axiosDesigner.patch(
+        `/api/v1/designer/calendar-item/${id}/full-access-fields`,
+        { creativeTeamId, postType },
+      );
       return res.data;
     },
     onSuccess: () => {
@@ -417,8 +474,8 @@ const CalendarTable = ({
       queryClient.invalidateQueries({ queryKey: ["designerClientsList"] });
     },
     onError: (err) => {
-      console.error("Failed to update creative team:", err);
-      alert("Creative team update করা যায়নি, আবার চেষ্টা করো।");
+      console.error("Failed to update calendar item:", err);
+      alert("Update করা যায়নি, আবার চেষ্টা করো।");
     },
   });
 
@@ -427,7 +484,11 @@ const CalendarTable = ({
   };
 
   const handleSaveCreativeTeam = (id: string, creativeTeamId: string) => {
-    updateCreativeTeamMutation.mutate({ id, creativeTeamId });
+    updateFullAccessFieldsMutation.mutate({ id, creativeTeamId });
+  };
+
+  const handleSavePostType = (id: string, postType: string) => {
+    updateFullAccessFieldsMutation.mutate({ id, postType });
   };
 
   if (isLoading) {
@@ -559,7 +620,20 @@ const CalendarTable = ({
                         {item.postHeadline || <span className="text-slate-300">—</span>}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-slate-600">
-                        {item.postType || <span className="text-slate-300">—</span>}
+                        {fullAccess ? (
+                          <PostTypeCell
+                            itemId={item._id}
+                            currentValue={item.postType ?? ""}
+                            onSave={handleSavePostType}
+                            saving={
+                              updateFullAccessFieldsMutation.isPending &&
+                              updateFullAccessFieldsMutation.variables?.id === item._id &&
+                              updateFullAccessFieldsMutation.variables?.postType !== undefined
+                            }
+                          />
+                        ) : (
+                          item.postType || <span className="text-slate-300">—</span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5">
                         <span
@@ -579,8 +653,9 @@ const CalendarTable = ({
                             designers={designers}
                             onSave={handleSaveCreativeTeam}
                             saving={
-                              updateCreativeTeamMutation.isPending &&
-                              updateCreativeTeamMutation.variables?.id === item._id
+                              updateFullAccessFieldsMutation.isPending &&
+                              updateFullAccessFieldsMutation.variables?.id === item._id &&
+                              updateFullAccessFieldsMutation.variables?.creativeTeamId !== undefined
                             }
                           />
                         ) : (
