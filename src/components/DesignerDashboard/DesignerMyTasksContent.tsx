@@ -1,4 +1,3 @@
-"use client";
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -103,12 +102,12 @@ const PLATFORM_SHORT: Record<Platform, string> = {
 // ব্যাকএন্ডের POST_TYPE_OPTIONS এর সাথে হুবহু মিলিয়ে রাখো — নাহলে
 // dropdown এ পাঠানো value backend এ invalid বলে reject হবে।
 const POST_TYPE_OPTIONS = [
-  "IMAGE",
-  "VIDEO",
-  "REEL",
-  "CAROUSEL",
-  "STORY",
-  "ARTICLE",
+   "Static",
+  "Reel",
+  "Motion Graphics",
+  "Memes (Static)",
+  "No Post",
+  "Cover Photo",
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -567,7 +566,7 @@ const CalendarTable = ({
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-400">
-                    কোনো task/item পাওয়া যায়নি।
+                    no content items found.
                   </td>
                 </tr>
               ) : (
