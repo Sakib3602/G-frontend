@@ -5,6 +5,13 @@ import Notification from "../ui/toast";
 import { useUserData } from "./Sales_Hook/User_Data";
 
 // --- 1. Interface ---
+export interface INoteEntry {
+  _id?: string;
+  text: string;
+  createdAt?: string;
+  createdBy?: string;
+}
+
 export interface LeadData {
   id?: string;
   _id?: string;
@@ -12,6 +19,7 @@ export interface LeadData {
   owner: string;
   status: string;
   indications?: string;
+  indicationsHistory?: INoteEntry[]; // ✅ নতুন
   companyName?: string;
   leadScore: number;
   email?: string;
@@ -50,10 +58,9 @@ export default function Sales_In_Progress() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [showNotiStatusUpdateYo, setShowNotiStatusUpdateYo] = useState(false);
   const [showNotiStatusUpdateEmail, setShowNotiStatusUpdateEmail] = useState(false);
-  
+
   const axiosSales = useAxiosSales();
   const { userData } = useUserData();
-  console.log("Fetched User Data from index:", userData);
 
   const {
     data: leadsData = [],
@@ -86,9 +93,15 @@ export default function Sales_In_Progress() {
   const [responseStatus, setResponseStatus] = useState<QualificationStatus | null>(null);
   const [pendingQualification, setPendingQualification] = useState<QualificationStatus | null>(null);
   const [dealDocLink, setDealDocLink] = useState("");
-  
-  // ── FIX 1: Added missing dealPrice state ──────────────────────
   const [dealPrice, setDealPrice] = useState("");
+
+  // ✅ নতুন — Note (follow-up history) state
+  const [newNoteText, setNewNoteText] = useState("");
+  const [showNoteHistory, setShowNoteHistory] = useState(true);
+
+  // ✅ নতুন — Lead Score edit state
+  const [isEditingScore, setIsEditingScore] = useState(false);
+  const [scoreValue, setScoreValue] = useState<string>("1");
 
   // Split leads
   const needsProposal = leads.filter((lead) => !lead.proposalSent);
@@ -105,6 +118,9 @@ export default function Sales_In_Progress() {
       `Hi ${lead.leadName.split(" ")[0]},\n\nFollowing up on our recent conversation...`
     );
     setProposalLink("");
+    setNewNoteText("");
+    setIsEditingScore(false);
+    setScoreValue(String(lead.leadScore || 1));
   };
 
   // Close Modal Handler
@@ -115,6 +131,8 @@ export default function Sales_In_Progress() {
     setPendingQualification(null);
     setDealDocLink("");
     setDealPrice("");
+    setNewNoteText("");
+    setIsEditingScore(false);
   };
 
   const handleMarkProposalSend = () => {
@@ -229,7 +247,6 @@ export default function Sales_In_Progress() {
       dealDocLink?: string;
       dealmoney?: string;
     }) => {
-      // ── FIX 2: Fixed the dynamic payload builder logic ──────────
       const payload: any = { status };
       if (dealDocLink) payload.dealDocLink = dealDocLink;
       if (dealmoney) payload.dealmoney = dealmoney;
@@ -270,6 +287,54 @@ export default function Sales_In_Progress() {
   });
 
   const isSending = mutationForEmail.isPending;
+
+  // ✅ নতুন — Note push mutation (পুরানো মুছবে না)
+  const mutationAddNote = useMutation({
+    mutationFn: async ({ leadId, text }: { leadId: string; text: string }) => {
+      const res = await axiosSales.post(`/api/v1/sales/add-note/${leadId}`, {
+        text,
+        createdBy: userData?.name || "Sales",
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      refetch();
+      if (data?.lead) {
+        setSelectedLead(data.lead);
+      }
+      setNewNoteText("");
+    },
+  });
+
+  const handleAddNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLead || !newNoteText.trim()) return;
+    const leadId = getLeadId(selectedLead);
+    mutationAddNote.mutate({ leadId, text: newNoteText.trim() });
+  };
+
+  // ✅ নতুন — Lead Score আপডেট মিউটেশন
+  const mutationUpdateScore = useMutation({
+    mutationFn: async ({ leadId, leadScore }: { leadId: string; leadScore: string }) => {
+      const res = await axiosSales.patch(`/api/v1/sales/update-lead-details/${leadId}`, {
+        leadScore,
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      refetch();
+      if (data?.lead) {
+        setSelectedLead(data.lead);
+      }
+      setIsEditingScore(false);
+    },
+  });
+
+  const handleSaveScore = () => {
+    if (!selectedLead) return;
+    const leadId = getLeadId(selectedLead);
+    mutationUpdateScore.mutate({ leadId, leadScore: scoreValue });
+  };
 
   // --- Loading / Error States ---
   if (isLoading) {
@@ -573,31 +638,130 @@ export default function Sales_In_Progress() {
                         Internal Metadata
                       </h3>
                       <div className="space-y-3 text-xs border border-slate-100 rounded-lg p-4">
+                        {/* ✅ Lead Score — এখন এডিটেবল */}
                         <div>
-                          <p className="text-slate-400 text-[10px] uppercase font-bold mb-1">Lead Matrix Quality</p>
-                          <div className="flex items-center gap-0.5 text-[#99B562]">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <svg
-                                key={star}
-                                className={`w-3.5 h-3.5 ${star <= selectedLead.leadScore ? "fill-current" : "text-slate-200 fill-none"}`}
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-slate-400 text-[10px] uppercase font-bold">Lead Matrix Quality</p>
+                            {!isEditingScore && (
+                              <button
+                                onClick={() => setIsEditingScore(true)}
+                                className="text-[10px] font-bold text-[#6f8a3f] hover:text-[#4f6b2c]"
                               >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                              </svg>
-                            ))}
+                                ✎ Edit
+                              </button>
+                            )}
                           </div>
+
+                          {isEditingScore ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={scoreValue}
+                                onChange={(e) => setScoreValue(e.target.value)}
+                                className="border border-slate-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-[#99B562]"
+                              >
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <option key={s} value={s}>Level {s}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={handleSaveScore}
+                                disabled={mutationUpdateScore.isPending}
+                                className="px-2 py-1 rounded bg-[#99B562] text-white text-[10px] font-bold hover:bg-[#85a052] disabled:opacity-50"
+                              >
+                                {mutationUpdateScore.isPending ? "Saving..." : "Save"}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setIsEditingScore(false);
+                                  setScoreValue(String(selectedLead.leadScore || 1));
+                                }}
+                                className="text-[10px] text-slate-400 hover:text-slate-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-0.5 text-[#99B562]">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  className={`w-3.5 h-3.5 ${star <= selectedLead.leadScore ? "fill-current" : "text-slate-200 fill-none"}`}
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                </svg>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <p className="text-slate-400 text-[10px] uppercase font-bold mb-0.5">Context Indications</p>
-                          <p className="text-slate-700 italic">"{selectedLead.indications || "No descriptive entries matched."}"</p>
-                        </div>
+
                         <div>
                           <p className="text-slate-400 text-[10px] uppercase font-bold mb-0.5">Assigned Auditor</p>
                           <p className="text-slate-800 font-semibold">{selectedLead.owner}</p>
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* ✅ নতুন — Follow-up Note History সেকশন */}
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowNoteHistory((prev) => !prev)}
+                      className="w-full flex items-center justify-between border-b border-slate-100 pb-2"
+                    >
+                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Follow-up History{" "}
+                        {selectedLead.indicationsHistory?.length ? `(${selectedLead.indicationsHistory.length})` : ""}
+                      </h3>
+                      <span className="text-slate-400 text-xs">{showNoteHistory ? "▲" : "▼"}</span>
+                    </button>
+
+                    {showNoteHistory && (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {!selectedLead.indicationsHistory || selectedLead.indicationsHistory.length === 0 ? (
+                          <p className="text-xs text-slate-400 italic py-2">
+                            No follow-up notes added yet. {selectedLead.indications && `Previous note: "${selectedLead.indications}"`}
+                          </p>
+                        ) : (
+                          [...selectedLead.indicationsHistory]
+                            .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+                            .map((entry, idx) => (
+                              <div key={entry._id || idx} className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                                <p className="text-xs text-slate-800">{entry.text}</p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ""}
+                                  </span>
+                                  {entry.createdBy && (
+                                    <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold">
+                                      {entry.createdBy}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleAddNote} className="flex items-end gap-2 pt-1">
+                      <textarea
+                        value={newNoteText}
+                        onChange={(e) => setNewNoteText(e.target.value)}
+                        rows={2}
+                        placeholder="Write a follow-up note..."
+                        className="flex-1 px-3 py-2 border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={mutationAddNote.isPending || !newNoteText.trim()}
+                        className="px-3 py-2 rounded bg-[#99B562] text-white text-[11px] font-bold hover:bg-[#85a052] disabled:opacity-40 whitespace-nowrap transition-colors"
+                      >
+                        {mutationAddNote.isPending ? "..." : "+ Add Note"}
+                      </button>
+                    </form>
                   </div>
                 </div>
               ) : (

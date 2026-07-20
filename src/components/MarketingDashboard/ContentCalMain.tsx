@@ -19,7 +19,8 @@ type ItemStatus =
   | "PAUSED"
   | "DELIVERED"
   | "CANCELLED"
-  | "SCHEDULED";
+  | "SCHEDULED"
+  | "NO POST";
 
 interface CalendarItem {
   _id: string;
@@ -70,6 +71,7 @@ const ITEM_STATUSES: { value: ItemStatus; label: string }[] = [
   { value: "DELIVERED", label: "Delivered" },
   { value: "CANCELLED", label: "Cancelled" },
   { value: "SCHEDULED", label: "Scheduled" },
+ { value: "NO POST", label: "No Post" },
 ];
 
 const STATUS_STYLES: Record<ItemStatus, string> = {
@@ -82,6 +84,7 @@ const STATUS_STYLES: Record<ItemStatus, string> = {
   DELIVERED: "bg-blue-100 text-blue-700",
   CANCELLED: "bg-red-100 text-red-600",
   SCHEDULED: "bg-cyan-100 text-cyan-700",
+  "NO POST": "bg-gray-100 text-gray-600",
 };
 
 // Statuses that should NOT be flagged as "missed delivery" even if the
@@ -90,6 +93,7 @@ const EXCLUDED_FROM_OVERDUE_CHECK: ItemStatus[] = [
   "DELIVERED",
   "CANCELLED",
   "PUBLISHED",
+   "NO POST",
 ];
 
 const PLATFORMS: Platform[] = ["FACEBOOK", "INSTAGRAM", "LINKEDIN", "YOUTUBE"];
