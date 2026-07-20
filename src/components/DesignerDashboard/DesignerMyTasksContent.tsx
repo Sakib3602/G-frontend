@@ -103,12 +103,26 @@ const PLATFORM_SHORT: Record<Platform, string> = {
 // ব্যাকএন্ডের POST_TYPE_OPTIONS এর সাথে হুবহু মিলিয়ে রাখো — নাহলে
 // dropdown এ পাঠানো value backend এ invalid বলে reject হবে।
 const POST_TYPE_OPTIONS = [
-  "IMAGE",
-  "VIDEO",
-  "REEL",
-  "CAROUSEL",
-  "STORY",
-  "ARTICLE",
+  "Static",
+  "Reel",
+  "Motion Graphics",
+  "Memes (Static)",
+  "No Post",
+  "Cover Photo",
+];
+
+// শুধু full-access ("special power") designer এই status list থেকে
+// item এর status বদলাতে পারবে। ব্যাকএন্ডের STATUS_OPTIONS এর সাথে মিলিয়ে রাখা।
+const STATUS_OPTIONS: ItemStatus[] = [
+  "NEW",
+  "IN_PROGRESS",
+  "UNDER_REVIEW",
+  "PUBLISHED",
+  "NEED_CONTENT",
+  "PAUSED",
+  "DELIVERED",
+  "CANCELLED",
+  "SCHEDULED",
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -125,6 +139,7 @@ const fmt = (d?: string) => {
 };
 
 const isOverdueLive = (item: CalendarItem) => {
+  if (item.postType === "No Post") return false; // No Post এ কোনো overdue tracking নাই
   if (!item.deliveryDate) return false;
   if (item.deliveryLink && item.deliveryLink.trim() !== "") return false;
   if (SAFE_STATUSES.includes(item.status) || item.status === "CANCELLED") return false;
@@ -294,6 +309,40 @@ const PostTypeCell = ({
   );
 };
 
+// ─── Status Cell (editable only for full-access designer — NEW) ──
+
+const StatusCell = ({
+  itemId,
+  currentValue,
+  onSave,
+  saving,
+}: {
+  itemId: string;
+  currentValue: ItemStatus;
+  onSave: (id: string, status: string) => void;
+  saving: boolean;
+}) => {
+  return (
+    <select
+      value={currentValue}
+      disabled={saving}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (next && next !== currentValue) onSave(itemId, next);
+      }}
+      className={`w-full rounded border border-indigo-300 px-2 py-1 text-[11px] font-semibold outline-none focus:ring-1 focus:ring-indigo-300 disabled:opacity-50 ${
+        STATUS_STYLES[currentValue] ?? "bg-slate-100 text-slate-600"
+      }`}
+    >
+      {STATUS_OPTIONS.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+    </select>
+  );
+};
+
 // ─── Client Card (grid item on the client-list screen) ─────────
 
 const ClientCard = ({
@@ -335,11 +384,15 @@ const ClientCard = ({
 };
 
 // ─── Client List Screen (full-access designer, before picking a client) ──
+// NEW: উপরে এখন একটা "My Assigned Items" বাটন যোগ হলো, যাতে full-access
+// designer নিজেকে assign করা item গুলোও দেখতে পারে।
 
 const ClientListScreen = ({
   onSelectClient,
+  onSelectMine,
 }: {
   onSelectClient: (client: ClientOption) => void;
+  onSelectMine: () => void;
 }) => {
   const axiosDesigner = useAxiosDesigner();
 
@@ -353,28 +406,34 @@ const ClientListScreen = ({
 
   const clients = data ?? [];
 
-  if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center text-sm text-slate-400">
-        Loading clients...
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-full w-full px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-          All Clients
-        </h1>
-        <p className="mt-0.5 text-sm text-slate-500">
-          একটা client এ click করে তার পুরো calendar দেখো।
-        </p>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+            All Clients
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Select a client to view their calendar items.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onSelectMine}
+          className="inline-flex items-center gap-2 self-start rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+        >
+          My Assigned Items
+        </button>
       </div>
 
-      {clients.length === 0 ? (
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center text-sm text-slate-400">
+          Loading clients...
+        </div>
+      ) : clients.length === 0 ? (
         <div className="rounded-xl border border-white/50 bg-white/30 p-10 text-center text-sm text-slate-400">
-          কোনো client পাওয়া যায়নি।
+          No Clients found. 
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -391,19 +450,20 @@ const ClientListScreen = ({
   );
 };
 
-// ─── Calendar Table (shared by normal designer + client-detail view) ──
+// ─── Calendar Table (shared by normal designer + client-detail + "mine" view) ──
 
 const CalendarTable = ({
   clientId,
   clientName,
+  mine,
   fullAccessOverride,
   onBack,
 }: {
-  // clientId থাকলে শুধু ওই client এর item আসবে (full-access flow)
   clientId?: string;
   clientName?: string;
-  // fullAccessOverride true মানে আমরা জানি এইটা full-access designer এর
-  // client-detail view, তাই creativeTeam dropdown দেখাতে হবে।
+  // true হলে backend কে ?mine=true পাঠানো হবে — full-access designer এর
+  // নিজের assign করা item গুলো আনার জন্য।
+  mine?: boolean;
   fullAccessOverride?: boolean;
   onBack?: () => void;
 }) => {
@@ -411,10 +471,10 @@ const CalendarTable = ({
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<CalendarItemsResponse>({
-    queryKey: ["designerCalendarItems", clientId ?? "own"],
+    queryKey: ["designerCalendarItems", clientId ?? (mine ? "mine" : "own")],
     queryFn: async () => {
       const res = await axiosDesigner.get("/api/v1/designer/calendar-items", {
-        params: clientId ? { clientId } : undefined,
+        params: mine ? { mine: "true" } : clientId ? { clientId } : undefined,
       });
       return res.data.data;
     },
@@ -451,27 +511,30 @@ const CalendarTable = ({
     },
   });
 
-  // Creative Team ও Post Type — দুইটাই এই একই endpoint দিয়ে আপডেট হয়,
-  // প্রতিটা কল এ যেকোনো একটা field পাঠানো হয়।
+  // Creative Team, Post Type ও Status — তিনটাই এই একই endpoint দিয়ে
+  // আপডেট হয়, প্রতিটা কল এ যেকোনো একটা field পাঠানো হয়।
   const updateFullAccessFieldsMutation = useMutation({
     mutationFn: async ({
       id,
       creativeTeamId,
       postType,
+      status,
     }: {
       id: string;
       creativeTeamId?: string;
       postType?: string;
+      status?: string;
     }) => {
       const res = await axiosDesigner.patch(
         `/api/v1/designer/calendar-item/${id}/full-access-fields`,
-        { creativeTeamId, postType },
+        { creativeTeamId, postType, status },
       );
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["designerCalendarItems"] });
       queryClient.invalidateQueries({ queryKey: ["designerClientsList"] });
+      queryClient.invalidateQueries({ queryKey: ["designerOverdueCalendarItems"] });
     },
     onError: (err) => {
       console.error("Failed to update calendar item:", err);
@@ -489,6 +552,10 @@ const CalendarTable = ({
 
   const handleSavePostType = (id: string, postType: string) => {
     updateFullAccessFieldsMutation.mutate({ id, postType });
+  };
+
+  const handleSaveStatus = (id: string, status: string) => {
+    updateFullAccessFieldsMutation.mutate({ id, status });
   };
 
   if (isLoading) {
@@ -512,11 +579,11 @@ const CalendarTable = ({
           </button>
         )}
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-          {clientName ?? "My Tasks"}
+          {clientName ?? (mine ? "My Assigned Items" : "My Tasks")}
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">
           {fullAccess
-            ? "শুধু Creative Team assignment বদলাতে পারবে, বাকি সব read-only।"
+            ? "Status, Post Type ও Creative Team — সব পরিবর্তন করা যাবে।"
             : "Your assigned content items, sorted by delivery date."}
         </p>
       </div>
@@ -538,7 +605,7 @@ const CalendarTable = ({
               <col style={{ width: "120px" }} />
               <col style={{ width: "200px" }} />
               <col style={{ width: "130px" }} />
-              <col style={{ width: "110px" }} />
+              <col style={{ width: "130px" }} />
               <col style={{ width: "180px" }} />
             </colgroup>
             <thead className="bg-white/50">
@@ -636,13 +703,26 @@ const CalendarTable = ({
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        <span
-                          className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                            STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
+                        {fullAccess ? (
+                          <StatusCell
+                            itemId={item._id}
+                            currentValue={item.status}
+                            onSave={handleSaveStatus}
+                            saving={
+                              updateFullAccessFieldsMutation.isPending &&
+                              updateFullAccessFieldsMutation.variables?.id === item._id &&
+                              updateFullAccessFieldsMutation.variables?.status !== undefined
+                            }
+                          />
+                        ) : (
+                          <span
+                            className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5">
                         {fullAccess ? (
@@ -684,12 +764,13 @@ const CalendarTable = ({
 
 // ─── Main ─────────────────────────────────────────────────────
 
+type ViewMode = "clients" | "mine" | "client-detail";
+
 const DesignerMyTasksContent = () => {
   const axiosDesigner = useAxiosDesigner();
   const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("clients");
 
-  // fullAccess কিনা সেটা বোঝার জন্য /clients-list কল করে দেখি — 403
-  // এলে normal designer, 200 এলে full-access designer।
   const { data: accessInfo, isLoading: accessLoading } = useQuery<{
     fullAccess: boolean;
   }>({
@@ -717,24 +798,47 @@ const DesignerMyTasksContent = () => {
 
   const fullAccess = accessInfo?.fullAccess ?? false;
 
-  // Normal designer — আগের মতোই flat "My Tasks" view, client list নাই।
+  // Normal designer — flat "My Tasks" view, client list নাই। এখানে
+  // backend আগে থেকেই creativeTeamId দিয়ে ফিল্টার করে, তাই self-assigned
+  // item এমনিতেই দেখাবে।
   if (!fullAccess) {
     return <CalendarTable fullAccessOverride={false} />;
   }
 
-  // Full-access designer, কোনো client select করা হয়নি — client grid দেখাও।
-  if (!selectedClient) {
-    return <ClientListScreen onSelectClient={setSelectedClient} />;
+  // Full-access designer, নিজের assigned item দেখছে (NEW)
+  if (viewMode === "mine") {
+    return (
+      <CalendarTable
+        mine
+        fullAccessOverride={true}
+        onBack={() => setViewMode("clients")}
+      />
+    );
   }
 
-  // Full-access designer, client select করা হয়েছে — সেই client এর
-  // calendar দেখাও, শুধু Creative Team dropdown editable।
+  // Full-access designer, কোনো client select করা হয়নি — client grid দেখাও।
+  if (!selectedClient) {
+    return (
+      <ClientListScreen
+        onSelectClient={(client) => {
+          setSelectedClient(client);
+          setViewMode("client-detail");
+        }}
+        onSelectMine={() => setViewMode("mine")}
+      />
+    );
+  }
+
+  // Full-access designer, client select করা হয়েছে
   return (
     <CalendarTable
       clientId={selectedClient._id}
       clientName={selectedClient.name}
       fullAccessOverride={true}
-      onBack={() => setSelectedClient(null)}
+      onBack={() => {
+        setSelectedClient(null);
+        setViewMode("clients");
+      }}
     />
   );
 };
