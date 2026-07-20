@@ -6,7 +6,6 @@ import { useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 
-
 // ─── Types ────────────────────────────────────────────────────
 
 type Platform = "FACEBOOK" | "INSTAGRAM" | "LINKEDIN" | "YOUTUBE";
@@ -215,7 +214,7 @@ const DropdownPortal = ({
         {children}
       </div>
     </>,
-    document.body
+    document.body,
   );
 };
 
@@ -300,10 +299,17 @@ const PostTypeCell = ({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-1 rounded border border-slate-200 bg-white/80 px-1.5 py-0.5 text-xs text-slate-700 hover:border-indigo-300"
       >
-        <span className="truncate">{value || <span className="text-slate-300">Type</span>}</span>
+        <span className="truncate">
+          {value || <span className="text-slate-300">Type</span>}
+        </span>
         <span className="shrink-0 text-slate-400">▾</span>
       </button>
-      <DropdownPortal buttonRef={buttonRef} open={open} onClose={() => setOpen(false)} width={176}>
+      <DropdownPortal
+        buttonRef={buttonRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={176}
+      >
         {POST_TYPES.map((pt) => (
           <button
             key={pt}
@@ -346,10 +352,17 @@ const TeamCell = ({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-1 rounded border border-slate-200 bg-white/80 px-1.5 py-0.5 text-xs text-slate-700 hover:border-indigo-300"
       >
-        <span className="truncate">{value || <span className="text-slate-300">Team</span>}</span>
+        <span className="truncate">
+          {value || <span className="text-slate-300">Team</span>}
+        </span>
         <span className="shrink-0 text-slate-400">▾</span>
       </button>
-      <DropdownPortal buttonRef={buttonRef} open={open} onClose={() => setOpen(false)} width={176}>
+      <DropdownPortal
+        buttonRef={buttonRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={176}
+      >
         {users.length === 0 ? (
           <p className="px-3 py-2 text-xs text-slate-400">No users found</p>
         ) : (
@@ -362,7 +375,9 @@ const TeamCell = ({
                 setOpen(false);
               }}
               className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${
-                user.name === value ? "font-semibold text-indigo-600" : "text-slate-700"
+                user.name === value
+                  ? "font-semibold text-indigo-600"
+                  : "text-slate-700"
               }`}
             >
               {user.name}
@@ -434,7 +449,12 @@ const StatusCell = ({
       >
         {label}
       </button>
-      <DropdownPortal buttonRef={buttonRef} open={open} onClose={() => setOpen(false)} width={160}>
+      <DropdownPortal
+        buttonRef={buttonRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={160}
+      >
         {ITEM_STATUSES.map((s) => (
           <button
             key={s.value}
@@ -444,7 +464,9 @@ const StatusCell = ({
               setOpen(false);
             }}
             className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-slate-50 ${
-              s.value === status ? "font-semibold text-indigo-600" : "text-slate-700"
+              s.value === status
+                ? "font-semibold text-indigo-600"
+                : "text-slate-700"
             }`}
           >
             {s.label}
@@ -479,7 +501,9 @@ const ContentCalMain = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
-  const [selectedCalendar, setSelectedCalendar] = useState<CalendarDoc | null>(null);
+  const [selectedCalendar, setSelectedCalendar] = useState<CalendarDoc | null>(
+    null,
+  );
 
   // Extra in-session guard so we don't fire the mutation twice for the
   // same item while waiting for the refetch to land (item.reportSent is
@@ -502,10 +526,14 @@ const ContentCalMain = () => {
     },
   });
 
-  const { data: items = [], isLoading: itemsLoading } = useQuery<CalendarItem[]>({
+  const { data: items = [], isLoading: itemsLoading } = useQuery<
+    CalendarItem[]
+  >({
     queryKey: ["calendarItems", selectedCalendar?._id],
     queryFn: async () => {
-      const res = await axiosMarketing.get(`/calendar-items/${selectedCalendar!._id}`);
+      const res = await axiosMarketing.get(
+        `/calendar-items/${selectedCalendar!._id}`,
+      );
       return res.data.data;
     },
     enabled: !!selectedCalendar,
@@ -554,7 +582,9 @@ const ContentCalMain = () => {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendarItems", selectedCalendar?._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["calendarItems", selectedCalendar?._id],
+      });
     },
   });
 
@@ -566,7 +596,9 @@ const ContentCalMain = () => {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendarItems", selectedCalendar?._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["calendarItems", selectedCalendar?._id],
+      });
     },
     onError: (err) => {
       console.error("Failed to trigger missed-delivery report:", err);
@@ -577,7 +609,8 @@ const ContentCalMain = () => {
   // permanent server flag (reportSent) and the short-lived in-session ref.
   useEffect(() => {
     items.forEach((item) => {
-      const alreadyHandled = item.reportSent || pendingReportIdsRef.current.has(item._id);
+      const alreadyHandled =
+        item.reportSent || pendingReportIdsRef.current.has(item._id);
       if (isOverdueMissingDelivery(item) && !alreadyHandled) {
         pendingReportIdsRef.current.add(item._id);
         reportMutation.mutate(item._id);
@@ -613,11 +646,9 @@ const ContentCalMain = () => {
   }
 
   return (
-    <div className="min-h-full w-full " >
-
+    <div className="min-h-full w-full ">
       {/* ── Top section with padding ───────────────────────── */}
       <div className="px-8 pt-8 pb-4 ">
-
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">
@@ -633,7 +664,10 @@ const ContentCalMain = () => {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
             New Calendar
           </p>
-          <form onSubmit={handleCreateCalendar} className="flex flex-wrap gap-2">
+          <form
+            onSubmit={handleCreateCalendar}
+            className="flex flex-wrap gap-2"
+          >
             <input
               type="text"
               placeholder="e.g. June–July 2026"
@@ -644,14 +678,20 @@ const ContentCalMain = () => {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setDateError(""); }}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setDateError("");
+              }}
               className="rounded-lg border border-slate-300/70 bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
             />
             <input
               type="date"
               value={endDate}
               min={startDate || undefined}
-              onChange={(e) => { setEndDate(e.target.value); setDateError(""); }}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setDateError("");
+              }}
               className={`rounded-lg border bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 ${
                 dateError && endDate && new Date(endDate) <= new Date(startDate)
                   ? "border-rose-400 focus:border-rose-400 focus:ring-rose-200"
@@ -663,10 +703,14 @@ const ContentCalMain = () => {
               disabled={createCalendarMutation.isPending}
               className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
             >
-              {createCalendarMutation.isPending ? "Creating..." : "Create Calendar"}
+              {createCalendarMutation.isPending
+                ? "Creating..."
+                : "Create Calendar"}
             </button>
           </form>
-          {dateError && <p className="mt-2 text-xs text-rose-500">{dateError}</p>}
+          {dateError && (
+            <p className="mt-2 text-xs text-rose-500">{dateError}</p>
+          )}
         </div>
 
         {/* Calendar Tabs */}
@@ -698,7 +742,6 @@ const ContentCalMain = () => {
       {/* ── Table — full width, no side padding ───────────── */}
       {selectedCalendar && (
         <div className=" border-t border-slate-200/60 bg-white/30 backdrop-blur-xl">
-
           {/* Table meta bar */}
           <div className="flex items-center justify-between px-8 py-2.5 border-b border-slate-200/60 bg-white/50">
             <div className="flex items-center gap-3">
@@ -706,17 +749,25 @@ const ContentCalMain = () => {
                 {selectedCalendar.title}
               </span>
               <span className="text-xs text-slate-400">
-                {fmt(selectedCalendar.startDate)} → {fmt(selectedCalendar.endDate)}
+                {fmt(selectedCalendar.startDate)} →{" "}
+                {fmt(selectedCalendar.endDate)}
               </span>
             </div>
-            <span className="text-xs text-slate-400">{items.length} working days</span>
+            <span className="text-xs text-slate-400">
+              {items.length} working days
+            </span>
           </div>
 
           {itemsLoading ? (
-            <div className="py-12 text-center text-sm text-slate-400">Loading rows...</div>
+            <div className="py-12 text-center text-sm text-slate-400">
+              Loading rows...
+            </div>
           ) : (
             <div className="overflow-x-auto px-4">
-              <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1100px" }}>
+              <table
+                className="w-full text-left"
+                style={{ tableLayout: "fixed", minWidth: "1100px" }}
+              >
                 <colgroup>
                   <col style={{ width: "36px" }} />
                   <col style={{ width: "110px" }} />
@@ -765,11 +816,14 @@ const ContentCalMain = () => {
                     // server — falls back to the live check only before
                     // that flag has been set (e.g. on the very first
                     // render before the mutation lands).
-                    const overdue = item.reportSent || isOverdueMissingDelivery(item);
+                    const overdue =
+                      item.reportSent || isOverdueMissingDelivery(item);
 
                     return (
                       <>
-                        {isWeekStart && <WeekRow key={`w-${weekNumber}`} week={weekNumber} />}
+                        {isWeekStart && (
+                          <WeekRow key={`w-${weekNumber}`} week={weekNumber} />
+                        )}
 
                         <tr
                           key={item._id}
@@ -779,16 +833,31 @@ const ContentCalMain = () => {
                               : "border-slate-100 hover:bg-indigo-50/30"
                           }`}
                         >
-                          <td className="px-3 py-2.5 text-xs text-slate-400">{idx + 1}</td>
+                          <td className="px-3 py-2.5 text-xs text-slate-400">
+                            {idx + 1}
+                          </td>
 
-                          <td className="px-3 py-2.5 text-xs font-semibold text-slate-700 whitespace-nowrap">
-                            {fmt(item.scheduleDate)}
+                          <td className="px-3 py-2.5">
+                            <EditableCell
+                              type="date"
+                              value={fmtInput(item.scheduleDate)}
+                              onSave={(v) =>
+                                update(item._id, {
+                                  scheduleDate: v || undefined,
+                                })
+                              }
+                              placeholder="Set date"
+                            />
                           </td>
                           <td className="px-3 py-2.5">
                             <EditableCell
                               type="date"
                               value={fmtInput(item.deliveryDate)}
-                              onSave={(v) => update(item._id, { deliveryDate: v || undefined })}
+                              onSave={(v) =>
+                                update(item._id, {
+                                  deliveryDate: v || undefined,
+                                })
+                              }
                               placeholder="Set date"
                             />
                           </td>
@@ -797,12 +866,14 @@ const ContentCalMain = () => {
                             <EditableCell
                               type="date"
                               value={fmtInput(item.contentDate)}
-                              onSave={(v) => update(item._id, { contentDate: v || undefined })}
+                              onSave={(v) =>
+                                update(item._id, {
+                                  contentDate: v || undefined,
+                                })
+                              }
                               placeholder="Set date"
                             />
                           </td>
-
-                          
 
                           <td className="px-3 py-2.5">
                             <TeamCell
@@ -827,7 +898,9 @@ const ContentCalMain = () => {
                           <td className="px-3 py-2.5">
                             <EditableCell
                               value={item.postHeadline ?? ""}
-                              onSave={(v) => update(item._id, { postHeadline: v })}
+                              onSave={(v) =>
+                                update(item._id, { postHeadline: v })
+                              }
                               placeholder="Headline"
                             />
                           </td>
@@ -850,7 +923,9 @@ const ContentCalMain = () => {
                             <EditableCell
                               type="url"
                               value={item.deliveryLink ?? ""}
-                              onSave={(v) => update(item._id, { deliveryLink: v })}
+                              onSave={(v) =>
+                                update(item._id, { deliveryLink: v })
+                              }
                               placeholder="Link"
                             />
                           </td>
@@ -876,12 +951,16 @@ const ContentCalMain = () => {
       {/* Empty states */}
       {calendars.length === 0 && (
         <div className="px-6 py-16 text-center">
-          <p className="text-sm text-slate-400">No calendars yet. Create one above.</p>
+          <p className="text-sm text-slate-400">
+            No calendars yet. Create one above.
+          </p>
         </div>
       )}
       {calendars.length > 0 && !selectedCalendar && (
         <div className="px-6 py-16 text-center">
-          <p className="text-sm text-slate-400">Select a calendar above to view content rows.</p>
+          <p className="text-sm text-slate-400">
+            Select a calendar above to view content rows.
+          </p>
         </div>
       )}
     </div>

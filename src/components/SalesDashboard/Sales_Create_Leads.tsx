@@ -30,7 +30,8 @@ const Sales_Create_leads = () => {
   const { userData } = useUserData();
 
   const [showNotification, setShowNotification] = useState(false);
-  
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   // Form state holding all fields from the image + additional necessary fields
   const [formData, setFormData] = useState<LeadFormData>({
     leadName: "",
@@ -87,10 +88,7 @@ const Sales_Create_leads = () => {
 
   const MutationImportLeads = useMutation<unknown, Error, LeadPayload[]>({
     mutationFn: async (newLeads: LeadPayload[]) => {
-      const res = await axiosSales.post(
-        "api/v1/sales/create-lead",
-        newLeads,
-      );
+      const res = await axiosSales.post("api/v1/sales/create-lead", newLeads);
       return res.data;
     },
     onSuccess: () => {
@@ -137,7 +135,7 @@ const Sales_Create_leads = () => {
 
   const regionOptions = ["US", "ANZ", "EMEA", "APAC", "LATAM", "Global"];
   const scoreOptions = ["1", "2", "3", "4", "5"];
-  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing","SEO"];
+  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO"];
 
   const CancelAll = () => {
     setFormData({
@@ -174,42 +172,44 @@ const Sales_Create_leads = () => {
           />
         )}
       </div>
-     
 
       <div className="w-full min-h-screen bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans text-slate-900 antialiased flex justify-center">
         <div className="w-full max-w-4xl">
-          
           {/* Header */}
           <div className="mb-8 border-b border-slate-200 pb-5">
-            <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">Pipeline Operations</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Lead Registry Entry</h1>
+            <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">
+              Pipeline Operations
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Lead Registry Entry
+            </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Input verified client coordinates to initialize a new tracking instance.
+              Input verified client coordinates to initialize a new tracking
+              instance.
             </p>
           </div>
-           <div className="w-full flex justify-center px-4 pb-8">
-        <Sales_import
-          onSave={async (leads) => {
-            console.log("Submitting:", leads);
-            await MutationImportLeads.mutateAsync(leads);
-          }}
-          isLoading={MutationImportLeads.isPending}
-        />
-      </div>
+          <div className="w-full flex justify-center px-4 pb-8">
+            <Sales_import
+              onSave={async (leads) => {
+                console.log("Submitting:", leads);
+                await MutationImportLeads.mutateAsync(leads);
+              }}
+              isLoading={MutationImportLeads.isPending}
+            />
+          </div>
 
+          {/* Form Card */}
           {/* Form Card */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <form onSubmit={handleSubmit} className="p-8">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                
-                {/* --- Personal Information Section --- */}
-                <div className="md:col-span-2">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
-                    Personal Identity Matrix
-                  </h3>
-                </div>
+              {/* --- Quick Add (সবসময় দেখাবে, দ্রুত এন্ট্রির জন্য) --- */}
+              <div className="mb-2">
+                <h3 className="text-[10px] font-bold text-[#99B562] uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+                  Quick Add — এই কয়টা ভরলেই লিড তৈরি হয়ে যাবে
+                </h3>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
                     Full Name <span className="text-red-500">*</span>
@@ -222,21 +222,6 @@ const Sales_Create_leads = () => {
                     onChange={handleChange}
                     placeholder="e.g. Liam Smith"
                     className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Email Address <span className="text-red-500"></span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                  
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="liam@enterprise.com"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
                   />
                 </div>
 
@@ -256,85 +241,15 @@ const Sales_Create_leads = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Profile URI
+                    Email Address
                   </label>
                   <input
-                    type="url"
-                    name="profileUrl"
-                    value={formData.profileUrl}
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleChange}
-                    placeholder="https://linkedin.com/in/..."
+                    placeholder="liam@enterprise.com"
                     className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
-                  />
-                </div>
-
-                {/* --- Business Context Section --- */}
-                <div className="md:col-span-2 mt-4">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
-                    Enterprise Context
-                  </h3>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Company Name <span className="text-red-500"></span>
-                  </label>
-                  <input
-                    type="text"
-                    name="companyName"
-             
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    placeholder="Enterprise Corp"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Territory / Region
-                  </label>
-                  <select
-                    name="region"
-                    value={formData.region}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
-                  >
-                    {regionOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Organizational Hierarchy <span className="text-red-500"></span>
-                  </label>
-                  <select
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
-                  >
-                    {titleOptions.map((opt, idx) => (
-                      <option key={idx} value={opt} disabled={opt === ""}>
-                        {opt === "" ? "Assign Hierarchy Status..." : opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Specific Functional Role
-                  </label>
-                  <input
-                    type="text"
-                    name="specificRole"
-                    value={formData.specificRole}
-                    onChange={handleChange}
-                    placeholder="e.g. Senior Director of IT"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
                   />
                 </div>
 
@@ -349,30 +264,9 @@ const Sales_Create_leads = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
                   >
                     {serviceNeedOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* --- Internal Tracking Section --- */}
-                <div className="md:col-span-2 mt-4">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
-                    System Parameters
-                  </h3>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Pipeline Status <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
-                  >
-                    {statusOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -388,38 +282,138 @@ const Sales_Create_leads = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer font-mono"
                   >
                     {scoreOptions.map((opt) => (
-                      <option key={opt} value={opt}>Level {opt}</option>
+                      <option key={opt} value={opt}>
+                        Level {opt}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Indications / Notes
+                    Pipeline Status
                   </label>
-                  <input
-                    type="text"
-                    name="indications"
-                    value={formData.indications}
+                  <select
+                    name="status"
+                    value={formData.status}
                     onChange={handleChange}
-                    placeholder="Log specific requirements, account history, or context..."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Auditor / Assigned Owner
-                  </label>
-                  <input
-                    type="text"
-                    name="owner"
-                    value={formData.owner}
-                    disabled
-                    className="w-full px-3 py-2 border border-slate-100 rounded-md bg-slate-50 text-slate-400 text-sm cursor-not-allowed italic font-medium"
-                  />
+                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
+                  >
+                    {statusOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+
+              {/* --- Advanced Toggle --- */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((prev) => !prev)}
+                className="mt-6 text-xs font-bold text-[#6f8a3f] hover:text-[#4f6b2c] flex items-center gap-1.5"
+              >
+                {showAdvanced
+                  ? "▲ Hide Extra Details"
+                  : "▼ Add More Details (Company, Title, Region...)"}
+              </button>
+
+              {showAdvanced && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-5 pt-5 border-t border-slate-100">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                      Profile URI
+                    </label>
+                    <input
+                      type="url"
+                      name="profileUrl"
+                      value={formData.profileUrl}
+                      onChange={handleChange}
+                      placeholder="https://linkedin.com/in/..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                      Company Name
+                    </label>
+                    <input
+                      type="text"
+                      name="companyName"
+                      value={formData.companyName}
+                      onChange={handleChange}
+                      placeholder="Enterprise Corp"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                      Territory / Region
+                    </label>
+                    <select
+                      name="region"
+                      value={formData.region}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
+                    >
+                      {regionOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                      Organizational Hierarchy
+                    </label>
+                    <select
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
+                    >
+                      {titleOptions.map((opt, idx) => (
+                        <option key={idx} value={opt} disabled={opt === ""}>
+                          {opt === "" ? "Assign Hierarchy Status..." : opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                      Specific Functional Role
+                    </label>
+                    <input
+                      type="text"
+                      name="specificRole"
+                      value={formData.specificRole}
+                      onChange={handleChange}
+                      placeholder="e.g. Senior Director of IT"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                      Indications / Notes (প্রথম নোট)
+                    </label>
+                    <input
+                      type="text"
+                      name="indications"
+                      value={formData.indications}
+                      onChange={handleChange}
+                      placeholder="Log specific requirements, account history, or context..."
+                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Form Actions */}
               <div className="mt-10 pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
@@ -441,7 +435,6 @@ const Sales_Create_leads = () => {
               </div>
             </form>
           </div>
-          
         </div>
       </div>
     </>
