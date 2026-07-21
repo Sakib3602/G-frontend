@@ -585,14 +585,23 @@ export default function Sales_My_Leads() {
           <div className="absolute inset-0" onClick={() => { setSelectedLeadDetails(null); setIsEditingDetails(false); }}></div>
           <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
             <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">{selectedLeadDetails.leadName}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{selectedLeadDetails.title || "Executive"} {selectedLeadDetails.companyName && `at ${selectedLeadDetails.companyName}`}</p>
-              </div>
-              <button onClick={() => { setSelectedLeadDetails(null); setIsEditingDetails(false); }} className="text-slate-400 hover:text-slate-900 p-1 rounded transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-            </div>
+  <div className="flex-1">
+    {isEditingDetails ? (
+      <input
+        name="leadName"
+        value={editForm.leadName || ""}
+        onChange={handleEditFormChange}
+        className="text-lg font-bold text-slate-900 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-[#99B562] w-full max-w-sm"
+      />
+    ) : (
+      <h2 className="text-lg font-bold text-slate-900">{selectedLeadDetails.leadName}</h2>
+    )}
+    <p className="text-xs text-slate-500 mt-0.5">{selectedLeadDetails.title || "Executive"} {selectedLeadDetails.companyName && `at ${selectedLeadDetails.companyName}`}</p>
+  </div>
+  <button onClick={() => { setSelectedLeadDetails(null); setIsEditingDetails(false); }} className="text-slate-400 hover:text-slate-900 p-1 rounded transition-colors">
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+  </button>
+</div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
