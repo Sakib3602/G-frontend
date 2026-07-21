@@ -212,15 +212,15 @@ const Sales_Create_leads = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Full Name <span className="text-red-500">*</span>
+                    Full Name <span className="text-red-500"></span>
                   </label>
                   <input
                     type="text"
                     name="leadName"
-                    required
+                 
                     value={formData.leadName}
                     onChange={handleChange}
-                    placeholder="e.g. Liam Smith"
+                    placeholder="e.g. Unknown User"
                     className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
                   />
                 </div>

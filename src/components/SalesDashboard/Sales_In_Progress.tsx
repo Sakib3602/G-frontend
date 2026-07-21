@@ -19,7 +19,7 @@ export interface LeadData {
   owner: string;
   status: string;
   indications?: string;
-  indicationsHistory?: INoteEntry[]; // ✅ নতুন
+  indicationsHistory?: INoteEntry[]; 
   companyName?: string;
   leadScore: number;
   email?: string;
@@ -31,6 +31,8 @@ export interface LeadData {
   linkedin?: string;
   leadCreatedBy: string;
   proposalSent?: boolean;
+   reminderAt?: string | null; 
+  reminderNote?: string;   
 }
 
 type QualificationStatus = "Qualified" | "Unqualified";
@@ -58,6 +60,10 @@ export default function Sales_In_Progress() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [showNotiStatusUpdateYo, setShowNotiStatusUpdateYo] = useState(false);
   const [showNotiStatusUpdateEmail, setShowNotiStatusUpdateEmail] = useState(false);
+  const [showReminderBox, setShowReminderBox] = useState(false);
+const [reminderDate, setReminderDate] = useState("");
+const [reminderTime, setReminderTime] = useState("");
+const [reminderNoteText, setReminderNoteText] = useState("");
 
   const axiosSales = useAxiosSales();
   const { userData } = useUserData();
@@ -121,6 +127,17 @@ export default function Sales_In_Progress() {
     setNewNoteText("");
     setIsEditingScore(false);
     setScoreValue(String(lead.leadScore || 1));
+
+     setShowReminderBox(false);
+  if (lead.reminderAt) {
+    const d = new Date(lead.reminderAt);
+    setReminderDate(d.toISOString().split("T")[0]);
+    setReminderTime(d.toTimeString().slice(0, 5));
+  } else {
+    setReminderDate("");
+    setReminderTime("");
+  }
+  setReminderNoteText(lead.reminderNote || "");
   };
 
   // Close Modal Handler
@@ -285,6 +302,40 @@ export default function Sales_In_Progress() {
       setShowNotiStatusUpdateEmail(true);
     },
   });
+
+  const mutationSetReminder = useMutation({
+  mutationFn: async ({ leadId, reminderAt, reminderNote }: { leadId: string; reminderAt: string; reminderNote?: string }) => {
+    const res = await axiosSales.put(`/api/v1/sales/set-reminder/${leadId}`, { reminderAt, reminderNote });
+    return res.data;
+  },
+  onSuccess: (data) => {
+    refetch();
+    if (data?.lead) setSelectedLead(data.lead);
+    setShowReminderBox(false);
+  },
+});
+
+const mutationClearReminder = useMutation({
+  mutationFn: async (leadId: string) => {
+    const res = await axiosSales.put(`/api/v1/sales/clear-reminder/${leadId}`);
+    return res.data;
+  },
+  onSuccess: (data) => {
+    refetch();
+    if (data?.lead) setSelectedLead(data.lead);
+    setReminderDate("");
+    setReminderTime("");
+    setReminderNoteText("");
+  },
+});
+
+const handleSetReminder = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!selectedLead || !reminderDate) return;
+  const leadId = getLeadId(selectedLead);
+  const isoDateTime = new Date(`${reminderDate}T${reminderTime || "09:00"}:00`).toISOString();
+  mutationSetReminder.mutate({ leadId, reminderAt: isoDateTime, reminderNote: reminderNoteText.trim() });
+};
 
   const isSending = mutationForEmail.isPending;
 
@@ -703,6 +754,51 @@ export default function Sales_In_Progress() {
                       </div>
                     </div>
                   </div>
+
+
+                  {/* ✅ Reminder Section */}
+<div className="space-y-3 border-t border-slate-100 pt-4">
+  <button type="button" onClick={() => setShowReminderBox((prev) => !prev)} className="w-full flex items-center justify-between">
+    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+      🔔 Follow-up Reminder
+      {selectedLead.reminderAt && (
+        <span className="normal-case bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-semibold">
+          {new Date(selectedLead.reminderAt).toLocaleDateString([], { day: "2-digit", month: "short" })} {new Date(selectedLead.reminderAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      )}
+    </h3>
+    <span className="text-slate-400 text-xs">{showReminderBox ? "▲" : "▼"}</span>
+  </button>
+
+  {showReminderBox && (
+    <form onSubmit={handleSetReminder} className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Date *</label>
+          <input type="date" required value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Time (optional)</label>
+          <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+        </div>
+      </div>
+      <div>
+        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Note (optional)</label>
+        <input type="text" value={reminderNoteText} onChange={(e) => setReminderNoteText(e.target.value)} placeholder="e.g. Discuss pricing again" className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+      </div>
+      <div className="flex justify-end gap-2">
+        {selectedLead.reminderAt && (
+          <button type="button" onClick={() => mutationClearReminder.mutate(getLeadId(selectedLead))} disabled={mutationClearReminder.isPending} className="px-3 py-1.5 rounded border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 disabled:opacity-50">
+            Clear
+          </button>
+        )}
+        <button type="submit" disabled={mutationSetReminder.isPending || !reminderDate} className="px-4 py-1.5 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] disabled:opacity-40">
+          {mutationSetReminder.isPending ? "Saving..." : "Set Follow-up"}
+        </button>
+      </div>
+    </form>
+  )}
+</div>
 
                   {/* ✅ নতুন — Follow-up Note History সেকশন */}
                   <div className="space-y-3">

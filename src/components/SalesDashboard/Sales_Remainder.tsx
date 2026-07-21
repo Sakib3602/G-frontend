@@ -1,11 +1,16 @@
-import useAxiosSales from '@/uri/useAxiosSales';
+import { useState } from "react";
+import useAxiosSales from "@/uri/useAxiosSales";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Notification from "../ui/toast";
+import { useUserData } from "./Sales_Hook/User_Data";
 
-import  {  useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Notification from '../ui/toast';
-import { useUserData } from './Sales_Hook/User_Data';
+export interface INoteEntry {
+  _id?: string;
+  text: string;
+  createdAt?: string;
+  createdBy?: string;
+}
 
-// --- 1. Your Lead Data Interface ---
 export interface LeadData {
   id: string;
   _id?: string;
@@ -13,6 +18,7 @@ export interface LeadData {
   owner: string;
   status: string;
   indications?: string;
+  indicationsHistory?: INoteEntry[]; // ✅ নতুন
   companyName?: string;
   leadScore: number;
   email?: string;
@@ -21,245 +27,608 @@ export interface LeadData {
   specificRole?: string;
   region?: string;
   profileUrl?: string;
-  linkedin?: string;
-  leadCreatedBy: string;
-  proposalSent?: boolean;
+  ServiceNeed?: string;
+  reminderAt: string;
+  reminderNote?: string;
 }
 
 export default function Sales_Remainder() {
-  const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
-  const [showNotiReminderEmailSent, setShowNotiReminderEmailSent] = useState(false);
+  const [showNotiEmailSent, setShowNotiEmailSent] = useState(false);
+  const [showNotiDone, setShowNotiDone] = useState(false);
+  const [showNotiSaved, setShowNotiSaved] = useState(false);
+  const [activeRescheduleId, setActiveRescheduleId] = useState<string | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [rescheduleNote, setRescheduleNote] = useState("");
+
+  // Details modal state (edit-able)
+  const [selectedLeadDetails, setSelectedLeadDetails] = useState<LeadData | null>(null);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<LeadData>>({});
+
+  // ✅ নতুন — Note history state
+  const [newNoteText, setNewNoteText] = useState("");
+  const [showNoteHistory, setShowNoteHistory] = useState(true);
 
   const axiosSales = useAxiosSales();
-  const {userData} = useUserData()
-
+  const { userData } = useUserData();
+  const queryClient = useQueryClient();
 
   const {
     data: reminderLeads = [],
-    isLoading: isReminderLoading,
-    isError: isReminderError,
+    isLoading,
+    isError,
   } = useQuery<LeadData[]>({
     queryKey: ["rem", userData?._id],
     enabled: Boolean(userData?._id),
-    queryFn : async() => {
+    queryFn: async () => {
       const res = await axiosSales.get(`/api/v1/sales/rem/${userData?._id}`);
       return res.data.data;
-    }
+    },
   });
 
-
-  // --- Console Log Function ---
   const getLeadId = (lead: LeadData) => lead._id || lead.id;
 
-  const handleFollowUpClick = (lead: LeadData) => {
-    const leadId = getLeadId(lead);
-    if (lead.email) {
-      // console.log(`Follow-up initiated for: ${lead.leadName} | Email: ${lead.email} | Lead ID: ${leadId}`);
-      mutationMarkRemainder.mutate({ email: lead.email });
-      mutationMark.mutate({ leadId, showNotification: false });
-    } else {
-      console.log(`Follow-up initiated for: ${lead.leadName} | No email on file. | Lead ID: ${leadId}`);
-    }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isOverdue = (dateStr: string) => {
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime() < today.getTime();
   };
 
-  const handleMarkAsFollowedUp = (lead: LeadData) => {
-    const leadId = getLeadId(lead);
-    // console.log(`Marked as followed up | Lead ID: ${leadId} | Lead Name: ${lead.leadName}`);
-    mutationMark.mutate({ leadId });
-    
+  const isDueToday = (dateStr: string) => {
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime() === today.getTime();
   };
 
-  const queryClient = useQueryClient();
-
-  const mutationMark = useMutation({
-    mutationFn: async ({ leadId }: { leadId: string; showNotification?: boolean }) => {
-      const res = await axiosSales.put(`/api/v1/sales/update-at-time/${leadId}`);
-      return res.data;
-    },
-    onSuccess: (_, variables)=>{
-      queryClient.invalidateQueries({ queryKey: ["rem"] });
-      if (variables?.showNotification !== false) {
-        setShowNotiStatusUpdate(true);
-      }
-    }
-  });
-  const mutationMarkRemainder = useMutation({
-    mutationFn: async ({ email }: { email: string }) => {
+  const mutationSendEmail = useMutation({
+    mutationFn: async (email: string) => {
       const res = await axiosSales.post(`/api/v1/sales/emailservice/send-reminder-email/${email}`);
       return res.data;
     },
-    onSuccess: ()=>{
-      queryClient.invalidateQueries({ queryKey: ["rem"] });
-      setShowNotiReminderEmailSent(true);
-    }
+    onSuccess: () => setShowNotiEmailSent(true),
   });
 
-  if (isReminderLoading) {
+  const mutationClearReminder = useMutation({
+    mutationFn: async (leadId: string) => {
+      const res = await axiosSales.put(`/api/v1/sales/clear-reminder/${leadId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rem"] });
+      setShowNotiDone(true);
+    },
+  });
+
+  const mutationReschedule = useMutation({
+    mutationFn: async ({ leadId, reminderAt, reminderNote }: { leadId: string; reminderAt: string; reminderNote?: string }) => {
+      const res = await axiosSales.put(`/api/v1/sales/set-reminder/${leadId}`, { reminderAt, reminderNote });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rem"] });
+      setActiveRescheduleId(null);
+      setRescheduleDate("");
+      setRescheduleTime("");
+      setRescheduleNote("");
+    },
+  });
+
+  const openReschedule = (lead: LeadData) => {
+    setActiveRescheduleId(getLeadId(lead));
+    const d = new Date(lead.reminderAt);
+    setRescheduleDate(d.toISOString().split("T")[0]);
+    setRescheduleTime(d.toTimeString().slice(0, 5));
+    setRescheduleNote(lead.reminderNote || "");
+  };
+
+  const handleReschedule = (e: React.FormEvent, leadId: string) => {
+    e.preventDefault();
+    if (!rescheduleDate) return;
+    const isoDateTime = new Date(`${rescheduleDate}T${rescheduleTime || "09:00"}:00`).toISOString();
+    mutationReschedule.mutate({ leadId, reminderAt: isoDateTime, reminderNote: rescheduleNote.trim() });
+  };
+
+  // Details modal open + edit logic
+  const openDetailsModal = (lead: LeadData) => {
+    setSelectedLeadDetails(lead);
+    setIsEditingDetails(false);
+    setEditForm(lead);
+    setNewNoteText("");
+    setShowNoteHistory(true);
+  };
+
+  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const mutationUpdateDetails = useMutation({
+    mutationFn: async ({ leadId, payload }: { leadId: string; payload: Partial<LeadData> }) => {
+      const res = await axiosSales.patch(`/api/v1/sales/update-lead-details/${leadId}`, payload);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["rem"] });
+      if (data?.lead) {
+        setSelectedLeadDetails(data.lead);
+      }
+      setIsEditingDetails(false);
+      setShowNotiSaved(true);
+    },
+  });
+
+  const handleSaveDetails = () => {
+    if (!selectedLeadDetails) return;
+    const leadId = getLeadId(selectedLeadDetails);
+    mutationUpdateDetails.mutate({ leadId, payload: editForm });
+  };
+
+  // ✅ নতুন — Note push mutation (পুরানো মুছবে না)
+  const mutationAddNote = useMutation({
+    mutationFn: async ({ leadId, text }: { leadId: string; text: string }) => {
+      const res = await axiosSales.post(`/api/v1/sales/add-note/${leadId}`, {
+        text,
+        createdBy: userData?.name || "Sales",
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["rem"] });
+      if (data?.lead) {
+        setSelectedLeadDetails(data.lead);
+      }
+      setNewNoteText("");
+    },
+  });
+
+  const handleAddNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLeadDetails || !newNoteText.trim()) return;
+    const leadId = getLeadId(selectedLeadDetails);
+    mutationAddNote.mutate({ leadId, text: newNoteText.trim() });
+  };
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600 font-medium">Loading reminders...</span>
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#99B562]"></div>
+        <span className="ml-3 text-sm text-slate-500 font-medium">Loading reminders...</span>
       </div>
     );
   }
 
-  if (isReminderError) {
+  if (isError) {
     return (
       <div className="p-6 mt-10 max-w-lg mx-auto bg-red-50 border border-red-200 rounded-lg text-center text-red-600">
-        <p className="font-semibold">Error fetching reminder leads.</p>
-        <p className="text-sm mt-1">Please check your connection and try again.</p>
+        <p className="font-semibold">Error fetching reminders.</p>
       </div>
     );
   }
 
   return (
     <>
-    <div className="fixed top-4 right-4 z-50">
-            {showNotiStatusUpdate && (
-              <Notification
-                type="success"
-                title="Marked as Followed Up!"
-                message="This lead has been marked as followed up successfully."
-                showIcon={true}
-                duration={3000}
-                onClose={() => {
-                  setShowNotiStatusUpdate(false);
-                }}
-              />
-            )}
-            {showNotiReminderEmailSent && (
-              <Notification
-                type="success"
-                title="Reminder Email Sent!"
-                message="Follow-up reminder email has been sent successfully."
-                showIcon={true}
-                duration={3000}
-                onClose={() => {
-                  setShowNotiReminderEmailSent(false);
-                }}
-              />
-            )}
-            {/* {showNotiStatusUpdateYo && (
-              <Notification
-                type="success"
-                title="Proposal Sent!"
-                message="Proposal has been sent to the lead successfully."
-                showIcon={true}
-                duration={3000}
-                onClose={() => {
-                  setShowNotiStatusUpdateYo(false);
-                }}
-              />
-            )}
-             */}
-          </div>
-    <div className="poppins-regular w-full bg-slate-50 p-4 sm:p-6 lg:p-10 font-sans min-h-screen text-slate-900">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* --- Header Section --- */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-            <span className="text-amber-600 text-xs font-bold uppercase tracking-widest">Action Required</span>
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Follow-Up Reminders</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Proposals have been sent to these leads, but they are awaiting a follow-up response.
-          </p>
-        </div>
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {showNotiEmailSent && (
+          <Notification type="success" title="Reminder Email Sent!" message="Follow-up reminder email has been sent successfully." showIcon duration={3000} onClose={() => setShowNotiEmailSent(false)} />
+        )}
+        {showNotiDone && (
+          <Notification type="success" title="Follow-up Completed!" message="This reminder has been cleared from the list." showIcon duration={3000} onClose={() => setShowNotiDone(false)} />
+        )}
+        {showNotiSaved && (
+          <Notification type="success" title="Lead Updated!" message="Lead details have been saved successfully." showIcon duration={3000} onClose={() => setShowNotiSaved(false)} />
+        )}
+      </div>
 
-        {/* --- List Section --- */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          
-          {/* List Header */}
-          <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Pending Responses
-            </h2>
-            <span className="bg-white text-slate-600 text-xs font-bold px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-              {reminderLeads.length} Leads
-            </span>
+      <div className="w-full bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans min-h-screen text-slate-900 antialiased">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8 border-b border-slate-200 pb-6">
+            <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">Follow-up Calendar</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Reminders</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Overdue and today's follow-ups. Click a row to view full lead details. Missed ones stay here until you complete or reschedule them.
+            </p>
           </div>
 
-          {/* List Body */}
-          <div className="divide-y divide-slate-100">
+          <div className="bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden">
+            <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 flex justify-between items-center">
+              <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending Follow-ups</h2>
+              <span className="text-xs font-mono font-bold text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded">
+                {reminderLeads.length}
+              </span>
+            </div>
+
             {reminderLeads.length === 0 ? (
-              <div className="text-center p-12">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                </div>
-                <p className="text-slate-500 font-medium">No pending follow-ups right now!</p>
+              <div className="text-center py-16">
+                <p className="text-sm text-slate-400">No pending follow-ups right now.</p>
               </div>
             ) : (
-              reminderLeads.map((lead) => (
-                <div key={lead.id} className="p-6 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-6 group">
-                  
-                  {/* Left Side: Lead Info */}
-                  <div className="flex items-start gap-4">
-                    {/* Avatar Profile */}
-                    <div className="w-12 h-12 rounded-full bg-[#99B562]/10 text-[#7a914e] border border-[#99B562]/20 flex items-center justify-center font-bold text-lg shrink-0">
-                      {lead.leadName.charAt(0)}
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#99B562] transition-colors">
-                          {lead.leadName}
-                        </h3>
-                        <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                          Needs Follow-Up
-                        </span>
-                      </div>
-                      
-                      <p className="text-sm font-medium text-slate-500 mb-2">
-                        {lead.title || 'No Title'} {lead.companyName && <span>at <span className="text-slate-800">{lead.companyName}</span></span>}
-                      </p>
-                      
-                      {/* Contact Badges */}
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-md shadow-sm">
-                          <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                          <span className="font-medium">{lead.email || 'No email'}</span>
-                        </div>
-                        {lead.phone && (
-                          <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-md shadow-sm">
-                            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                            <span className="font-medium">{lead.phone}</span>
-                          </div>
+              <table className="min-w-full text-sm text-left">
+                <thead className="border-b border-slate-100 bg-slate-50/50">
+                  <tr>
+                    <th className="px-5 py-2.5 text-[10px] uppercase tracking-wider font-bold text-slate-500">Lead</th>
+                    <th className="px-5 py-2.5 text-[10px] uppercase tracking-wider font-bold text-slate-500">Contact</th>
+                    <th className="px-5 py-2.5 text-[10px] uppercase tracking-wider font-bold text-slate-500">Follow-up Time</th>
+                    <th className="px-5 py-2.5 text-[10px] uppercase tracking-wider font-bold text-slate-500">Note</th>
+                    <th className="px-5 py-2.5 text-[10px] uppercase tracking-wider font-bold text-slate-500 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {reminderLeads.map((lead) => {
+                    const leadId = getLeadId(lead);
+                    const overdue = isOverdue(lead.reminderAt);
+                    const dueToday = isDueToday(lead.reminderAt);
+                    const isRescheduling = activeRescheduleId === leadId;
+
+                    return (
+                      <>
+                        <tr
+                          key={leadId}
+                          onClick={() => openDetailsModal(lead)}
+                          className="hover:bg-slate-50/70 transition-colors cursor-pointer"
+                        >
+                          <td className="px-5 py-3">
+                            <p className="font-semibold text-slate-800 hover:text-[#99B562] transition-colors">{lead.leadName}</p>
+                            <p className="text-xs text-slate-400">{lead.title || "—"} {lead.companyName && `• ${lead.companyName}`}</p>
+                          </td>
+                          <td className="px-5 py-3 text-xs text-slate-500 font-mono">
+                            <p>{lead.email || "—"}</p>
+                            <p>{lead.phone || "—"}</p>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span className={`text-xs font-mono font-bold px-2 py-1 rounded border ${
+                              overdue ? "bg-red-50 text-red-700 border-red-200" : dueToday ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-600 border-slate-200"
+                            }`}>
+                              {overdue ? "Overdue • " : dueToday ? "Today • " : ""}
+                              {new Date(lead.reminderAt).toLocaleDateString([], { day: "2-digit", month: "short" })}{" "}
+                              {new Date(lead.reminderAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-xs text-slate-600 italic max-w-[220px] truncate">
+                            {lead.reminderNote || "—"}
+                          </td>
+                          <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => lead.email && mutationSendEmail.mutate(lead.email)}
+                                disabled={!lead.email || mutationSendEmail.isPending}
+                                className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition-all disabled:opacity-40"
+                              >
+                                Send Email
+                              </button>
+                              <button
+                                onClick={() => (isRescheduling ? setActiveRescheduleId(null) : openReschedule(lead))}
+                                className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition-all"
+                              >
+                                Reschedule
+                              </button>
+                              <button
+                                onClick={() => mutationClearReminder.mutate(leadId)}
+                                disabled={mutationClearReminder.isPending}
+                                className="px-3 py-1.5 rounded bg-[#99B562] text-white hover:bg-[#85a052] text-[11px] font-bold transition-all disabled:opacity-50"
+                              >
+                                Done
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {isRescheduling && (
+                          <tr key={`${leadId}-reschedule`} className="bg-slate-50/60">
+                            <td colSpan={5} className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                              <form onSubmit={(e) => handleReschedule(e, leadId)} className="flex flex-col sm:flex-row items-end gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Date *</label>
+                                  <input type="date" required value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Time (optional)</label>
+                                  <input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+                                </div>
+                                <div className="flex-1 w-full">
+                                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Note (optional)</label>
+                                  <input type="text" value={rescheduleNote} onChange={(e) => setRescheduleNote(e.target.value)} placeholder="e.g. Client asked to call next week" className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+                                </div>
+                                <div className="flex gap-2">
+                                  <button type="button" onClick={() => setActiveRescheduleId(null)} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800">Cancel</button>
+                                  <button type="submit" disabled={mutationReschedule.isPending || !rescheduleDate} className="px-4 py-1.5 rounded bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 disabled:opacity-40">
+                                    {mutationReschedule.isPending ? "Saving..." : "Save"}
+                                  </button>
+                                </div>
+                              </form>
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Side: Action Buttons */}
-                  <div className="shrink-0 flex sm:flex-col items-center justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button 
-                      onClick={() => handleFollowUpClick(lead)}
-                      className="w-full sm:w-auto bg-[#99B562] hover:bg-[#85a052] text-white font-bold py-2.5 px-5 rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                      Send Follow-Up
-                    </button>
-
-                    <button
-                      onClick={() => handleMarkAsFollowedUp(lead)}
-                      className="w-full sm:w-auto bg-white hover:bg-slate-100 text-slate-700 font-bold py-2.5 px-5 rounded-lg transition-all border border-slate-300 shadow-sm flex items-center justify-center gap-2 active:scale-95"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                      Mark as Followed Up
-                    </button>
-                  </div>
-
-                </div>
-              ))
+                      </>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
-        
       </div>
-    </div>
+
+      {/* LEAD DETAILS MODAL (Edit-able + Notes) */}
+      {selectedLeadDetails && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
+          <div
+            className="absolute inset-0"
+            onClick={() => {
+              setSelectedLeadDetails(null);
+              setIsEditingDetails(false);
+            }}
+          ></div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">{selectedLeadDetails.leadName}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {selectedLeadDetails.title || "Executive"} {selectedLeadDetails.companyName && `at ${selectedLeadDetails.companyName}`}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedLeadDetails(null);
+                  setIsEditingDetails(false);
+                }}
+                className="text-slate-400 hover:text-slate-900 p-1 rounded transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+              {/* Top Meta Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.status}</p>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Score</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.leadScore}</p>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Territory</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.region || "—"}</p>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Owner</p>
+                  <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.owner || "—"}</p>
+                </div>
+              </div>
+
+              {/* Follow-up Info */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1">Scheduled Follow-up</p>
+                <p className="text-sm text-amber-900 font-semibold">
+                  {new Date(selectedLeadDetails.reminderAt).toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" })}{" "}
+                  at {new Date(selectedLeadDetails.reminderAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </p>
+                {selectedLeadDetails.reminderNote && (
+                  <p className="text-xs text-amber-700 italic mt-1">"{selectedLeadDetails.reminderNote}"</p>
+                )}
+              </div>
+
+              {/* Extended Details Grids (editable) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">Contact Profile</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Email Address</p>
+                      {isEditingDetails ? (
+                        <input
+                          name="email"
+                          value={editForm.email || ""}
+                          onChange={handleEditFormChange}
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm font-mono focus:outline-none focus:border-[#99B562]"
+                        />
+                      ) : (
+                        <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.email || "—"}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Phone Number</p>
+                      {isEditingDetails ? (
+                        <input
+                          name="phone"
+                          value={editForm.phone || ""}
+                          onChange={handleEditFormChange}
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm font-mono focus:outline-none focus:border-[#99B562]"
+                        />
+                      ) : (
+                        <p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.phone || "—"}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">LinkedIn / Profile URL</p>
+                      {isEditingDetails ? (
+                        <input
+                          name="profileUrl"
+                          value={editForm.profileUrl || ""}
+                          onChange={handleEditFormChange}
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm font-mono focus:outline-none focus:border-[#99B562]"
+                        />
+                      ) : selectedLeadDetails.profileUrl ? (
+                        <a href={selectedLeadDetails.profileUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline">
+                          View Profile
+                        </a>
+                      ) : (
+                        <p className="text-sm text-slate-800">—</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">Business Context</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Company Name</p>
+                      {isEditingDetails ? (
+                        <input
+                          name="companyName"
+                          value={editForm.companyName || ""}
+                          onChange={handleEditFormChange}
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm focus:outline-none focus:border-[#99B562]"
+                        />
+                      ) : (
+                        <p className="text-sm text-slate-800">{selectedLeadDetails.companyName || "—"}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Specific Role</p>
+                      {isEditingDetails ? (
+                        <input
+                          name="specificRole"
+                          value={editForm.specificRole || ""}
+                          onChange={handleEditFormChange}
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm focus:outline-none focus:border-[#99B562]"
+                        />
+                      ) : (
+                        <p className="text-sm text-slate-800">{selectedLeadDetails.specificRole || "—"}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Service Need</p>
+                      {isEditingDetails ? (
+                        <select
+                          name="ServiceNeed"
+                          value={editForm.ServiceNeed || "Graphic"}
+                          onChange={handleEditFormChange}
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:outline-none focus:border-[#99B562]"
+                        >
+                          {["Graphic", "Web", "Software", "Marketing", "SEO"].map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-sm text-slate-800">{selectedLeadDetails.ServiceNeed || "—"}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Region</p>
+                      {isEditingDetails ? (
+                        <select
+                          name="region"
+                          value={editForm.region || "US"}
+                          onChange={handleEditFormChange}
+                          className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:outline-none focus:border-[#99B562]"
+                        >
+                          {["US", "ANZ", "EMEA", "APAC", "LATAM", "Global"].map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-sm text-slate-800">{selectedLeadDetails.region || "—"}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save / Edit controls */}
+              <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
+                {isEditingDetails ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsEditingDetails(false);
+                        setEditForm(selectedLeadDetails);
+                      }}
+                      className="px-4 py-2 rounded border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveDetails}
+                      disabled={mutationUpdateDetails.isPending}
+                      className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] disabled:opacity-50"
+                    >
+                      {mutationUpdateDetails.isPending ? "Saving..." : "Save Changes"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingDetails(true)}
+                    className="px-4 py-2 rounded bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
+                  >
+                    ✎ Edit Details
+                  </button>
+                )}
+              </div>
+
+              {/* ✅ নতুন — Follow-up Note History সেকশন */}
+              <div className="space-y-3 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowNoteHistory((prev) => !prev)}
+                  className="w-full flex items-center justify-between"
+                >
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Follow-up History{" "}
+                    {selectedLeadDetails.indicationsHistory?.length ? `(${selectedLeadDetails.indicationsHistory.length})` : ""}
+                  </h3>
+                  <span className="text-slate-400 text-xs">{showNoteHistory ? "▲" : "▼"}</span>
+                </button>
+
+                {showNoteHistory && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {!selectedLeadDetails.indicationsHistory || selectedLeadDetails.indicationsHistory.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic py-2">
+                        No follow-up notes added yet. {selectedLeadDetails.indications && `Previous note: "${selectedLeadDetails.indications}"`}
+                      </p>
+                    ) : (
+                      [...selectedLeadDetails.indicationsHistory]
+                        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+                        .map((entry, idx) => (
+                          <div key={entry._id || idx} className="bg-white border border-slate-200 rounded-lg p-3">
+                            <p className="text-sm text-slate-800">{entry.text}</p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ""}
+                              </span>
+                              {entry.createdBy && (
+                                <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold">
+                                  {entry.createdBy}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+
+                <form onSubmit={handleAddNote} className="flex items-end gap-2 pt-1">
+                  <textarea
+                    value={newNoteText}
+                    onChange={(e) => setNewNoteText(e.target.value)}
+                    rows={2}
+                    placeholder="Write what was discussed today..."
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={mutationAddNote.isPending || !newNoteText.trim()}
+                    className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] disabled:opacity-40 whitespace-nowrap transition-colors"
+                  >
+                    {mutationAddNote.isPending ? "Adding..." : "+ Add Note"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
