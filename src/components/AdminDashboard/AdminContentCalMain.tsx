@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
+import { FiArrowLeft } from "react-icons/fi";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -186,7 +187,10 @@ const EditableCell = ({
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === "Enter") commit();
-          if (e.key === "Escape") { setDraft(value); setEditing(false); }
+          if (e.key === "Escape") {
+            setDraft(value);
+            setEditing(false);
+          }
         }}
         className="w-full rounded border border-indigo-400 bg-white px-1.5 py-0.5 text-xs text-slate-800 outline-none focus:ring-1 focus:ring-indigo-300"
       />
@@ -195,7 +199,10 @@ const EditableCell = ({
 
   return (
     <span
-      onClick={() => { setDraft(value); setEditing(true); }}
+      onClick={() => {
+        setDraft(value);
+        setEditing(true);
+      }}
       className="block cursor-pointer truncate rounded px-1 py-0.5 text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
       title={value || placeholder}
     >
@@ -208,7 +215,13 @@ const EditableCell = ({
 
 // ─── Post Type Dropdown ───────────────────────────────────────
 
-const PostTypeCell = ({ value, onSave }: { value: string; onSave: (v: string) => void }) => {
+const PostTypeCell = ({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+}) => {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -235,16 +248,25 @@ const PostTypeCell = ({ value, onSave }: { value: string; onSave: (v: string) =>
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-1 rounded border border-slate-200 bg-white/80 px-1.5 py-0.5 text-xs text-slate-700 hover:border-indigo-300"
       >
-        <span className="truncate">{value || <span className="text-slate-300">Type</span>}</span>
+        <span className="truncate">
+          {value || <span className="text-slate-300">Type</span>}
+        </span>
         <span className="shrink-0 text-slate-400">▾</span>
       </button>
       {open && (
         <div className="absolute left-0 top-7 z-40 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
           {POST_TYPES.map((pt) => (
-            <button key={pt} type="button"
-              onClick={() => { onSave(pt); setOpen(false); }}
+            <button
+              key={pt}
+              type="button"
+              onClick={() => {
+                onSave(pt);
+                setOpen(false);
+              }}
               className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${pt === value ? "font-semibold text-indigo-600" : "text-slate-700"}`}
-            >{pt}</button>
+            >
+              {pt}
+            </button>
           ))}
         </div>
       )}
@@ -255,7 +277,9 @@ const PostTypeCell = ({ value, onSave }: { value: string; onSave: (v: string) =>
 // ─── Team Cell ────────────────────────────────────────────────
 
 const TeamCell = ({
-  value, users, onSave,
+  value,
+  users,
+  onSave,
 }: {
   value: string;
   users: UserOption[];
@@ -287,19 +311,30 @@ const TeamCell = ({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-1 rounded border border-slate-200 bg-white/80 px-1.5 py-0.5 text-xs text-slate-700 hover:border-indigo-300"
       >
-        <span className="truncate">{value || <span className="text-slate-300">Team</span>}</span>
+        <span className="truncate">
+          {value || <span className="text-slate-300">Team</span>}
+        </span>
         <span className="shrink-0 text-slate-400">▾</span>
       </button>
       {open && (
         <div className="absolute left-0 top-7 z-40 max-h-56 w-44 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl">
           {users.length === 0 ? (
             <p className="px-3 py-2 text-xs text-slate-400">No users found</p>
-          ) : users.map((user) => (
-            <button key={user._id} type="button"
-              onClick={() => { onSave(user); setOpen(false); }}
-              className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${user.name === value ? "font-semibold text-indigo-600" : "text-slate-700"}`}
-            >{user.name}</button>
-          ))}
+          ) : (
+            users.map((user) => (
+              <button
+                key={user._id}
+                type="button"
+                onClick={() => {
+                  onSave(user);
+                  setOpen(false);
+                }}
+                className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-indigo-50 ${user.name === value ? "font-semibold text-indigo-600" : "text-slate-700"}`}
+              >
+                {user.name}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -308,17 +343,31 @@ const TeamCell = ({
 
 // ─── Platform Cell ────────────────────────────────────────────
 
-const PlatformCell = ({ selected, onSave }: { selected: Platform[]; onSave: (p: Platform[]) => void }) => {
+const PlatformCell = ({
+  selected,
+  onSave,
+}: {
+  selected: Platform[];
+  onSave: (p: Platform[]) => void;
+}) => {
   const toggle = (p: Platform) => {
-    const next = selected.includes(p) ? selected.filter((x) => x !== p) : [...selected, p];
+    const next = selected.includes(p)
+      ? selected.filter((x) => x !== p)
+      : [...selected, p];
     onSave(next);
   };
   return (
     <div className="flex gap-1">
       {PLATFORMS.map((p) => (
-        <button key={p} type="button" onClick={() => toggle(p)} title={p}
+        <button
+          key={p}
+          type="button"
+          onClick={() => toggle(p)}
+          title={p}
           className={`h-6 w-7 rounded text-[10px] font-bold transition ${selected.includes(p) ? `${PLATFORM_COLORS[p]} text-white` : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
-        >{PLATFORM_SHORT[p]}</button>
+        >
+          {PLATFORM_SHORT[p]}
+        </button>
       ))}
     </div>
   );
@@ -326,7 +375,13 @@ const PlatformCell = ({ selected, onSave }: { selected: Platform[]; onSave: (p: 
 
 // ─── Status Cell ──────────────────────────────────────────────
 
-const StatusCell = ({ status, onSave }: { status: ItemStatus; onSave: (s: ItemStatus) => void }) => {
+const StatusCell = ({
+  status,
+  onSave,
+}: {
+  status: ItemStatus;
+  onSave: (s: ItemStatus) => void;
+}) => {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -349,16 +404,27 @@ const StatusCell = ({ status, onSave }: { status: ItemStatus; onSave: (s: ItemSt
   const label = ITEM_STATUSES.find((s) => s.value === status)?.label ?? status;
   return (
     <div ref={wrapperRef} className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
         className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[status]}`}
-      >{label}</button>
+      >
+        {label}
+      </button>
       {open && (
         <div className="absolute left-0 top-7 z-40 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
           {ITEM_STATUSES.map((s) => (
-            <button key={s.value} type="button"
-              onClick={() => { onSave(s.value); setOpen(false); }}
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => {
+                onSave(s.value);
+                setOpen(false);
+              }}
               className={`block w-full px-3 py-1.5 text-left text-xs transition hover:bg-slate-50 ${s.value === status ? "font-semibold text-indigo-600" : "text-slate-700"}`}
-            >{s.label}</button>
+            >
+              {s.label}
+            </button>
           ))}
         </div>
       )}
@@ -371,7 +437,9 @@ const StatusCell = ({ status, onSave }: { status: ItemStatus; onSave: (s: ItemSt
 const WeekRow = ({ week }: { week: number }) => (
   <tr className="bg-slate-50">
     <td colSpan={11} className="px-3 py-1.5">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">── Week {week}</span>
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        ── Week {week}
+      </span>
     </td>
   </tr>
 );
@@ -387,12 +455,19 @@ const AdminContentCalMain = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [dateError, setDateError] = useState("");
-  const [selectedCalendar, setSelectedCalendar] = useState<CalendarDoc | null>(null);
+  const [selectedCalendar, setSelectedCalendar] = useState<CalendarDoc | null>(
+    null,
+  );
+
+  const navigate = useNavigate();
 
   // ── Client Share Link state ──
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareExpiry, setShareExpiry] = useState("");
-  const [shareData, setShareData] = useState<{ shareUrl: string; expiresAt: string } | null>(null);
+  const [shareData, setShareData] = useState<{
+    shareUrl: string;
+    expiresAt: string;
+  } | null>(null);
   const [shareError, setShareError] = useState("");
 
   const pendingReportIdsRef = useRef<Set<string>>(new Set());
@@ -413,10 +488,14 @@ const AdminContentCalMain = () => {
     },
   });
 
-  const { data: items = [], isLoading: itemsLoading } = useQuery<CalendarItem[]>({
+  const { data: items = [], isLoading: itemsLoading } = useQuery<
+    CalendarItem[]
+  >({
     queryKey: ["admin-calendarItems", selectedCalendar?._id],
     queryFn: async () => {
-      const res = await axiosAdmin.get(`/content-calendar/calendar-items/${selectedCalendar!._id}`);
+      const res = await axiosAdmin.get(
+        `/content-calendar/calendar-items/${selectedCalendar!._id}`,
+      );
       return res.data.data;
     },
     enabled: !!selectedCalendar,
@@ -432,14 +511,17 @@ const AdminContentCalMain = () => {
   });
 
   // ── Client Share Link — current status for selected calendar ──
-  const { data: shareStatus, refetch: refetchShareStatus } = useQuery<ShareStatus>({
-    queryKey: ["admin-share-status", selectedCalendar?._id],
-    queryFn: async () => {
-      const res = await axiosAdmin.get(`/content-calendar/calendar/${selectedCalendar!._id}/share-status`);
-      return res.data.data;
-    },
-    enabled: !!selectedCalendar,
-  });
+  const { data: shareStatus, refetch: refetchShareStatus } =
+    useQuery<ShareStatus>({
+      queryKey: ["admin-share-status", selectedCalendar?._id],
+      queryFn: async () => {
+        const res = await axiosAdmin.get(
+          `/content-calendar/calendar/${selectedCalendar!._id}/share-status`,
+        );
+        return res.data.data;
+      },
+      enabled: !!selectedCalendar,
+    });
 
   const createCalendarMutation = useMutation({
     mutationFn: async () => {
@@ -453,28 +535,46 @@ const AdminContentCalMain = () => {
       return res.data;
     },
     onSuccess: () => {
-      setTitle(""); setStartDate(""); setEndDate(""); setDateError("");
+      setTitle("");
+      setStartDate("");
+      setEndDate("");
+      setDateError("");
       queryClient.invalidateQueries({ queryKey: ["admin-calendars", id] });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ itemId, patch }: { itemId: string; patch: Partial<CalendarItem> }) => {
-      const res = await axiosAdmin.patch(`/content-calendar/calendar-item/${itemId}`, patch);
+    mutationFn: async ({
+      itemId,
+      patch,
+    }: {
+      itemId: string;
+      patch: Partial<CalendarItem>;
+    }) => {
+      const res = await axiosAdmin.patch(
+        `/content-calendar/calendar-item/${itemId}`,
+        patch,
+      );
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-calendarItems", selectedCalendar?._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-calendarItems", selectedCalendar?._id],
+      });
     },
   });
 
   const reportMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      const res = await axiosAdmin.post(`/content-calendar/generate-report/${itemId}`);
+      const res = await axiosAdmin.post(
+        `/content-calendar/generate-report/${itemId}`,
+      );
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-calendarItems", selectedCalendar?._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-calendarItems", selectedCalendar?._id],
+      });
     },
     onError: (err) => console.error("Report trigger failed:", err),
   });
@@ -494,13 +594,17 @@ const AdminContentCalMain = () => {
       refetchShareStatus();
     },
     onError: (err: any) => {
-      setShareError(err?.response?.data?.message || "Link generate করা যায়নি।");
+      setShareError(
+        err?.response?.data?.message || "Link generate করা যায়নি।",
+      );
     },
   });
 
   const revokeShareLinkMutation = useMutation({
     mutationFn: async () => {
-      const res = await axiosAdmin.post(`/content-calendar/calendar/${selectedCalendar!._id}/revoke-share-link`);
+      const res = await axiosAdmin.post(
+        `/content-calendar/calendar/${selectedCalendar!._id}/revoke-share-link`,
+      );
       return res.data;
     },
     onSuccess: () => {
@@ -512,7 +616,8 @@ const AdminContentCalMain = () => {
 
   useEffect(() => {
     items.forEach((item) => {
-      const alreadyHandled = item.reportSent || pendingReportIdsRef.current.has(item._id);
+      const alreadyHandled =
+        item.reportSent || pendingReportIdsRef.current.has(item._id);
       if (isOverdueLive(item) && !alreadyHandled) {
         pendingReportIdsRef.current.add(item._id);
         reportMutation.mutate(item._id);
@@ -528,30 +633,50 @@ const AdminContentCalMain = () => {
   const handleCreateCalendar = (e: React.FormEvent) => {
     e.preventDefault();
     setDateError("");
-    if (!title || !startDate || !endDate) { setDateError("সব field পূরণ করুন।"); return; }
-    if (!isEndDateValid(startDate, endDate)) { setDateError("End date অবশ্যই start date এর পরে হতে হবে।"); return; }
+    if (!title || !startDate || !endDate) {
+      setDateError("সব field পূরণ করুন।");
+      return;
+    }
+    if (!isEndDateValid(startDate, endDate)) {
+      setDateError("End date অবশ্যই start date এর পরে হতে হবে।");
+      return;
+    }
     createCalendarMutation.mutate();
   };
 
   const openShareModal = () => {
     setShareError("");
     setShareData(
-      shareStatus?.shareEnabled && shareStatus.shareUrl && shareStatus.shareExpiresAt
-        ? { shareUrl: shareStatus.shareUrl, expiresAt: shareStatus.shareExpiresAt }
+      shareStatus?.shareEnabled &&
+        shareStatus.shareUrl &&
+        shareStatus.shareExpiresAt
+        ? {
+            shareUrl: shareStatus.shareUrl,
+            expiresAt: shareStatus.shareExpiresAt,
+          }
         : null,
     );
     setShareModalOpen(true);
   };
 
   if (clientLoading) {
-    return <div className="flex h-64 items-center justify-center text-sm text-slate-400">Loading...</div>;
+    return (
+      <div className="flex h-64 items-center justify-center text-sm text-slate-400">
+        Loading...
+      </div>
+    );
   }
 
   return (
     <div className="min-h-full w-full">
       <div className="px-8 pt-8 pb-4">
-
         {/* Header */}
+       <button
+               onClick={() => navigate(-1)}
+               className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-black mb-4"
+             >
+               <FiArrowLeft /> Back to List
+             </button>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <div className="mb-1 inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
@@ -563,7 +688,12 @@ const AdminContentCalMain = () => {
             <p className="mt-0.5 text-sm text-slate-500">
               Agreement date: {fmt(client?.agreementDate)}
               {client?.creatorId?.name && (
-                <span className="ml-2 text-slate-400">· Created by <span className="font-medium text-slate-600">{client.creatorId.name}</span></span>
+                <span className="ml-2 text-slate-400">
+                  · Created by{" "}
+                  <span className="font-medium text-slate-600">
+                    {client.creatorId.name}
+                  </span>
+                </span>
               )}
             </p>
           </div>
@@ -571,16 +701,29 @@ const AdminContentCalMain = () => {
 
         {/* Create Calendar Form */}
         <div className="mb-6 rounded-xl border border-white/50 bg-white/60 p-4 shadow-md backdrop-blur-xl">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">New Calendar</p>
-          <form onSubmit={handleCreateCalendar} className="flex flex-wrap items-end gap-3">
-            <input type="text" placeholder="e.g. June–July 2026" value={title}
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            New Calendar
+          </p>
+          <form
+            onSubmit={handleCreateCalendar}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <input
+              type="text"
+              placeholder="e.g. June–July 2026"
+              value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-56 rounded-lg border border-slate-300/70 bg-white/70 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
             />
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500">Start date</label>
-              <input type="date" value={startDate} max={endDate || undefined}
+              <label className="text-xs font-medium text-slate-500">
+                Start date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                max={endDate || undefined}
                 onChange={(e) => {
                   const nextStartDate = e.target.value;
                   setStartDate(nextStartDate);
@@ -594,8 +737,13 @@ const AdminContentCalMain = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500">End date</label>
-              <input type="date" value={endDate} min={startDate || undefined}
+              <label className="text-xs font-medium text-slate-500">
+                End date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
                 onChange={(e) => {
                   const nextEndDate = e.target.value;
                   setEndDate(nextEndDate);
@@ -613,28 +761,41 @@ const AdminContentCalMain = () => {
               />
             </div>
 
-            <button type="submit" disabled={createCalendarMutation.isPending}
+            <button
+              type="submit"
+              disabled={createCalendarMutation.isPending}
               className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
             >
-              {createCalendarMutation.isPending ? "Creating..." : "Create Calendar"}
+              {createCalendarMutation.isPending
+                ? "Creating..."
+                : "Create Calendar"}
             </button>
           </form>
-          {dateError && <p className="mt-2 text-xs text-rose-500">{dateError}</p>}
+          {dateError && (
+            <p className="mt-2 text-xs text-rose-500">{dateError}</p>
+          )}
         </div>
 
         {/* Calendar Tabs */}
         {calendars.length > 0 && (
           <div className="mb-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Calendars</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Calendars
+            </p>
             <div className="flex flex-wrap gap-2">
               {calendars.map((cal) => (
-                <button key={cal._id} type="button" onClick={() => setSelectedCalendar(cal)}
+                <button
+                  key={cal._id}
+                  type="button"
+                  onClick={() => setSelectedCalendar(cal)}
                   className={`rounded-full border px-4 py-1 text-sm font-medium transition ${
                     selectedCalendar?._id === cal._id
                       ? "border-slate-900 bg-slate-900 text-white"
                       : "border-slate-300 bg-white/60 text-slate-600 hover:border-slate-500 hover:text-slate-900"
                   }`}
-                >{cal.title}</button>
+                >
+                  {cal.title}
+                </button>
               ))}
             </div>
           </div>
@@ -648,7 +809,9 @@ const AdminContentCalMain = () => {
               onClick={openShareModal}
               className="rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
             >
-              {shareStatus?.shareEnabled ? "🔗 Manage Client Link" : "🔗 Generate Client Link"}
+              {shareStatus?.shareEnabled
+                ? "🔗 Manage Client Link"
+                : "🔗 Generate Client Link"}
             </button>
           </div>
         )}
@@ -659,17 +822,29 @@ const AdminContentCalMain = () => {
         <div className="border-t border-slate-200/60 bg-white/30 backdrop-blur-xl">
           <div className="flex items-center justify-between px-8 py-2.5 border-b border-slate-200/60 bg-white/50">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-slate-800">{selectedCalendar.title}</span>
-              <span className="text-xs text-slate-400">{fmt(selectedCalendar.startDate)} → {fmt(selectedCalendar.endDate)}</span>
+              <span className="text-sm font-semibold text-slate-800">
+                {selectedCalendar.title}
+              </span>
+              <span className="text-xs text-slate-400">
+                {fmt(selectedCalendar.startDate)} →{" "}
+                {fmt(selectedCalendar.endDate)}
+              </span>
             </div>
-            <span className="text-xs text-slate-400">{items.length} working days</span>
+            <span className="text-xs text-slate-400">
+              {items.length} working days
+            </span>
           </div>
 
           {itemsLoading ? (
-            <div className="py-12 text-center text-sm text-slate-400">Loading rows...</div>
+            <div className="py-12 text-center text-sm text-slate-400">
+              Loading rows...
+            </div>
           ) : (
             <div className="overflow-x-auto overflow-y-visible px-4 pb-8">
-              <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1100px" }}>
+              <table
+                className="w-full text-left"
+                style={{ tableLayout: "fixed", minWidth: "1100px" }}
+              >
                 <colgroup>
                   <col style={{ width: "36px" }} />
                   <col style={{ width: "110px" }} />
@@ -685,8 +860,25 @@ const AdminContentCalMain = () => {
                 </colgroup>
                 <thead className="sticky top-0 z-10 bg-white/90 backdrop-blur">
                   <tr className="border-b-2 border-slate-200">
-                    {["#","Schedule Date","Delivery Date- CT","Caption Date","Creative Team","Post Type","Post Headline","Platforms","Status","Delivery Link","Notes"].map((h) => (
-                      <th key={h} className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{h}</th>
+                    {[
+                      "#",
+                      "Schedule Date",
+                      "Delivery Date- CT",
+                      "Caption Date",
+                      "Creative Team",
+                      "Post Type",
+                      "Post Headline",
+                      "Platforms",
+                      "Status",
+                      "Delivery Link",
+                      "Notes",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-slate-400"
+                      >
+                        {h}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -698,7 +890,9 @@ const AdminContentCalMain = () => {
 
                     return (
                       <>
-                        {isWeekStart && <WeekRow key={`w-${weekNumber}`} week={weekNumber} />}
+                        {isWeekStart && (
+                          <WeekRow key={`w-${weekNumber}`} week={weekNumber} />
+                        )}
                         <tr
                           key={item._id}
                           className={`border-b transition ${
@@ -707,37 +901,92 @@ const AdminContentCalMain = () => {
                               : "border-slate-100 hover:bg-indigo-50/30"
                           }`}
                         >
-                          <td className="px-3 py-2.5 text-xs text-slate-400">{idx + 1}</td>
-                          <td className="px-3 py-2.5 text-xs font-semibold text-slate-700 whitespace-nowrap">{fmt(item.scheduleDate)}</td>
-                          <td className="px-3 py-2.5">
-                            <EditableCell type="date" value={fmtInput(item.deliveryDate)} onSave={(v) => update(item._id, { deliveryDate: v || undefined })} placeholder="Set date" />
+                          <td className="px-3 py-2.5 text-xs text-slate-400">
+                            {idx + 1}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-semibold text-slate-700 whitespace-nowrap">
+                            {fmt(item.scheduleDate)}
                           </td>
                           <td className="px-3 py-2.5">
-                            <EditableCell type="date" value={fmtInput(item.contentDate)} onSave={(v) => update(item._id, { contentDate: v || undefined })} placeholder="Set date" />
-                          </td>
-                          
-                          <td className="px-3 py-2.5">
-                            <TeamCell value={item.creativeTeam ?? ""} users={users}
-                              onSave={(user) => update(item._id, { creativeTeam: user.name, creativeTeamId: user._id })}
+                            <EditableCell
+                              type="date"
+                              value={fmtInput(item.deliveryDate)}
+                              onSave={(v) =>
+                                update(item._id, {
+                                  deliveryDate: v || undefined,
+                                })
+                              }
+                              placeholder="Set date"
                             />
                           </td>
                           <td className="px-3 py-2.5">
-                            <PostTypeCell value={item.postType ?? ""} onSave={(v) => update(item._id, { postType: v })} />
+                            <EditableCell
+                              type="date"
+                              value={fmtInput(item.contentDate)}
+                              onSave={(v) =>
+                                update(item._id, {
+                                  contentDate: v || undefined,
+                                })
+                              }
+                              placeholder="Set date"
+                            />
+                          </td>
+
+                          <td className="px-3 py-2.5">
+                            <TeamCell
+                              value={item.creativeTeam ?? ""}
+                              users={users}
+                              onSave={(user) =>
+                                update(item._id, {
+                                  creativeTeam: user.name,
+                                  creativeTeamId: user._id,
+                                })
+                              }
+                            />
                           </td>
                           <td className="px-3 py-2.5">
-                            <EditableCell value={item.postHeadline ?? ""} onSave={(v) => update(item._id, { postHeadline: v })} placeholder="Headline" />
+                            <PostTypeCell
+                              value={item.postType ?? ""}
+                              onSave={(v) => update(item._id, { postType: v })}
+                            />
                           </td>
                           <td className="px-3 py-2.5">
-                            <PlatformCell selected={item.platforms ?? []} onSave={(p) => update(item._id, { platforms: p })} />
+                            <EditableCell
+                              value={item.postHeadline ?? ""}
+                              onSave={(v) =>
+                                update(item._id, { postHeadline: v })
+                              }
+                              placeholder="Headline"
+                            />
                           </td>
                           <td className="px-3 py-2.5">
-                            <StatusCell status={item.status} onSave={(s) => update(item._id, { status: s })} />
+                            <PlatformCell
+                              selected={item.platforms ?? []}
+                              onSave={(p) => update(item._id, { platforms: p })}
+                            />
                           </td>
                           <td className="px-3 py-2.5">
-                            <EditableCell type="url" value={item.deliveryLink ?? ""} onSave={(v) => update(item._id, { deliveryLink: v })} placeholder="Link" />
+                            <StatusCell
+                              status={item.status}
+                              onSave={(s) => update(item._id, { status: s })}
+                            />
                           </td>
                           <td className="px-3 py-2.5">
-                            <EditableCell value={item.notes ?? ""} onSave={(v) => update(item._id, { notes: v })} placeholder="Notes" />
+                            <EditableCell
+                              type="url"
+                              value={item.deliveryLink ?? ""}
+                              onSave={(v) =>
+                                update(item._id, { deliveryLink: v })
+                              }
+                              placeholder="Link"
+                            />
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <EditableCell
+                              value={item.notes ?? ""}
+                              onSave={(v) => update(item._id, { notes: v })}
+                              placeholder="Notes"
+                            />
                           </td>
                         </tr>
                       </>
@@ -755,12 +1004,16 @@ const AdminContentCalMain = () => {
 
       {calendars.length === 0 && (
         <div className="px-6 py-16 text-center">
-          <p className="text-sm text-slate-400">No calendars yet. Create one above.</p>
+          <p className="text-sm text-slate-400">
+            No calendars yet. Create one above.
+          </p>
         </div>
       )}
       {calendars.length > 0 && !selectedCalendar && (
         <div className="px-6 py-16 text-center">
-          <p className="text-sm text-slate-400">Select a calendar above to view content rows.</p>
+          <p className="text-sm text-slate-400">
+            Select a calendar above to view content rows.
+          </p>
         </div>
       )}
 
@@ -774,9 +1027,12 @@ const AdminContentCalMain = () => {
             className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-slate-900">Client Share Link</h3>
+            <h3 className="text-lg font-semibold text-slate-900">
+              Client Share Link
+            </h3>
             <p className="mt-1 text-sm text-slate-500">
-              {selectedCalendar.title} — client login ছাড়া শুধু এই calendar দেখতে পারবে।
+              {selectedCalendar.title} — client login ছাড়া শুধু এই calendar
+              দেখতে পারবে।
             </p>
 
             {!shareData ? (
@@ -790,14 +1046,18 @@ const AdminContentCalMain = () => {
                   onChange={(e) => setShareExpiry(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
                 />
-                {shareError && <p className="mt-2 text-xs text-rose-500">{shareError}</p>}
+                {shareError && (
+                  <p className="mt-2 text-xs text-rose-500">{shareError}</p>
+                )}
                 <button
                   type="button"
                   disabled={!shareExpiry || generateShareLinkMutation.isPending}
                   onClick={() => generateShareLinkMutation.mutate()}
                   className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
                 >
-                  {generateShareLinkMutation.isPending ? "Generating..." : "Generate Link"}
+                  {generateShareLinkMutation.isPending
+                    ? "Generating..."
+                    : "Generate Link"}
                 </button>
               </div>
             ) : (
@@ -813,7 +1073,9 @@ const AdminContentCalMain = () => {
                   />
                   <button
                     type="button"
-                    onClick={() => navigator.clipboard.writeText(shareData.shareUrl)}
+                    onClick={() =>
+                      navigator.clipboard.writeText(shareData.shareUrl)
+                    }
                     className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
                   >
                     Copy
@@ -829,7 +1091,9 @@ const AdminContentCalMain = () => {
                   onClick={() => revokeShareLinkMutation.mutate()}
                   className="mt-4 w-full rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
                 >
-                  {revokeShareLinkMutation.isPending ? "Revoking..." : "Revoke Link"}
+                  {revokeShareLinkMutation.isPending
+                    ? "Revoking..."
+                    : "Revoke Link"}
                 </button>
               </div>
             )}

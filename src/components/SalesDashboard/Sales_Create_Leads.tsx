@@ -205,7 +205,7 @@ const Sales_Create_leads = () => {
               {/* --- Quick Add (সবসময় দেখাবে, দ্রুত এন্ট্রির জন্য) --- */}
               <div className="mb-2">
                 <h3 className="text-[10px] font-bold text-[#99B562] uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
-                  Quick Add — এই কয়টা ভরলেই লিড তৈরি হয়ে যাবে
+                  Quick Add — Fill the essential fields to create a new lead in the pipeline.
                 </h3>
               </div>
 
