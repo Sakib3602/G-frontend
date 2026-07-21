@@ -537,8 +537,8 @@ export default function Sales_Meetings() {
                <div>
                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Medium</label>
                  <select name="meetingType" value={formData.meetingType} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-xl text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-2 focus:ring-[#99B562]/20 transition-all bg-white cursor-pointer">
-                   <option value="online">Virtual / Online</option>
-                   <option value="offline">In-Person / Offline</option>
+                   <option value="online">Online</option>
+                   <option value="offline">Offline</option>
                  </select>
                </div>
 
