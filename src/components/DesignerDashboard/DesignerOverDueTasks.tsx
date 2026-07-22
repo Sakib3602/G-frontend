@@ -278,7 +278,7 @@ const CalendarOverdueSection = () => {
         )}
         {rangeInvalid && (
           <p className="w-full text-xs font-medium text-rose-600">
-            "From" তারিখ "To" তারিখের পরে হতে পারবে না।
+            "From" date cannot be later than "To" date.
           </p>
         )}
       </div>
@@ -290,8 +290,9 @@ const CalendarOverdueSection = () => {
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
           {hasRange
-            ? "এই সময়সীমার মধ্যে কোনো বকেয়া item পাওয়া যায়নি।"
-            : "কোনো overdue calendar item নেই।"}
+            ? "There are no overdue calendar items in the selected date range."
+            : "There are no overdue calendar items."
+          }
         </div>
       ) : (
         <div className={`space-y-4 transition-opacity ${isFetching ? "opacity-50" : "opacity-100"}`}>

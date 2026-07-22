@@ -109,7 +109,7 @@ const Footer: React.FC = () => {
                   </div>
                   <div className="overflow-hidden">
                     <p className="text-[10px] text-white/60 uppercase tracking-wider mb-0.5">Email Us</p>
-                    <p className="font-medium text-sm truncate">gmail.com</p>
+                    <p className="font-medium text-sm truncate">info@genesysltd.com</p>
                   </div>
                 </a>
                 
@@ -121,7 +121,7 @@ const Footer: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-[10px] text-white/60 uppercase tracking-wider mb-0.5">Call Us</p>
-                    <p className="font-medium text-sm">+880</p>
+                    <p className="font-medium text-sm">+880 1329-743366</p>
                   </div>
                   
                 </a>
@@ -135,7 +135,7 @@ const Footer: React.FC = () => {
                   <div className="flex flex-col">
                     <span className="text-[10px] text-white/60 uppercase tracking-wider mb-0.5">Location</span>
                     <span className="font-medium text-sm leading-relaxed">
-                      Dhaka, Bangladesh <br/>
+                      Flat A3, House 08, Road-08, Dhaka 1230 <br/>
                       <span className="text-white/70 font-normal">Adress full</span>
                     </span>
                   </div>
