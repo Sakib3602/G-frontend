@@ -230,8 +230,8 @@ const CalendarOverdueSection = () => {
           <h2 className="text-xl font-semibold text-slate-900">Content Calendar — Overdue Items</h2>
           <p className="text-sm text-slate-500">
             {hasRange
-              ? "নির্বাচিত সময়সীমার সব বকেয়া (running) item — মাস অনুযায়ী গ্রুপ করা।"
-              : "এখন পর্যন্ত overdue item — মাস অনুযায়ী গ্রুপ করা, সবচেয়ে পুরনো মাস উপরে।"}
+              ? "This is the overdue item list for the selected date range, grouped by month."
+              : "This is the list of all overdue items, grouped by month, with the oldest months at the top."}
           </p>
         </div>
         <span className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-3 py-1 self-start">

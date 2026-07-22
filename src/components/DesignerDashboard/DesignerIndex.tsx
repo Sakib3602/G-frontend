@@ -186,10 +186,7 @@ const DesignerIndex = () => {
                                 </div>
                             </div>
 
-                            {/* ─── NEW: Content Calendar Overview ───
-                                normal designer এর নিজের assign করা item, অথবা
-                                special/full-access designer নিজেকে assign করা item —
-                                দুইটার জন্যই এখানে count দেখাবে। */}
+                           
                             <div className="mt-6">
                                 <div className="mb-3 flex items-center justify-between">
                                     <h2 className="text-base font-semibold text-slate-900">Content Calendar Work</h2>

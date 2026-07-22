@@ -418,13 +418,13 @@ const ClientListScreen = ({
           All Clients
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">
-          একটা client এ click করে তার পুরো calendar দেখো।
+          Browse all clients' calendars, edit Creative Team / Post Type / Status.
         </p>
       </div>
 
       {clients.length === 0 ? (
         <div className="rounded-xl border border-white/50 bg-white/30 p-10 text-center text-sm text-slate-400">
-          কোনো client পাওয়া যায়নি।
+          No clients found.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -583,9 +583,9 @@ const CalendarTable = ({
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">
           {mine
-            ? "তুমি নিজেকে যেসব item assign করেছো, সেগুলো এখানে দেখাচ্ছে।"
+            ? "Your assigned content items, sorted by delivery date."
             : fullAccess
-              ? "Creative Team, Post Type ও Status — সবই বদলাতে পারবে।"
+              ? "Creative Team, Post Type and Status — Everything can be edited here."
               : "Your assigned content items, sorted by delivery date."}
         </p>
       </div>
@@ -636,7 +636,7 @@ const CalendarTable = ({
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-400">
-                    {mine ? "তুমি এখনো নিজেকে কোনো item assign করোনি।" : "no content items found."}
+                    {mine ? "You haven't assigned any items yet." : "No content items found."}
                   </td>
                 </tr>
               ) : (
@@ -764,9 +764,6 @@ const CalendarTable = ({
   );
 };
 
-// ─── Full-Access Menu Screen (choose: Browse by Client / My Assigned Items) ──
-// NEW: full-access designer এখন প্রথমে একটা মেনু দেখবে — সব client browse
-// করতে চায়, নাকি নিজেকে assign করা item গুলো ("My Assigned Items") দেখতে চায়।
 
 const FullAccessMenu = ({
   onBrowseClients,
@@ -780,7 +777,7 @@ const FullAccessMenu = ({
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">Content Calendar</h1>
         <p className="mt-0.5 text-sm text-slate-500">
-          তুমি Full-Access Designer — client browse করতে পারো অথবা নিজেকে assign করা item গুলো দেখতে পারো।
+        Your assigned content items, sorted by delivery date. Creative Team / Post Type / Status can be edited here.
         </p>
       </div>
 
@@ -792,7 +789,7 @@ const FullAccessMenu = ({
         >
           <span className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Browse by Client</span>
           <p className="text-sm text-slate-600">
-            সব client এর calendar দেখো, Creative Team / Post Type / Status বদলাও।
+            View all clients' calendars, edit Creative Team / Post Type / Status.
           </p>
         </button>
 
@@ -803,7 +800,7 @@ const FullAccessMenu = ({
         >
           <span className="text-sm font-semibold uppercase tracking-wide text-indigo-700">My Assigned Items</span>
           <p className="text-sm text-slate-600">
-            তুমি নিজেকে যেসব item assign করেছো, শুধু সেগুলোই এখানে দেখাবে।
+           Your assigned content items, sorted by delivery date. Creative Team / Post Type / Status can be edited here.
           </p>
         </button>
       </div>
