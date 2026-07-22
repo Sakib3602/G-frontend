@@ -2,7 +2,16 @@ import useAxiosDesigner from "@/uri/useAxiosDesigner";
 import { useUserDataDesigner } from "./HOOK/user_data_designer";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowUpRight, CheckCircle2, CircleAlert, Clock3, ListTodo } from "lucide-react";
+import {
+    ArrowUpRight,
+    CalendarClock,
+    CheckCircle2,
+    CircleAlert,
+    Clock3,
+    ListTodo,
+    ListChecks,
+} from "lucide-react";
+
 type DesignerCompletedTask = {
     _id: string;
     title?: string;
@@ -22,6 +31,22 @@ type DesignerDashboardResponse = {
         overdue?: number;
     };
     completedData?: DesignerCompletedTask[];
+};
+
+// ─── Content Calendar (mine=true) response shape ───────────────
+// NOTE: /api/v1/designer/calendar-items?mine=true সবসময় "আমাকে assign করা
+// item" ফেরত দেয় — normal designer আর full-access (special) designer
+// দুইজনের জন্যই একই রকম কাজ করে। তাই dashboard এ এইটা directly ব্যবহার
+// করলেই "নিজে assign করা কাজ কয়টা" count হয়ে যাবে।
+type CalendarItemsMineResponse = {
+    items?: unknown[];
+    stats?: {
+        running?: number;
+        dueThisMonth?: number;
+        missedLastMonth?: number;
+    };
+    fullAccess?: boolean;
+    mine?: boolean;
 };
 
 type MonthFilter = "thisMonth" | "lastMonth";
@@ -53,6 +78,19 @@ const DesignerIndex = () => {
         },
         enabled: !!userData?._id,
     });
+
+    // ─── NEW: Content Calendar work assigned to me ───
+    const { data: calendarMine, isLoading: isCalendarLoading } = useQuery<CalendarItemsMineResponse>({
+        queryKey: ["designer-calendar-items-mine", userData?._id],
+        queryFn: async () => {
+            const res = await axiosDesigner.get("/api/v1/designer/calendar-items", {
+                params: { mine: "true" },
+            });
+            return res.data?.data ?? {};
+        },
+        enabled: !!userData?._id,
+    });
+
     const summary = data?.tasks ?? { total: 0, pending: 0, inProgress: 0, overdue: 0 };
     const completedTasks = data?.completedData ?? [];
     const filteredCompletedTasks = completedTasks.filter((task) => isTaskInSelectedMonth(task.updatedAt, monthFilter));
@@ -61,6 +99,12 @@ const DesignerIndex = () => {
     const totalTasks = summary.total ?? 0;
 
     const completionRate = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
+
+    // Content Calendar stats (my assigned items)
+    const totalCalendarItems = calendarMine?.items?.length ?? 0;
+    const calendarRunning = calendarMine?.stats?.running ?? 0;
+    const calendarDueThisMonth = calendarMine?.stats?.dueThisMonth ?? 0;
+    const calendarMissedLastMonth = calendarMine?.stats?.missedLastMonth ?? 0;
 
     return (
         <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
@@ -140,6 +184,81 @@ const DesignerIndex = () => {
                                     <div className="mt-3 text-3xl font-semibold text-rose-600">{summary.overdue}</div>
                                     <div className="mt-2 text-xs text-slate-500">Needs attention now</div>
                                 </div>
+                            </div>
+
+                            {/* ─── NEW: Content Calendar Overview ───
+                                normal designer এর নিজের assign করা item, অথবা
+                                special/full-access designer নিজেকে assign করা item —
+                                দুইটার জন্যই এখানে count দেখাবে। */}
+                            <div className="mt-6">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <h2 className="text-base font-semibold text-slate-900">Content Calendar Work</h2>
+                                    {calendarMine?.fullAccess && (
+                                        <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
+                                            Special Access
+                                        </span>
+                                    )}
+                                </div>
+
+                                {isCalendarLoading ? (
+                                    <div className="flex min-h-[100px] items-center justify-center text-sm text-slate-500">
+                                        Loading content calendar work...
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                        <div className="rounded-3xl border border-slate-200 p-5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                    My Content Items
+                                                </div>
+                                                <div className="rounded-full border border-slate-200 p-2 text-indigo-600">
+                                                    <ListChecks className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 text-3xl font-semibold text-indigo-600">{totalCalendarItems}</div>
+                                            <div className="mt-2 text-xs text-slate-500">
+                                                Total items assigned to you in Content Calendar
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-3xl border border-slate-200 p-5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Running</div>
+                                                <div className="rounded-full border border-slate-200 p-2 text-blue-600">
+                                                    <ArrowUpRight className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 text-3xl font-semibold text-blue-600">{calendarRunning}</div>
+                                            <div className="mt-2 text-xs text-slate-500">Not yet delivered / published</div>
+                                        </div>
+
+                                        <div className="rounded-3xl border border-slate-200 p-5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                    Due This Month
+                                                </div>
+                                                <div className="rounded-full border border-slate-200 p-2 text-amber-600">
+                                                    <CalendarClock className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 text-3xl font-semibold text-amber-600">{calendarDueThisMonth}</div>
+                                            <div className="mt-2 text-xs text-slate-500">Delivery date falls in this month</div>
+                                        </div>
+
+                                        <div className="rounded-3xl border border-slate-200 p-5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                    Missed Last Month
+                                                </div>
+                                                <div className="rounded-full border border-slate-200 p-2 text-rose-600">
+                                                    <CircleAlert className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 text-3xl font-semibold text-rose-600">{calendarMissedLastMonth}</div>
+                                            <div className="mt-2 text-xs text-slate-500">Missed deadline, last month</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200">
