@@ -118,6 +118,7 @@ const Sales_Create_leads = () => {
     "Attempted to contact",
     "Contacted",
     "In Progress",
+    
   ];
 
   const titleOptions = [
@@ -135,7 +136,7 @@ const Sales_Create_leads = () => {
 
   const regionOptions = ["US", "ANZ", "EMEA", "APAC", "LATAM", "Global"];
   const scoreOptions = ["1", "2", "3", "4", "5"];
-  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO"];
+  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO", "WEB & Graphic", "Other", "GRAPHIC & MARKETING",  "WEB & MARKETING",  "MARKETING & SOFTWARE", "WEB & SOFTWARE", "GRAPHIC & SOFTWARE", "WEB & GRAPHIC & SOFTWARE", "WEB & GRAPHIC & MARKETING", "WEB & GRAPHIC & MARKETING & SOFTWARE"];
 
   const CancelAll = () => {
     setFormData({

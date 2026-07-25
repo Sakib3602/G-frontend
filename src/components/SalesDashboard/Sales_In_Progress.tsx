@@ -62,7 +62,8 @@ type TabKey = "action" | "sent";
 export default function Sales_In_Progress() {
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [showNotiStatusUpdateYo, setShowNotiStatusUpdateYo] = useState(false);
-  const [showNotiStatusUpdateEmail, setShowNotiStatusUpdateEmail] = useState(false);
+  const [showNotiStatusUpdateEmail, setShowNotiStatusUpdateEmail] =
+    useState(false);
   const [showReminderBox, setShowReminderBox] = useState(false);
   const [reminderDate, setReminderDate] = useState("");
   const [reminderTime, setReminderTime] = useState("");
@@ -84,7 +85,7 @@ export default function Sales_In_Progress() {
     enabled: Boolean(userData?._id),
     queryFn: async () => {
       const res = await axiosSales.get(
-        `/api/v1/sales/get-in-progress-leads/${userData?._id}`
+        `/api/v1/sales/get-in-progress-leads/${userData?._id}`,
       );
       return res.data.leads as LeadData[];
     },
@@ -105,8 +106,10 @@ export default function Sales_In_Progress() {
   const [manualProposalLink, setManualProposalLink] = useState("");
 
   // Awaiting Response Status State
-  const [responseStatus, setResponseStatus] = useState<QualificationStatus | null>(null);
-  const [pendingQualification, setPendingQualification] = useState<QualificationStatus | null>(null);
+  const [responseStatus, setResponseStatus] =
+    useState<QualificationStatus | null>(null);
+  const [pendingQualification, setPendingQualification] =
+    useState<QualificationStatus | null>(null);
   const [dealDocLink, setDealDocLink] = useState("");
   const [dealPrice, setDealPrice] = useState("");
 
@@ -136,7 +139,7 @@ export default function Sales_In_Progress() {
     setIsComposing(false);
     setEmailSubject(`Proposal for ${lead.companyName || lead.leadName}`);
     setEmailBody(
-      `Hi ${lead.leadName.split(" ")[0]},\n\nFollowing up on our recent conversation...`
+      `Hi ${lead.leadName.split(" ")[0]},\n\nFollowing up on our recent conversation...`,
     );
     setProposalLink("");
     setManualProposalLink(lead.proposalLink || "");
@@ -192,7 +195,7 @@ export default function Sales_In_Progress() {
     }) => {
       const res = await axiosSales.put(
         `/api/v1/sales/mark-proposal-sent/${leadId}`,
-        { proposalLink }
+        { proposalLink },
       );
       return res.data;
     },
@@ -258,7 +261,13 @@ export default function Sales_In_Progress() {
   };
 
   const handleSubmitQualification = () => {
-    if (!selectedLead || !pendingQualification || !dealDocLink.trim() || !dealPrice.trim()) return;
+    if (
+      !selectedLead ||
+      !pendingQualification ||
+      !dealDocLink.trim() ||
+      !dealPrice.trim()
+    )
+      return;
 
     const leadId = getLeadId(selectedLead);
 
@@ -293,7 +302,7 @@ export default function Sales_In_Progress() {
 
       const res = await axiosSales.put(
         `/api/v1/sales/update-lead-status/${leadId}`,
-        payload
+        payload,
       );
       return res.data;
     },
@@ -309,7 +318,7 @@ export default function Sales_In_Progress() {
     mutationFn: async (proposalData: ProposalEmailPayload) => {
       const res = await axiosSales.post(
         "/api/v1/sales/emailservice/send-proposal-email",
-        proposalData
+        proposalData,
       );
       return res.data;
     },
@@ -329,8 +338,19 @@ export default function Sales_In_Progress() {
   });
 
   const mutationSetReminder = useMutation({
-    mutationFn: async ({ leadId, reminderAt, reminderNote }: { leadId: string; reminderAt: string; reminderNote?: string }) => {
-      const res = await axiosSales.put(`/api/v1/sales/set-reminder/${leadId}`, { reminderAt, reminderNote });
+    mutationFn: async ({
+      leadId,
+      reminderAt,
+      reminderNote,
+    }: {
+      leadId: string;
+      reminderAt: string;
+      reminderNote?: string;
+    }) => {
+      const res = await axiosSales.put(`/api/v1/sales/set-reminder/${leadId}`, {
+        reminderAt,
+        reminderNote,
+      });
       return res.data;
     },
     onSuccess: (data) => {
@@ -342,7 +362,9 @@ export default function Sales_In_Progress() {
 
   const mutationClearReminder = useMutation({
     mutationFn: async (leadId: string) => {
-      const res = await axiosSales.put(`/api/v1/sales/clear-reminder/${leadId}`);
+      const res = await axiosSales.put(
+        `/api/v1/sales/clear-reminder/${leadId}`,
+      );
       return res.data;
     },
     onSuccess: (data) => {
@@ -358,8 +380,14 @@ export default function Sales_In_Progress() {
     e.preventDefault();
     if (!selectedLead || !reminderDate) return;
     const leadId = getLeadId(selectedLead);
-    const isoDateTime = new Date(`${reminderDate}T${reminderTime || "09:00"}:00`).toISOString();
-    mutationSetReminder.mutate({ leadId, reminderAt: isoDateTime, reminderNote: reminderNoteText.trim() });
+    const isoDateTime = new Date(
+      `${reminderDate}T${reminderTime || "09:00"}:00`,
+    ).toISOString();
+    mutationSetReminder.mutate({
+      leadId,
+      reminderAt: isoDateTime,
+      reminderNote: reminderNoteText.trim(),
+    });
   };
 
   const isSending = mutationForEmail.isPending;
@@ -391,10 +419,19 @@ export default function Sales_In_Progress() {
 
   // Lead Score আপডেট মিউটেশন
   const mutationUpdateScore = useMutation({
-    mutationFn: async ({ leadId, leadScore }: { leadId: string; leadScore: string }) => {
-      const res = await axiosSales.patch(`/api/v1/sales/update-lead-details/${leadId}`, {
-        leadScore,
-      });
+    mutationFn: async ({
+      leadId,
+      leadScore,
+    }: {
+      leadId: string;
+      leadScore: string;
+    }) => {
+      const res = await axiosSales.patch(
+        `/api/v1/sales/update-lead-details/${leadId}`,
+        {
+          leadScore,
+        },
+      );
       return res.data;
     },
     onSuccess: (data) => {
@@ -414,10 +451,19 @@ export default function Sales_In_Progress() {
 
   // Lead Name আপডেট মিউটেশন
   const mutationUpdateName = useMutation({
-    mutationFn: async ({ leadId, leadName }: { leadId: string; leadName: string }) => {
-      const res = await axiosSales.patch(`/api/v1/sales/update-lead-details/${leadId}`, {
-        leadName,
-      });
+    mutationFn: async ({
+      leadId,
+      leadName,
+    }: {
+      leadId: string;
+      leadName: string;
+    }) => {
+      const res = await axiosSales.patch(
+        `/api/v1/sales/update-lead-details/${leadId}`,
+        {
+          leadName,
+        },
+      );
       return res.data;
     },
     onSuccess: (data) => {
@@ -540,21 +586,38 @@ export default function Sales_In_Progress() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-left">
-                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">Lead</th>
-                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">Company</th>
-                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">Email</th>
-                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">Phone</th>
-                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">Score</th>
+                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">
+                    Lead
+                  </th>
+                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">
+                    Company
+                  </th>
+                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">
+                    Score
+                  </th>
                   {activeTab === "sent" && (
-                    <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">Proposal Link</th>
+                    <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider">
+                      Proposal Link
+                    </th>
                   )}
-                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                  <th className="px-4 py-2.5 font-bold text-slate-400 uppercase tracking-wider text-right">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {activeList.length === 0 ? (
                   <tr>
-                    <td colSpan={activeTab === "sent" ? 7 : 6} className="text-center py-14 text-slate-400">
+                    <td
+                      colSpan={activeTab === "sent" ? 7 : 6}
+                      className="text-center py-14 text-slate-400"
+                    >
                       {activeTab === "action"
                         ? "Pipeline empty. No actions pending."
                         : "No proposals currently deployed on file."}
@@ -563,17 +626,30 @@ export default function Sales_In_Progress() {
                 ) : (
                   activeList.map((lead) => (
                     <tr
-                      key={getLeadId(lead) || `${lead.leadName}-${lead.email || "no-email"}`}
+                      key={
+                        getLeadId(lead) ||
+                        `${lead.leadName}-${lead.email || "no-email"}`
+                      }
                       onClick={() => openModal(lead)}
                       className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer transition-colors"
                     >
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900">{lead.leadName}</p>
-                        <p className="text-slate-400 mt-0.5">{lead.title || "Executive"}</p>
+                        <p className="font-semibold text-slate-900">
+                          {lead.leadName}
+                        </p>
+                        <p className="text-slate-400 mt-0.5">
+                          {lead.title || "Executive"}
+                        </p>
                       </td>
-                      <td className="px-4 py-3 text-slate-700">{lead.companyName || "—"}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono">{lead.email || "—"}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono">{lead.phone || "—"}</td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {lead.companyName || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 font-mono">
+                        {lead.email || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 font-mono">
+                        {lead.phone || "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <span className="text-[10px] font-mono font-bold text-amber-600 bg-amber-50 border border-amber-200/50 px-2 py-0.5 rounded-sm uppercase tracking-wide">
                           {lead.leadScore}
@@ -640,7 +716,9 @@ export default function Sales_In_Progress() {
                     />
                     <button
                       onClick={handleSaveName}
-                      disabled={mutationUpdateName.isPending || !nameValue.trim()}
+                      disabled={
+                        mutationUpdateName.isPending || !nameValue.trim()
+                      }
                       className="px-2 py-1 rounded bg-[#99B562] text-white text-[10px] font-bold hover:bg-[#85a052] disabled:opacity-50"
                     >
                       {mutationUpdateName.isPending ? "Saving..." : "Save"}
@@ -661,9 +739,22 @@ export default function Sales_In_Progress() {
                   {selectedLead.companyName && `• ${selectedLead.companyName}`}
                 </p>
               </div>
-              <button onClick={closeModal} className="text-slate-400 hover:text-slate-900 p-1.5 rounded transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              <button
+                onClick={closeModal}
+                className="text-slate-400 hover:text-slate-900 p-1.5 rounded transition-colors"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
                 </svg>
               </button>
             </div>
@@ -690,7 +781,9 @@ export default function Sales_In_Progress() {
                         <input
                           type="url"
                           value={manualProposalLink}
-                          onChange={(e) => setManualProposalLink(e.target.value)}
+                          onChange={(e) =>
+                            setManualProposalLink(e.target.value)
+                          }
                           placeholder="https://secure.ledger.path/asset"
                           className="w-full bg-white border border-slate-200 text-slate-800 rounded px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-slate-900 transition-all"
                         />
@@ -722,24 +815,26 @@ export default function Sales_In_Progress() {
 
                       {/* Proposal Link দেখানো */}
                       {selectedLead.proposalLink && (
-  <div>
-    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-      Proposal Link
-    </p>
-    <a
-      href={selectedLead.proposalLink}
-      target="_blank"
-      rel="noreferrer"
-      className="text-xs text-[#6f8a3f] hover:underline font-mono break-all"
-    >
-      {selectedLead.proposalLink}
-    </a>
-  </div>
-)}
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                            Proposal Link
+                          </p>
+                          <a
+                            href={selectedLead.proposalLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-[#6f8a3f] hover:underline font-mono break-all"
+                          >
+                            {selectedLead.proposalLink}
+                          </a>
+                        </div>
+                      )}
 
                       <div className="flex gap-3 pt-2 border-t border-slate-200/60">
                         <button
-                          onClick={() => handleQualificationResponse("Qualified")}
+                          onClick={() =>
+                            handleQualificationResponse("Qualified")
+                          }
                           className={`flex-1 px-3 py-2 rounded text-xs font-semibold border transition-all ${
                             responseStatus === "Qualified"
                               ? "bg-[#99B562] border-[#99B562] text-white"
@@ -749,7 +844,9 @@ export default function Sales_In_Progress() {
                           Approve Qualification
                         </button>
                         <button
-                          onClick={() => handleQualificationResponse("Unqualified")}
+                          onClick={() =>
+                            handleQualificationResponse("Unqualified")
+                          }
                           className={`flex-1 px-3 py-2 rounded text-xs font-semibold border transition-all ${
                             responseStatus === "Unqualified"
                               ? "bg-red-600 border-red-600 text-white"
@@ -769,16 +866,28 @@ export default function Sales_In_Progress() {
                       </h3>
                       <div className="space-y-3 font-mono text-xs border border-slate-100 rounded-lg p-4">
                         <div>
-                          <p className="text-slate-400 text-[10px] uppercase font-sans mb-0.5">Email</p>
-                          <p className="text-slate-800">{selectedLead.email || "—"}</p>
+                          <p className="text-slate-400 text-[10px] uppercase font-sans mb-0.5">
+                            Email
+                          </p>
+                          <p className="text-slate-800">
+                            {selectedLead.email || "—"}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-slate-400 text-[10px] uppercase font-sans mb-0.5">Phone</p>
-                          <p className="text-slate-800">{selectedLead.phone || "—"}</p>
+                          <p className="text-slate-400 text-[10px] uppercase font-sans mb-0.5">
+                            Phone
+                          </p>
+                          <p className="text-slate-800">
+                            {selectedLead.phone || "—"}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-slate-400 text-[10px] uppercase font-sans mb-0.5">Territory</p>
-                          <p className="text-slate-800 font-sans">{selectedLead.region || "—"}</p>
+                          <p className="text-slate-400 text-[10px] uppercase font-sans mb-0.5">
+                            Territory
+                          </p>
+                          <p className="text-slate-800 font-sans">
+                            {selectedLead.region || "—"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -790,7 +899,9 @@ export default function Sales_In_Progress() {
                       <div className="space-y-3 text-xs border border-slate-100 rounded-lg p-4">
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-slate-400 text-[10px] uppercase font-bold">Lead Matrix Quality</p>
+                            <p className="text-slate-400 text-[10px] uppercase font-bold">
+                              Lead Matrix Quality
+                            </p>
                             {!isEditingScore && (
                               <button
                                 onClick={() => setIsEditingScore(true)}
@@ -809,7 +920,9 @@ export default function Sales_In_Progress() {
                                 className="border border-slate-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-[#99B562]"
                               >
                                 {[1, 2, 3, 4, 5].map((s) => (
-                                  <option key={s} value={s}>Level {s}</option>
+                                  <option key={s} value={s}>
+                                    Level {s}
+                                  </option>
                                 ))}
                               </select>
                               <button
@@ -817,12 +930,16 @@ export default function Sales_In_Progress() {
                                 disabled={mutationUpdateScore.isPending}
                                 className="px-2 py-1 rounded bg-[#99B562] text-white text-[10px] font-bold hover:bg-[#85a052] disabled:opacity-50"
                               >
-                                {mutationUpdateScore.isPending ? "Saving..." : "Save"}
+                                {mutationUpdateScore.isPending
+                                  ? "Saving..."
+                                  : "Save"}
                               </button>
                               <button
                                 onClick={() => {
                                   setIsEditingScore(false);
-                                  setScoreValue(String(selectedLead.leadScore || 1));
+                                  setScoreValue(
+                                    String(selectedLead.leadScore || 1),
+                                  );
                                 }}
                                 className="text-[10px] text-slate-400 hover:text-slate-700"
                               >
@@ -838,7 +955,12 @@ export default function Sales_In_Progress() {
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
                                 >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                  ></path>
                                 </svg>
                               ))}
                             </div>
@@ -846,8 +968,12 @@ export default function Sales_In_Progress() {
                         </div>
 
                         <div>
-                          <p className="text-slate-400 text-[10px] uppercase font-bold mb-0.5">Assigned Auditor</p>
-                          <p className="text-slate-800 font-semibold">{selectedLead.owner}</p>
+                          <p className="text-slate-400 text-[10px] uppercase font-bold mb-0.5">
+                            Assigned Auditor
+                          </p>
+                          <p className="text-slate-800 font-semibold">
+                            {selectedLead.owner}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -855,42 +981,104 @@ export default function Sales_In_Progress() {
 
                   {/* Reminder Section */}
                   <div className="space-y-3 border-t border-slate-100 pt-4">
-                    <button type="button" onClick={() => setShowReminderBox((prev) => !prev)} className="w-full flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setShowReminderBox((prev) => !prev)}
+                      className="w-full flex items-center justify-between"
+                    >
                       <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                         🔔 Follow-up Reminder
                         {selectedLead.reminderAt && (
                           <span className="normal-case bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-semibold">
-                            {new Date(selectedLead.reminderAt).toLocaleDateString([], { day: "2-digit", month: "short" })} {new Date(selectedLead.reminderAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(
+                              selectedLead.reminderAt,
+                            ).toLocaleDateString([], {
+                              day: "2-digit",
+                              month: "short",
+                            })}{" "}
+                            {new Date(
+                              selectedLead.reminderAt,
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         )}
                       </h3>
-                      <span className="text-slate-400 text-xs">{showReminderBox ? "▲" : "▼"}</span>
+                      <span className="text-slate-400 text-xs">
+                        {showReminderBox ? "▲" : "▼"}
+                      </span>
                     </button>
 
                     {showReminderBox && (
-                      <form onSubmit={handleSetReminder} className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                      <form
+                        onSubmit={handleSetReminder}
+                        className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3"
+                      >
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Date *</label>
-                            <input type="date" required value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                              Date *
+                            </label>
+                            <input
+                              type="date"
+                              required
+                              value={reminderDate}
+                              onChange={(e) => setReminderDate(e.target.value)}
+                              className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]"
+                            />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Time (optional)</label>
-                            <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                              Time (optional)
+                            </label>
+                            <input
+                              type="time"
+                              value={reminderTime}
+                              onChange={(e) => setReminderTime(e.target.value)}
+                              className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]"
+                            />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Note (optional)</label>
-                          <input type="text" value={reminderNoteText} onChange={(e) => setReminderNoteText(e.target.value)} placeholder="e.g. Discuss pricing again" className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]" />
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                            Note (optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={reminderNoteText}
+                            onChange={(e) =>
+                              setReminderNoteText(e.target.value)
+                            }
+                            placeholder="e.g. Discuss pricing again"
+                            className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]"
+                          />
                         </div>
                         <div className="flex justify-end gap-2">
                           {selectedLead.reminderAt && (
-                            <button type="button" onClick={() => mutationClearReminder.mutate(getLeadId(selectedLead))} disabled={mutationClearReminder.isPending} className="px-3 py-1.5 rounded border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 disabled:opacity-50">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                mutationClearReminder.mutate(
+                                  getLeadId(selectedLead),
+                                )
+                              }
+                              disabled={mutationClearReminder.isPending}
+                              className="px-3 py-1.5 rounded border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 disabled:opacity-50"
+                            >
                               Clear
                             </button>
                           )}
-                          <button type="submit" disabled={mutationSetReminder.isPending || !reminderDate} className="px-4 py-1.5 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] disabled:opacity-40">
-                            {mutationSetReminder.isPending ? "Saving..." : "Set Follow-up"}
+                          <button
+                            type="submit"
+                            disabled={
+                              mutationSetReminder.isPending || !reminderDate
+                            }
+                            className="px-4 py-1.5 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] disabled:opacity-40"
+                          >
+                            {mutationSetReminder.isPending
+                              ? "Saving..."
+                              : "Set Follow-up"}
                           </button>
                         </div>
                       </form>
@@ -906,26 +1094,46 @@ export default function Sales_In_Progress() {
                     >
                       <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         Follow-up History{" "}
-                        {selectedLead.indicationsHistory?.length ? `(${selectedLead.indicationsHistory.length})` : ""}
+                        {selectedLead.indicationsHistory?.length
+                          ? `(${selectedLead.indicationsHistory.length})`
+                          : ""}
                       </h3>
-                      <span className="text-slate-400 text-xs">{showNoteHistory ? "▲" : "▼"}</span>
+                      <span className="text-slate-400 text-xs">
+                        {showNoteHistory ? "▲" : "▼"}
+                      </span>
                     </button>
 
                     {showNoteHistory && (
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                        {!selectedLead.indicationsHistory || selectedLead.indicationsHistory.length === 0 ? (
+                        {!selectedLead.indicationsHistory ||
+                        selectedLead.indicationsHistory.length === 0 ? (
                           <p className="text-xs text-slate-400 italic py-2">
-                            No follow-up notes added yet. {selectedLead.indications && `Previous note: "${selectedLead.indications}"`}
+                            No follow-up notes added yet.{" "}
+                            {selectedLead.indications &&
+                              `Previous note: "${selectedLead.indications}"`}
                           </p>
                         ) : (
                           [...selectedLead.indicationsHistory]
-                            .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+                            .sort(
+                              (a, b) =>
+                                new Date(b.createdAt || 0).getTime() -
+                                new Date(a.createdAt || 0).getTime(),
+                            )
                             .map((entry, idx) => (
-                              <div key={entry._id || idx} className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                                <p className="text-xs text-slate-800">{entry.text}</p>
+                              <div
+                                key={entry._id || idx}
+                                className="bg-slate-50 border border-slate-100 rounded-lg p-3"
+                              >
+                                <p className="text-xs text-slate-800">
+                                  {entry.text}
+                                </p>
                                 <div className="flex items-center gap-2 mt-1.5">
                                   <span className="text-[10px] text-slate-400 font-mono">
-                                    {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ""}
+                                    {entry.createdAt
+                                      ? new Date(
+                                          entry.createdAt,
+                                        ).toLocaleString()
+                                      : ""}
                                   </span>
                                   {entry.createdBy && (
                                     <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold">
@@ -939,7 +1147,10 @@ export default function Sales_In_Progress() {
                       </div>
                     )}
 
-                    <form onSubmit={handleAddNote} className="flex items-end gap-2 pt-1">
+                    <form
+                      onSubmit={handleAddNote}
+                      className="flex items-end gap-2 pt-1"
+                    >
                       <textarea
                         value={newNoteText}
                         onChange={(e) => setNewNoteText(e.target.value)}
@@ -949,7 +1160,9 @@ export default function Sales_In_Progress() {
                       />
                       <button
                         type="submit"
-                        disabled={mutationAddNote.isPending || !newNoteText.trim()}
+                        disabled={
+                          mutationAddNote.isPending || !newNoteText.trim()
+                        }
                         className="px-3 py-2 rounded bg-[#99B562] text-white text-[11px] font-bold hover:bg-[#85a052] disabled:opacity-40 whitespace-nowrap transition-colors"
                       >
                         {mutationAddNote.isPending ? "..." : "+ Add Note"}
@@ -962,7 +1175,9 @@ export default function Sales_In_Progress() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Outbound Destination</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                          Outbound Destination
+                        </label>
                         <input
                           type="text"
                           disabled
@@ -971,7 +1186,9 @@ export default function Sales_In_Progress() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Subject Header</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                          Subject Header
+                        </label>
                         <input
                           type="text"
                           value={emailSubject}
@@ -980,7 +1197,9 @@ export default function Sales_In_Progress() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Proposal URI Resource Path</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                          Proposal URI Resource Path
+                        </label>
                         <input
                           type="url"
                           value={proposalLink}
@@ -990,7 +1209,9 @@ export default function Sales_In_Progress() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Outbound Payload Message Body</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                          Outbound Payload Message Body
+                        </label>
                         <textarea
                           rows={5}
                           value={emailBody}
@@ -1046,10 +1267,12 @@ export default function Sales_In_Progress() {
                 Resource Registry Insertion
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Link absolute transaction documentation and price prior to switching status to{" "}
+                Link absolute transaction documentation and price prior to
+                switching status to{" "}
                 <span className="font-bold text-slate-900">
                   {pendingQualification}
-                </span>.
+                </span>
+                .
               </p>
             </div>
 
@@ -1103,7 +1326,9 @@ export default function Sales_In_Progress() {
                 }
                 className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded disabled:opacity-40 transition-colors"
               >
-                {MutationUpForStatusUpdate.isPending ? "Syncing..." : "Commit Change"}
+                {MutationUpForStatusUpdate.isPending
+                  ? "Syncing..."
+                  : "Commit Change"}
               </button>
             </div>
           </div>
