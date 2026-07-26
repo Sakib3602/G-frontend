@@ -228,11 +228,12 @@ const Sales_Create_leads = () => {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
                     name="phone"
+                    required
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+1 (555) 000-0000"

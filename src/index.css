@@ -238,3 +238,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* টেবিলের নিজের horizontal scrollbar লুকানো — fixed bottom bar দিয়ে কন্ট্রোল হবে */
+.hidden-native-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hidden-native-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ফিক্সড স্ক্রলবার — সরু ও স্টাইলিশ */
+.thin-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 9999px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}

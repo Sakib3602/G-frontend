@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from "react-router";
-import { useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
-import { FiArrowLeft, FiX, FiChevronDown, FiArrowUp, FiArrowDown } from "react-icons/fi";
+import { FiArrowLeft, FiX, FiChevronDown, FiArrowUp, FiArrowDown, FiClock } from "react-icons/fi";
 
 interface INoteEntry {
   _id?: string;
@@ -53,6 +53,18 @@ interface LeadsPage {
   };
 }
 
+interface TimelineEvent {
+  type: "status_change" | "note" | "meeting";
+  timestamp: string;
+  data: any;
+}
+
+interface TimelineResponse {
+  success: boolean;
+  lead: { _id: string; leadName: string; status: string; createdAt: string };
+  timeline: TimelineEvent[];
+}
+
 const PAGE_SIZE = 20;
 
 const formatNumber = (n?: number) => new Intl.NumberFormat("en-BD").format(n || 0);
@@ -68,6 +80,15 @@ const formatDateTime = (d?: string) =>
         minute: "2-digit",
       })
     : "-";
+
+const msToDaysHours = (ms?: number | null) => {
+  if (!ms || ms <= 0) return null;
+  const totalHours = ms / (1000 * 60 * 60);
+  const days = Math.floor(totalHours / 24);
+  const hours = Math.round(totalHours % 24);
+  if (days === 0) return `${hours}h`;
+  return `${days}d ${hours}h`;
+};
 
 const statusColor = (status: string) => {
   const map: Record<string, string> = {
@@ -113,7 +134,7 @@ const SortHeader = ({
   </th>
 );
 
-// ✅ Full Details Modal — আলাদা component হিসেবে বের করা হলো, ট্যাগ ব্যালেন্স ট্র্যাক করা সহজ রাখার জন্য
+// ✅ Full Details Modal (read-only)
 const LeadDetailsModal = ({ lead, onClose }: { lead: Lead; onClose: () => void }) => {
   const [showNoteHistory, setShowNoteHistory] = useState(true);
 
@@ -277,6 +298,142 @@ const LeadDetailsModal = ({ lead, onClose }: { lead: Lead; onClose: () => void }
   );
 };
 
+// ✅ Timeline Modal
+const eventStyle = (type: TimelineEvent["type"]) => {
+  const map: Record<TimelineEvent["type"], { dot: string; label: string; badge: string }> = {
+    status_change: { dot: "bg-indigo-500", label: "Status Change", badge: "bg-indigo-50 text-indigo-600 border-indigo-200" },
+    note: { dot: "bg-emerald-500", label: "Note Added", badge: "bg-emerald-50 text-emerald-600 border-emerald-200" },
+    meeting: { dot: "bg-amber-500", label: "Meeting Scheduled", badge: "bg-amber-50 text-amber-600 border-amber-200" },
+  };
+  return map[type];
+};
+
+const LeadTimelineModal = ({ leadId, leadName, onClose }: { leadId: string; leadName: string; onClose: () => void }) => {
+  const axiosAdmin = useAxiosAdmin();
+
+  const { data, isLoading, isError } = useQuery<TimelineResponse>({
+    queryKey: ["lead-timeline", leadId],
+    queryFn: async () => {
+      const res = await axiosAdmin.get(`/lead-timeline/${leadId}`);
+      return res.data;
+    },
+    enabled: !!leadId,
+  });
+
+  const timeline = data?.timeline || [];
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="absolute inset-0" onClick={onClose}></div>
+
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-xl flex flex-col max-h-[88vh] relative z-10 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-start bg-white">
+          <div>
+            <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2">
+              <FiClock className="text-gray-400" /> Activity Timeline
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">{leadName}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-900 p-1.5 rounded transition-colors">
+            <FiX size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto bg-gray-50/40 p-6">
+          {isLoading && <p className="text-sm text-gray-400 text-center py-10">Loading timeline...</p>}
+          {isError && <p className="text-sm text-rose-500 text-center py-10">Failed to load timeline.</p>}
+
+          {!isLoading && !isError && timeline.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-10">No activity recorded for this lead yet.</p>
+          )}
+
+          {!isLoading && !isError && timeline.length > 0 && (
+            <div className="relative pl-6">
+              <div className="absolute left-[7px] top-1 bottom-1 w-px bg-gray-200"></div>
+
+              <div className="space-y-5">
+                {timeline.map((event, idx) => {
+                  const style = eventStyle(event.type);
+                  return (
+                    <div key={idx} className="relative">
+                      <span
+                        className={`absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow ${style.dot}`}
+                      ></span>
+
+                      <div className="bg-white border border-gray-200 rounded-lg p-3.5">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span
+                            className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${style.badge}`}
+                          >
+                            {style.label}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-mono whitespace-nowrap">
+                            {formatDateTime(event.timestamp)}
+                          </span>
+                        </div>
+
+                        {event.type === "status_change" && (
+                          <div>
+                            <p className="text-sm text-[#1E293B]">
+                              {event.data.fromStatus ? (
+                                <>
+                                  <span className="font-semibold">{event.data.fromStatus}</span>
+                                  <span className="mx-1.5 text-gray-400">→</span>
+                                  <span className="font-semibold">{event.data.toStatus}</span>
+                                </>
+                              ) : (
+                                <>
+                                  Lead created with status{" "}
+                                  <span className="font-semibold">{event.data.toStatus}</span>
+                                </>
+                              )}
+                            </p>
+                            {event.data.durationMs ? (
+                              <p className="text-[11px] text-gray-400 mt-1">
+                                Spent{" "}
+                                <span className="font-semibold text-gray-600">
+                                  {msToDaysHours(event.data.durationMs)}
+                                </span>{" "}
+                                in previous status
+                              </p>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {event.type === "note" && (
+                          <div>
+                            <p className="text-sm text-[#1E293B]">{event.data.text}</p>
+                            {event.data.createdBy ? (
+                              <p className="text-[11px] text-gray-400 mt-1">by {event.data.createdBy}</p>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {event.type === "meeting" && (
+                          <div>
+                            <p className="text-sm text-[#1E293B] font-semibold">{event.data.title || "Meeting"}</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                              {event.data.meetingDate} at {event.data.meetingTime} •{" "}
+                              {event.data.meetingType === "online" ? "Virtual" : "In-Person"}
+                            </p>
+                            <span className="inline-block mt-1 text-[10px] font-bold uppercase text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                              {event.data.status || "scheduled"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminViewLeads = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -289,6 +446,13 @@ const AdminViewLeads = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [timelineLead, setTimelineLead] = useState<{ id: string; name: string } | null>(null);
+
+  // ✅ ফিক্সড বটম স্ক্রলবার — ref ও state (leads ডিফাইন হওয়ার আগে declare করা নিরাপদ)
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const bottomScrollRef = useRef<HTMLDivElement>(null);
+  const [scrollWidth, setScrollWidth] = useState(0);
+  const [barRect, setBarRect] = useState<{ left: number; width: number } | null>(null);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<LeadsPage>({
     queryKey: ["leads-by-salesman", id, status, startDate, endDate, sortBy, sortOrder],
@@ -310,10 +474,35 @@ const AdminViewLeads = () => {
     enabled: !!id,
   });
 
+  // ✅ leads এখানে ডিফাইন হয় — useEffect অবশ্যই এই লাইনের পরে থাকতে হবে
   const leads = data?.pages.flatMap((p) => p.data) || [];
   const summary = data?.pages[0]?.summary;
   const availableStatuses = data?.pages[0]?.availableStatuses || [];
   const hasDateFilter = !!(startDate || endDate);
+
+  useEffect(() => {
+    const updateMeasurements = () => {
+      if (tableScrollRef.current) {
+        const rect = tableScrollRef.current.getBoundingClientRect();
+        setBarRect({ left: rect.left, width: rect.width });
+        setScrollWidth(tableScrollRef.current.scrollWidth);
+      }
+    };
+    updateMeasurements();
+    window.addEventListener("resize", updateMeasurements);
+    const interval = setInterval(updateMeasurements, 500);
+    return () => {
+      window.removeEventListener("resize", updateMeasurements);
+      clearInterval(interval);
+    };
+  }, [leads]);
+
+  const syncFromBottomBar = (e: React.UIEvent<HTMLDivElement>) => {
+    if (tableScrollRef.current) tableScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+  };
+  const syncFromTable = (e: React.UIEvent<HTMLDivElement>) => {
+    if (bottomScrollRef.current) bottomScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+  };
 
   const clearDateFilter = () => {
     setStartDate("");
@@ -331,6 +520,17 @@ const AdminViewLeads = () => {
 
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen text-[#1E293B]">
+      {/* ✅ ইনলাইন স্টাইল — নেটিভ স্ক্রলবার লুকানো + ফিক্সড স্ক্রলবার সরু করা */}
+      <style>{`
+        .hidden-native-scrollbar::-webkit-scrollbar { display: none; }
+        .hidden-native-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .thin-scrollbar::-webkit-scrollbar { height: 8px; }
+        .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .thin-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
+        .thin-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .thin-scrollbar { scrollbar-width: thin; scrollbar-color: #94a3b8 transparent; }
+      `}</style>
+
       <button
         onClick={() => navigate(-1)}
         className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-black mb-4"
@@ -341,7 +541,7 @@ const AdminViewLeads = () => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-          <p className="text-sm text-gray-500 mt-1">All leads created by this salesman. Click a row for full details.</p>
+          <p className="text-sm text-gray-500 mt-1">All leads created by this salesman.</p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -367,7 +567,7 @@ const AdminViewLeads = () => {
                 className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
               />
             </div>
-            {hasDateFilter ? (
+            {hasDateFilter && (
               <button
                 onClick={clearDateFilter}
                 title="Clear date filter"
@@ -375,7 +575,7 @@ const AdminViewLeads = () => {
               >
                 <FiX size={16} />
               </button>
-            ) : null}
+            )}
           </div>
 
           <div className="relative w-fit">
@@ -396,18 +596,18 @@ const AdminViewLeads = () => {
         </div>
       </div>
 
-      {summary ? (
+      {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <SummaryCard label="Total Leads" value={formatNumber(summary.totalLeads)} />
           <SummaryCard label="Total Revenue" value={formatNumber(summary.totalRevenue)} prefix="$" />
           <SummaryCard label="Proposals Sent" value={formatNumber(summary.proposalSentCount)} />
           <SummaryCard label="Avg Lead Score" value={formatNumber(summary.avgLeadScore)} />
         </div>
-      ) : null}
+      )}
 
       <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[960px]">
+        <div ref={tableScrollRef} onScroll={syncFromTable} className="overflow-x-auto hidden-native-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[1040px]">
             <thead className="bg-gray-50/80">
               <tr>
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">#</th>
@@ -415,74 +615,85 @@ const AdminViewLeads = () => {
                 <SortHeader field="companyName" label="Company" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Service</th>
                 <SortHeader field="leadScore" label="Score" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
-                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Proposal Sent</th>
-                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Contract Value</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Proposal</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Deal Money</th>
                 <SortHeader field="createdAt" label="Created" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Status</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {isLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      {Array.from({ length: 9 }).map((__, j) => (
-                        <td key={j} className="p-4">
-                          <div className="h-4 bg-gray-100 rounded w-3/4" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                : null}
+              {isLoading &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    {Array.from({ length: 10 }).map((__, j) => (
+                      <td key={j} className="p-4">
+                        <div className="h-4 bg-gray-100 rounded w-3/4" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
 
-              {!isLoading && leads.length === 0 ? (
+              {!isLoading && leads.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-10 text-center text-sm text-gray-400">
+                  <td colSpan={10} className="p-10 text-center text-sm text-gray-400">
                     No leads found for this filter.
                   </td>
                 </tr>
-              ) : null}
+              )}
 
-              {!isLoading
-                ? leads.map((l, idx) => (
-                    <tr
-                      key={l._id}
-                      onClick={() => setSelectedLead(l)}
-                      className="hover:bg-gray-50/60 transition-colors cursor-pointer"
-                    >
-                      <td className="p-4 text-sm font-medium text-gray-400">{idx + 1}</td>
-                      <td className="p-4 text-sm font-semibold">
-                        {l.leadName}
-                        {l.reminderAt ? (
-                          <span className="ml-2 text-[10px] font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                            🔔 {formatDate(l.reminderAt)}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="p-4 text-sm">{l.companyName || "-"}</td>
-                      <td className="p-4 text-sm">{l.ServiceNeed || "-"}</td>
-                      <td className="p-4 text-sm font-mono">{l.leadScore}</td>
-                      <td className="p-4 text-sm">
-                        {l.proposalSent ? (
-                          <span className="text-emerald-600 font-semibold">Yes</span>
-                        ) : (
-                          <span className="text-gray-400">No</span>
-                        )}
-                      </td>
-                      <td className="p-4 text-sm font-mono">${formatNumber(l.dealmoney)}</td>
-                      <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.createdAt)}</td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${statusColor(l.status)}`}>
-                          {l.status}
+              {!isLoading &&
+                leads.map((l, idx) => (
+                  <tr key={l._id} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="p-4 text-sm font-medium text-gray-400">{idx + 1}</td>
+                    <td className="p-4 text-sm font-semibold">
+                      {l.leadName}
+                      {l.reminderAt && (
+                        <span className="ml-2 text-[10px] font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                          🔔 {formatDate(l.reminderAt)}
                         </span>
-                      </td>
-                    </tr>
-                  ))
-                : null}
+                      )}
+                    </td>
+                    <td className="p-4 text-sm">{l.companyName || "-"}</td>
+                    <td className="p-4 text-sm">{l.ServiceNeed || "-"}</td>
+                    <td className="p-4 text-sm font-mono">{l.leadScore}</td>
+                    <td className="p-4 text-sm">
+                      {l.proposalSent ? (
+                        <span className="text-emerald-600 font-semibold">Yes</span>
+                      ) : (
+                        <span className="text-gray-400">No</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-sm font-mono">${formatNumber(l.dealmoney)}</td>
+                    <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.createdAt)}</td>
+                    <td className="p-4">
+                      <span
+                        className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${statusColor(l.status)}`}
+                      >
+                        {l.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => setSelectedLead(l)}
+                        className="text-xs font-semibold text-gray-600 hover:text-gray-900 mr-3"
+                      >
+                        Details
+                      </button>
+                      <button
+                        onClick={() => setTimelineLead({ id: l._id, name: l.leadName })}
+                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
+                      >
+                        <FiClock size={12} /> Timeline
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
 
-        {hasNextPage ? (
+        {hasNextPage && (
           <div className="flex justify-center py-4 border-t border-gray-100">
             <button
               onClick={() => fetchNextPage()}
@@ -492,10 +703,34 @@ const AdminViewLeads = () => {
               {isFetchingNextPage ? "Loading..." : "Load More"}
             </button>
           </div>
-        ) : null}
+        )}
       </div>
 
-      {selectedLead ? <LeadDetailsModal lead={selectedLead} onClose={() => setSelectedLead(null)} /> : null}
+      {/* ✅ ফিক্সড বটম স্ক্রলবার — viewport-এর সাথে লেগে থাকে */}
+      {barRect && scrollWidth > barRect.width + 4 && (
+        <div
+          style={{ position: "fixed", bottom: 0, left: barRect.left, width: barRect.width, zIndex: 40 }}
+          className="bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-2px_6px_rgba(0,0,0,0.04)]"
+        >
+          <div
+            ref={bottomScrollRef}
+            onScroll={syncFromBottomBar}
+            className="overflow-x-auto thin-scrollbar"
+            style={{ height: 14 }}
+          >
+            <div style={{ width: scrollWidth, height: 1 }} />
+          </div>
+        </div>
+      )}
+
+      {selectedLead && <LeadDetailsModal lead={selectedLead} onClose={() => setSelectedLead(null)} />}
+      {timelineLead && (
+        <LeadTimelineModal
+          leadId={timelineLead.id}
+          leadName={timelineLead.name}
+          onClose={() => setTimelineLead(null)}
+        />
+      )}
     </div>
   );
 };

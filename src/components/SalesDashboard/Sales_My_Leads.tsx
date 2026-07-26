@@ -669,7 +669,7 @@ export default function Sales_My_Leads() {
                       <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Service Need</p>
                       {isEditingDetails ? (
                         <select name="ServiceNeed" value={editForm.ServiceNeed || "Graphic"} onChange={handleEditFormChange} className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:outline-none focus:border-[#99B562]">
-                          {["Graphic", "Web", "Software", "Marketing", "SEO"].map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
+                          {["Graphic", "Web", "Software", "Marketing", "SEO", "WEB & Graphic", "Other", "GRAPHIC & MARKETING",  "WEB & MARKETING",  "MARKETING & SOFTWARE", "WEB & SOFTWARE", "GRAPHIC & SOFTWARE", "WEB & GRAPHIC & SOFTWARE", "WEB & GRAPHIC & MARKETING", "WEB & GRAPHIC & MARKETING & SOFTWARE"].map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
                         </select>
                       ) : (<p className="text-sm text-slate-800">{selectedLeadDetails.ServiceNeed || "—"}</p>)}
                     </div>
