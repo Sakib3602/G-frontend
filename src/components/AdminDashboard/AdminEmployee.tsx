@@ -49,6 +49,7 @@ const AdminEmployee = () => {
     },
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const employees = employeesData?.data ?? [];
 
   const roleOptions = useMemo<string[]>(() => {
@@ -58,38 +59,8 @@ const AdminEmployee = () => {
     return Array.from(new Set([...baseRoleOptions, ...roles]));
   }, [employees]);
 
-  const handleDelete = async (id: string) => {
-    const isConfirmed = window.confirm("Are you sure you want to delete this employee?");
 
-    if (!isConfirmed) return;
 
-    console.log("Deleting employee id:", id);
-
-    mutationDelete.mutate({ id });
-  };
-
-  const mutationDelete = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      const res = await axiosAdmin.delete(`/delete-employee/${id}`);
-      return res.data;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.setQueryData<EmployeesResponse | undefined>(
-        ["employees"],
-        (current) => {
-          if (!current) return current;
-          return {
-            ...current,
-            data: current.data.filter((emp) => emp._id !== variables.id),
-          };
-        },
-      );
-    },
-    onError: (error, variables) => {
-      alert(`Failed to delete employee id: ${variables.id}. Please try again.`);
-      console.log("Delete failed for id:", variables.id, error);
-    },
-  });
 
 
 
@@ -157,7 +128,7 @@ const AdminEmployee = () => {
               <th className="pb-4 font-medium">Phone</th>
               <th className="pb-4 font-medium">Address</th>
               <th className="pb-4 font-medium">Role</th>
-              <th className="pb-4 font-medium">Action</th>
+             
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -242,18 +213,7 @@ const AdminEmployee = () => {
                   </select>
                 </td>
 
-                <td className="py-4">
-                  <button
-                    onClick={() => handleDelete(emp._id)}
-                    className={`px-3 py-1 rounded-lg text-sm transition-colors whitespace-nowrap ${
-                      isUserRole
-                        ? "text-red-700 hover:text-red-900 hover:bg-red-100"
-                        : "text-red-500 hover:text-red-700 hover:bg-red-50"
-                    }`}
-                  >
-                    Delete
-                  </button>
-                </td>
+              
               </tr>
                 );
               })()
