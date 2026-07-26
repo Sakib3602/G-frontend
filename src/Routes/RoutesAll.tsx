@@ -59,6 +59,7 @@ import AdminViewMeetings from "@/components/AdminDashboard/AdminViewMeetings";
 import SubmitCompliance from "@/components/Compliance/SubmitCompliance";
 import ViewCompliance from "@/components/Compliance/ViewCompliance";
 import ClientCalendarView from "@/components/PublicClient/ClientCalendarView";
+import NotFound from "@/components/BasicComponents/notFound/NotFound";
 
 const RoutesAll = () => {
   return (
@@ -232,6 +233,9 @@ const RoutesAll = () => {
 
 
       {/* Admin dashboard end */}
+
+
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
