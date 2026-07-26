@@ -415,8 +415,8 @@ const AdminViewLeads = () => {
                 <SortHeader field="companyName" label="Company" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Service</th>
                 <SortHeader field="leadScore" label="Score" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
-                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Proposal</th>
-                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Deal Money</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Proposal Sent</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Contract Value</th>
                 <SortHeader field="createdAt" label="Created" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Status</th>
               </tr>
