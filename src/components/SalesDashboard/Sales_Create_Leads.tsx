@@ -44,7 +44,7 @@ const Sales_Create_leads = () => {
     phone: "",
     title: "",
     specificRole: "",
-    region: "US",
+    region: "BANGLADESH",
     profileUrl: "",
     leadCreatedBy: userData?._id || "",
     ServiceNeed: "Graphic",
@@ -134,9 +134,9 @@ const Sales_Create_leads = () => {
     "Intern",
   ];
 
-  const regionOptions = ["US", "ANZ", "EMEA", "APAC", "LATAM", "Global"];
+  const regionOptions = ["Global", "BANGLADESH", "INDIA", "PAKISTAN", "SOUTH ASIA", "MIDDLE EAST", "AFRICA", "UK", "EUROPE", "US", "CANADA", "AUSTRALIA", "LATIN AMERICA"];
   const scoreOptions = ["1", "2", "3", "4", "5"];
-  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO", "WEB & Graphic", "Other", "GRAPHIC & MARKETING",  "WEB & MARKETING",  "MARKETING & SOFTWARE", "WEB & SOFTWARE", "GRAPHIC & SOFTWARE", "WEB & GRAPHIC & SOFTWARE", "WEB & GRAPHIC & MARKETING", "WEB & GRAPHIC & MARKETING & SOFTWARE"];
+  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO", "WEB & Graphic", "Other", "GRAPHIC & MARKETING",  "WEB & MARKETING",  "MARKETING & SOFTWARE", ,"App","WEB & SOFTWARE", "GRAPHIC & SOFTWARE", "WEB & GRAPHIC & SOFTWARE", "WEB & GRAPHIC & MARKETING", "WEB & GRAPHIC & MARKETING & SOFTWARE"];
 
   const CancelAll = () => {
     setFormData({
@@ -213,7 +213,7 @@ const Sales_Create_leads = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                    Full Name <span className="text-red-500"></span>
+                    Lead Name <span className="text-red-500"></span>
                   </label>
                   <input
                     type="text"
@@ -401,19 +401,7 @@ const Sales_Create_leads = () => {
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
-                      Indications / Notes (প্রথম নোট)
-                    </label>
-                    <input
-                      type="text"
-                      name="indications"
-                      value={formData.indications}
-                      onChange={handleChange}
-                      placeholder="Log specific requirements, account history, or context..."
-                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
-                    />
-                  </div>
+                
                 </div>
               )}
 
@@ -432,7 +420,7 @@ const Sales_Create_leads = () => {
                   className="px-5 py-2 flex items-center text-xs font-bold text-white bg-[#99B562] rounded-md hover:bg-[#85a052] transition-colors shadow-xs"
                 >
                   <Save className="w-3.5 h-3.5 mr-1.5" />
-                  Commit Registry
+                  Save Lead
                 </button>
               </div>
             </form>

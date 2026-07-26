@@ -489,10 +489,10 @@ export default function Sales_My_Leads() {
             <table className="min-w-full text-sm text-left whitespace-nowrap">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Lead Registry</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Lead Name</th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500 w-[1%]">Operations</th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500 w-44">Pipeline Status</th>
-                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Enterprise</th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Company </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Email Address</th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Contact No.</th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">Service Category</th>
@@ -614,11 +614,11 @@ export default function Sales_My_Leads() {
                   <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.leadScore}</p>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-lg p-3">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Territory</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Country</p>
                   <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.region || "—"}</p>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-lg p-3">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Owner</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lead Creator</p>
                   <p className="text-xs font-semibold text-slate-800">{selectedLeadDetails.owner || "—"}</p>
                 </div>
               </div>
@@ -640,7 +640,7 @@ export default function Sales_My_Leads() {
                       ) : (<p className="text-sm text-slate-800 font-mono">{selectedLeadDetails.phone || "—"}</p>)}
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">LinkedIn / Profile URL</p>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Profile URL</p>
                       {isEditingDetails ? (
                         <input name="profileUrl" value={editForm.profileUrl || ""} onChange={handleEditFormChange} className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm font-mono focus:outline-none focus:border-[#99B562]" />
                       ) : selectedLeadDetails.profileUrl ? (
@@ -674,7 +674,7 @@ export default function Sales_My_Leads() {
                       ) : (<p className="text-sm text-slate-800">{selectedLeadDetails.ServiceNeed || "—"}</p>)}
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Region</p>
+                      <p className="text-[10px] uppercase text-slate-400 font-bold mb-1">Country</p>
                       {isEditingDetails ? (
                         <select name="region" value={editForm.region || "US"} onChange={handleEditFormChange} className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:outline-none focus:border-[#99B562]">
                           {["US", "ANZ", "EMEA", "APAC", "LATAM", "Global"].map((opt) => (<option key={opt} value={opt}>{opt}</option>))}

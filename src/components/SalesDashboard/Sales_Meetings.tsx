@@ -333,7 +333,7 @@ export default function Sales_Meetings() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
               <div>
-                <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Total Logged</p>
+                <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Total Meetings</p>
                 <p className="text-3xl font-bold text-slate-800">{totalMeetings}</p>
               </div>
               <div className="w-11 h-11 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
