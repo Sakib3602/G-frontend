@@ -13,14 +13,14 @@ const NotFound: React.FC = () => {
       <Navbar />
       
       {/* Background Gradient & Layout */}
-      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-slate-50 to-slate-200 px-6 overflow-hidden">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-indigo-50 via-slate-50 to-slate-200 px-6 overflow-hidden">
         
         {/* Main Card with Framer Motion */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative w-full max-w-2xl rounded-3xl bg-white/80 p-10 text-center shadow-[0_20px_50px_rgba(8,_112,_184,_0.07)] border border-white/50 backdrop-blur-xl"
+          className="relative w-full max-w-2xl rounded-3xl bg-white/80 p-10 text-center shadow-[0_20px_50px_rgba(8,112,184,0.07)] border border-white/50 backdrop-blur-xl"
         >
           {/* Floating Icon Animation */}
           <motion.div
