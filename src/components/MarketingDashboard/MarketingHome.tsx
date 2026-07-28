@@ -46,6 +46,11 @@ const MarketingHome = () => {
       path: "/dashboard/marketing/pending-signatures",
       icon: Megaphone,
     },
+    {
+      name: "My Assigned Leads",
+      path: "/dashboard/marketing/my-assigned-leads",
+      icon: Megaphone,
+    },
     // { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
     {
       name: "Create Campaign",
@@ -81,6 +86,11 @@ const MarketingHome = () => {
     {
       name: "Tasks",
       path: "/dashboard/marketing/tasks",
+      icon: ListFilter,
+    },
+    {
+      name: "In Progress",
+      path: "/dashboard/marketing/in-progress",
       icon: ListFilter,
     },
     {

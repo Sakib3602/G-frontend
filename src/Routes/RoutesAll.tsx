@@ -60,6 +60,11 @@ import SubmitCompliance from "@/components/Compliance/SubmitCompliance";
 import ViewCompliance from "@/components/Compliance/ViewCompliance";
 import ClientCalendarView from "@/components/PublicClient/ClientCalendarView";
 import NotFound from "@/components/BasicComponents/notFound/NotFound";
+import AdminPendingAssignments from "@/components/AdminDashboard/AdminPendingAssignments";
+import TeamInProgressLeads from "@/components/Common/TeamInProgressLeads";
+import DesignerTeamInProgress from "@/components/DesignerDashboard/DesignerTeamInProgress";
+import TeamAssignedLeads from "@/components/Common/TeamAssignedLeads";
+import DesignerAssignedLeads from "@/components/DesignerDashboard/DesignerAssignedLeads";
 
 const RoutesAll = () => {
   return (
@@ -111,7 +116,10 @@ const RoutesAll = () => {
         <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
         <Route path="/dashboard/sales/emails" element={<Sales_Emails />} />
         <Route path="/dashboard/sales/tasks" element={<SalesTaskAD />} />
-        <Route path="/dashboard/sales/compliance" element={<SubmitCompliance />} />
+        <Route
+          path="/dashboard/sales/compliance"
+          element={<SubmitCompliance />}
+        />
       </Route>
       {/* sales dashboard end */}
       {/* marketing dashboard start */}
@@ -132,6 +140,12 @@ const RoutesAll = () => {
           path="/dashboard/marketing/remainders-to-signatures"
           element={<MarketingRemainders />}
         />
+        <Route
+          path="/dashboard/marketing/in-progress"
+          element={
+            <TeamInProgressLeads title="Marketing — In Progress Leads" />
+          }
+        />
 
         <Route
           path="/dashboard/marketing/create-campaign"
@@ -150,6 +164,10 @@ const RoutesAll = () => {
           element={<MarketingAddTask />}
         />
         <Route
+          path="/dashboard/marketing/my-assigned-leads"
+          element={<TeamAssignedLeads title="My Assigned Leads (Marketing)" />}
+        />
+        <Route
           path="/dashboard/marketing/assigned-tasks"
           element={<MarketingPendingTask />}
         />
@@ -165,14 +183,8 @@ const RoutesAll = () => {
           path="/dashboard/marketing/content-calendar-main/:id"
           element={<ContentCalMain />}
         />
-        <Route
-          path="/dashboard/marketing/tasks"
-          element={<TaskAD />}
-        />
-        <Route
-          path="/dashboard/marketing/tasks"
-          element={<TaskAD />}
-        />
+        <Route path="/dashboard/marketing/tasks" element={<TaskAD />} />
+        <Route path="/dashboard/marketing/tasks" element={<TaskAD />} />
         <Route
           path="/dashboard/marketing/compliance"
           element={<SubmitCompliance />}
@@ -198,6 +210,14 @@ const RoutesAll = () => {
           element={<DesignerRunningWorks />}
         />
         <Route
+          path="/dashboard/designer/assigned-leads"
+          element={<DesignerAssignedLeads />}
+        />
+        <Route
+          path="/dashboard/designer/in-progress"
+          element={<DesignerTeamInProgress />}
+        />
+        <Route
           path="/dashboard/designer/overdue-tasks"
           element={<DesignerOverDueTasks />}
         />
@@ -213,27 +233,63 @@ const RoutesAll = () => {
       {/* designer dashboard end */}
       {/* Admin dashboard start */}
 
-      <Route path="/dashboard/admin" element={<AdminPrivate><AdminHome></AdminHome></AdminPrivate>}>
+      <Route
+        path="/dashboard/admin"
+        element={
+          <AdminPrivate>
+            <AdminHome></AdminHome>
+          </AdminPrivate>
+        }
+      >
         <Route index element={<AdminIndex />} />
         <Route path="/dashboard/admin/employees" element={<AdminEmployee />} />
-        <Route path="/dashboard/admin/content-calendar" element={<AdminContentCalenderClient />} />
-        <Route path="/dashboard/admin/content-calendar/:id" element={<AdminContentCalMain />} />
-        <Route path="/dashboard/admin/delay-works" element={<AdminDelayWorks />} />
-        <Route path="/dashboard/admin/em-reports" element={<AdminEmReports />} />
+        <Route
+          path="/dashboard/admin/content-calendar"
+          element={<AdminContentCalenderClient />}
+        />
+        <Route
+          path="/dashboard/admin/content-calendar/:id"
+          element={<AdminContentCalMain />}
+        />
+        <Route
+          path="/dashboard/admin/delay-works"
+          element={<AdminDelayWorks />}
+        />
+        <Route
+          path="/dashboard/admin/em-reports"
+          element={<AdminEmReports />}
+        />
         <Route path="/dashboard/admin/campaigns" element={<AdminCampaigns />} />
         <Route path="/dashboard/admin/marketing" element={<AdminMarketing />} />
-        <Route path="/dashboard/admin/marketing/:id" element={<AdminMarketingDetails   />} />
+        <Route
+          path="/dashboard/admin/marketing/:id"
+          element={<AdminMarketingDetails />}
+        />
         <Route path="/dashboard/admin/add-task" element={<AdminAddTask />} />
         <Route path="/dashboard/admin/sales" element={<AdminSalesDept />} />
-        <Route path="/dashboard/admin/sales/:id" element={<AdminSalesDetails />} />
-        <Route path="/dashboard/admin/leads/:id/view" element={<AdminVIewLeads />} />
-        <Route path="/dashboard/admin/meetings/:id/view" element={<AdminViewMeetings />} />
-        <Route path="/dashboard/admin/compliance" element={<ViewCompliance />} />
+        <Route
+          path="/dashboard/admin/sales/:id"
+          element={<AdminSalesDetails />}
+        />
+        <Route
+          path="/dashboard/admin/leads/:id/view"
+          element={<AdminVIewLeads />}
+        />
+        <Route
+          path="/dashboard/admin/meetings/:id/view"
+          element={<AdminViewMeetings />}
+        />
+        <Route
+          path="/dashboard/admin/compliance"
+          element={<ViewCompliance />}
+        />
+        <Route
+          path="pending-assignments"
+          element={<AdminPendingAssignments />}
+        />
       </Route>
 
-
       {/* Admin dashboard end */}
-
 
       <Route path="*" element={<NotFound />} />
     </Routes>

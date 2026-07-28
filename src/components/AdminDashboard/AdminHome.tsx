@@ -67,6 +67,11 @@ const MENU_ITEMS = [
     path: "/dashboard/admin/compliance",
     icon: Shield,
   },
+  {
+    name: "Pending Assignments",
+    path: "/dashboard/admin/pending-assignments",
+    icon: HiOutlineClock,
+  },
   
 ];
 

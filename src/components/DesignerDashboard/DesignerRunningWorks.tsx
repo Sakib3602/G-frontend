@@ -131,7 +131,7 @@ const DesignerRunningWorks = () => {
             </div>
 
             {isLoading ? (
-                <div className="flex items-center justify-center min-h-[200px] text-sm text-gray-500">Loading...</div>
+                <div className="flex items-center justify-center min-h-50 text-sm text-gray-500">Loading...</div>
             ) : myTasks.length === 0 ? (
                 <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">No running works.</div>
             ) : (
@@ -188,7 +188,7 @@ const DesignerRunningWorks = () => {
                     <div className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={() => { setIsDetailsOpen(false); setSelectedTask(null); }} />
                     <div role="dialog" aria-modal="true" aria-labelledby="task-details-title" className="relative z-10 w-full max-w-2xl mx-auto">
                         <div className="overflow-hidden rounded-3xl bg-white shadow-[0_25px_80px_rgba(15,23,42,0.25)] border border-white/60">
-                            <div className="h-2 bg-gradient-to-r from-[#F16C65] via-rose-500 to-indigo-500" />
+                            <div className="h-2 bg-linear-to-r from-[#F16C65] via-rose-500 to-indigo-500" />
                             <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -264,7 +264,7 @@ const DesignerRunningWorks = () => {
                     <div className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={() => { setIsLinkOpen(false); setLinkTask(null); }} />
                     <div role="dialog" aria-modal="true" aria-labelledby="done-link-title" className="relative z-10 w-full max-w-md mx-auto">
                         <div className="overflow-hidden rounded-3xl bg-white shadow-[0_25px_80px_rgba(15,23,42,0.25)] border border-white/60">
-                            <div className="h-2 bg-gradient-to-r from-[#F16C65] via-rose-500 to-indigo-500" />
+                            <div className="h-2 bg-linear-to-r from-[#F16C65] via-rose-500 to-indigo-500" />
                             <header className="flex items-start justify-between gap-4 p-6 border-b border-slate-100">
                                 <div>
                                     <div className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Done Task</div>

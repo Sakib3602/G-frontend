@@ -61,7 +61,7 @@ export default function Sales_Unqualified() {
 
   return (
     <div className="w-full bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans min-h-screen text-slate-900 antialiased">
-      <div className="max-w-[1200px] mx-auto">
+      <div className="max-w-300 mx-auto">
         
         {/* --- Header Section --- */}
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-5">

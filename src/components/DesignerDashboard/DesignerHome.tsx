@@ -11,6 +11,8 @@ import {
   BarChart3,
   Shield,
   AudioLines,
+  ListChecks ,
+  Database
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
 
@@ -50,37 +52,48 @@ const DesignerHome = () => {
     };
   }, [person?.displayName, person?.email, userData]);
 
-  const navItems = [
-    { name: "DashBoard", path: "/dashboard/designer", icon: BarChart3 },
-    { name: "My Tasks", path: "/dashboard/designer/my-tasks", icon: Megaphone },
-    {
-      name: "Running Works",
-      path: "/dashboard/designer/in-progress-tasks",
-      icon: ChartNetwork,
-    },
-    {
-      name: "Overdue Tasks",
-      path: "/dashboard/designer/overdue-tasks",
-      icon: LocateOff,
-    },
-    {
-      name: "Content Tasks",
-      path: "/dashboard/designer/content-tasks",
-      icon: AudioLines,
-    },
-    {
-      name: "Compliance",
-      path: "/dashboard/designer/compliance",
-      icon: Shield,
-    },
-  ];
+const navItems = [
+  { name: "DashBoard", path: "/dashboard/designer", icon: BarChart3 },
+  { name: "My Tasks", path: "/dashboard/designer/my-tasks", icon: Megaphone },
+  {
+    name: "Running Works",
+    path: "/dashboard/designer/in-progress-tasks",
+    icon: ChartNetwork,
+  },
+  {
+  name: "Assigned Leads",
+  path: "/dashboard/designer/assigned-leads",
+  icon: Database,
+},
+  {
+    // ← notun nav item, Web ar Designer duibar jonno-i same link
+    name: "In Progress Leads",
+    path: "/dashboard/designer/in-progress",
+    icon: ListChecks,
+  },
+  {
+    name: "Overdue Tasks",
+    path: "/dashboard/designer/overdue-tasks",
+    icon: LocateOff,
+  },
+  {
+    name: "Content Tasks",
+    path: "/dashboard/designer/content-tasks",
+    icon: AudioLines,
+  },
+  {
+    name: "Compliance",
+    path: "/dashboard/designer/compliance",
+    icon: Shield,
+  },
+];
 
   return (
     <div className="poppins-regular flex h-screen bg-[#F7F4EE] text-stone-800">
       {/* Sidebar */}
       <aside
         className={`${isSidebarOpen ? "w-72" : "w-24"}
-        border-r border-[#DDD2C3] bg-gradient-to-b from-[#FBF8F3] via-[#F3ECE2] to-[#EDE3D5] transition-all duration-300 flex flex-col backdrop-blur-xl`}
+        border-r border-[#DDD2C3] bg-linear-to-b from-[#FBF8F3] via-[#F3ECE2] to-[#EDE3D5] transition-all duration-300 flex flex-col backdrop-blur-xl`}
       >
         {/* Logo */}
         <div className="h-20 flex items-center justify-center border-b border-[#D9CCBC] px-4">
@@ -102,7 +115,7 @@ const DesignerHome = () => {
         {/* Navigation */}
         <div className="flex-1 py-6 overflow-y-auto">
           {isSidebarOpen && (
-            <div className="mx-4 mb-6 rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-100 via-orange-100 to-rose-100 p-4">
+            <div className="mx-4 mb-6 rounded-2xl border border-amber-300/60 bg-linear-to-br from-amber-100 via-orange-100 to-rose-100 p-4">
               <div className="mb-2 flex items-center gap-2 text-amber-800">
                 <Sparkles className="h-4 w-4" />
                 <p className="text-xs font-semibold uppercase tracking-wider">
@@ -129,7 +142,7 @@ const DesignerHome = () => {
                       isSidebarOpen ? "px-4 mx-3" : "px-0 mx-3 justify-center"
                     } ${
                       isActive
-                        ? "bg-gradient-to-r from-amber-200/70 via-orange-200/60 to-rose-200/60 text-stone-900 border border-amber-300/70 shadow-lg shadow-amber-900/10"
+                        ? "bg-linear-to-r from-amber-200/70 via-orange-200/60 to-rose-200/60 text-stone-900 border border-amber-300/70 shadow-lg shadow-amber-900/10"
                         : "text-stone-600 hover:bg-white/70 hover:text-stone-900 border border-transparent"
                     }`
                   }

@@ -6,7 +6,7 @@ type FAQItem = {
   answer: string;
 };
 
-// আপনার নিজের প্রশ্ন-উত্তর দিয়ে এই লিস্টটা বদলে নিন
+
 const FAQ_ITEMS: FAQItem[] = [
   {
     question: "How to using Saafiy for Business?",

@@ -96,8 +96,8 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
             <Link to="/">
               <div className="shrink-0 flex items-center cursor-pointer">
                 <span className="text-2xl font-bold text-gray-950 tracking-tight">
-                  {companyName}
-                  <span style={{ color: BRAND }}>.</span>
+                  {companyName} 
+                  <span className="font-bold" style={{ color: BRAND }}> CRM.</span>
                 </span>
               </div>
             </Link>

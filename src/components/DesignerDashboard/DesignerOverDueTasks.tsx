@@ -284,7 +284,7 @@ const CalendarOverdueSection = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-[120px] text-sm text-gray-500">
+        <div className="flex items-center justify-center min-h-30 text-sm text-gray-500">
           Loading content calendar items...
         </div>
       ) : items.length === 0 ? (
@@ -351,7 +351,7 @@ const CalendarOverdueSection = () => {
                             key={item._id}
                             className="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-sm transition hover:border-rose-300"
                           >
-                            <div className="h-1.5 bg-gradient-to-r from-rose-500 via-[#F16C65] to-amber-400" />
+                            <div className="h-1.5 bg-linear-to-r from-rose-500 via-[#F16C65] to-amber-400" />
                             <div className="p-4 flex flex-col gap-3">
                               <div className="min-w-0">
                                 <h4 className="text-sm font-semibold text-rose-900 leading-snug line-clamp-2">
@@ -498,7 +498,7 @@ const DesignerOverDueTasks = () => {
                 </div>
 
                 {isLoading ? (
-                    <div className="flex items-center justify-center min-h-[220px] text-sm text-gray-500">Loading overdue tasks...</div>
+                    <div className="flex items-center justify-center min-h-55 text-sm text-gray-500">Loading overdue tasks...</div>
                 ) : overdueTasks.length === 0 ? (
                     <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
                         No overdue tasks found.
@@ -517,7 +517,7 @@ const DesignerOverDueTasks = () => {
                                     key={task._id}
                                     className="overflow-hidden rounded-3xl border border-rose-200 bg-rose-50/70 shadow-sm transition hover:border-rose-300"
                                 >
-                                    <div className="h-1.5 bg-gradient-to-r from-rose-500 via-[#F16C65] to-amber-400" />
+                                    <div className="h-1.5 bg-linear-to-r from-rose-500 via-[#F16C65] to-amber-400" />
                                     <div className="p-4 flex flex-col gap-4">
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0 flex-1">
