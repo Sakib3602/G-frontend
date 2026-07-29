@@ -75,9 +75,18 @@ interface ActivitySummaryResponse {
   data: ActivitySummaryItem[];
 }
 
-const COLORS = ["#6366F1", "#22C55E", "#F59E0B", "#EF4444", "#06B6D4", "#EC4899", "#8B5CF6"];
+const COLORS = [
+  "#6366F1",
+  "#22C55E",
+  "#F59E0B",
+  "#EF4444",
+  "#06B6D4",
+  "#EC4899",
+  "#8B5CF6",
+];
 
-const formatNumber = (n?: number) => new Intl.NumberFormat("en-BD").format(n || 0);
+const formatNumber = (n?: number) =>
+  new Intl.NumberFormat("en-BD").format(n || 0);
 
 const toChartData = (obj: Record<string, number> = {}) =>
   Object.entries(obj).map(([name, value]) => ({ name, value }));
@@ -102,7 +111,9 @@ const SummaryCard = ({
   accent?: string;
 }) => (
   <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-    <p className="text-[11px] font-bold uppercase text-gray-400 tracking-wider mb-2">{label}</p>
+    <p className="text-[11px] font-bold uppercase text-gray-400 tracking-wider mb-2">
+      {label}
+    </p>
     <p className={`text-xl font-bold ${accent}`}>
       {prefix}
       {value}
@@ -110,7 +121,13 @@ const SummaryCard = ({
   </div>
 );
 
-const ChartCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const ChartCard = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
   <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
     <h3 className="text-sm font-bold text-[#1E293B] mb-4">{title}</h3>
     <div className="h-72">{children}</div>
@@ -122,14 +139,18 @@ const AdminSalesDetails = () => {
   const navigate = useNavigate();
   const axiosAdmin = useAxiosAdmin();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "activity">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "activity">(
+    "overview",
+  );
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   // Activity tab-এর জন্য আলাদা date range, ডিফল্ট = চলতি মাস
   const currentMonth = getCurrentMonthRange();
-  const [activityStartDate, setActivityStartDate] = useState(currentMonth.start);
+  const [activityStartDate, setActivityStartDate] = useState(
+    currentMonth.start,
+  );
   const [activityEndDate, setActivityEndDate] = useState(currentMonth.end);
 
   const { data, isLoading } = useQuery<SalesDetailsResponse>({
@@ -139,25 +160,30 @@ const AdminSalesDetails = () => {
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
 
-      const res = await axiosAdmin.get(`/sales-details/${id}?${params.toString()}`);
+      const res = await axiosAdmin.get(
+        `/sales-details/${id}?${params.toString()}`,
+      );
       return res.data;
     },
     enabled: !!id,
   });
 
-  const { data: activityData, isLoading: isActivityLoading } = useQuery<ActivitySummaryResponse>({
-    queryKey: ["activity-summary", id, activityStartDate, activityEndDate],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      params.set("salesmanId", id || "");
-      if (activityStartDate) params.set("startDate", activityStartDate);
-      if (activityEndDate) params.set("endDate", activityEndDate);
+  const { data: activityData, isLoading: isActivityLoading } =
+    useQuery<ActivitySummaryResponse>({
+      queryKey: ["activity-summary", id, activityStartDate, activityEndDate],
+      queryFn: async () => {
+        const params = new URLSearchParams();
+        params.set("salesmanId", id || "");
+        if (activityStartDate) params.set("startDate", activityStartDate);
+        if (activityEndDate) params.set("endDate", activityEndDate);
 
-      const res = await axiosAdmin.get(`/activity-summary?${params.toString()}`);
-      return res.data;
-    },
-    enabled: !!id && activeTab === "activity",
-  });
+        const res = await axiosAdmin.get(
+          `/activity-summary?${params.toString()}`,
+        );
+        return res.data;
+      },
+      enabled: !!id && activeTab === "activity",
+    });
 
   const summary = data?.summary;
   const hasDateFilter = !!(startDate || endDate);
@@ -187,7 +213,9 @@ const AdminSalesDetails = () => {
 
   const activityStat = activityData?.data?.[0];
   const statusDurationChartData = activityStat
-    ? Object.entries(activityStat.statusAvgDurationDays).map(([status, days]) => ({ status, days }))
+    ? Object.entries(activityStat.statusAvgDurationDays).map(
+        ([status, days]) => ({ status, days }),
+      )
     : [];
 
   return (
@@ -202,7 +230,9 @@ const AdminSalesDetails = () => {
 
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Salesman Performance</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Salesman Performance
+          </h1>
           <p className="text-sm text-gray-500 mt-1">
             Leads, meetings, and revenue overview for this salesman.
           </p>
@@ -221,6 +251,14 @@ const AdminSalesDetails = () => {
               className="cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-[#1E293B] shadow-sm transition hover:bg-gray-50 hover:border-gray-300"
             >
               View Meetings
+            </button>
+            <button
+              onClick={() =>
+                navigate(`/dashboard/admin/missed-followups/${id}/view`)
+              }
+              className="cursor-pointer rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-100 hover:border-rose-300"
+            >
+              View Missing Follow-ups
             </button>
           </div>
         </div>
@@ -256,24 +294,28 @@ const AdminSalesDetails = () => {
           <div className="flex justify-end mb-6">
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 w-fit">
               <div className="flex flex-col">
-                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">From</label>
+                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">
+                  From
+                </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   max={endDate || undefined}
-                  className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                  className="text-sm font-medium focus:outline-none w-32.5 cursor-pointer"
                 />
               </div>
               <span className="text-gray-300">→</span>
               <div className="flex flex-col">
-                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">To</label>
+                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">
+                  To
+                </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   min={startDate || undefined}
-                  className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                  className="text-sm font-medium focus:outline-none w-32.5 cursor-pointer"
                 />
               </div>
               {hasDateFilter && (
@@ -288,23 +330,43 @@ const AdminSalesDetails = () => {
             </div>
           </div>
 
-          {isLoading && <p className="text-sm text-gray-400">Loading data...</p>}
+          {isLoading && (
+            <p className="text-sm text-gray-400">Loading data...</p>
+          )}
 
           {!isLoading && summary && (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-                <SummaryCard label="Total Leads" value={formatNumber(summary.totalLeads)} />
-                <SummaryCard label="Total Meetings" value={formatNumber(summary.totalMeetings)} />
+                <SummaryCard
+                  label="Total Leads"
+                  value={formatNumber(summary.totalLeads)}
+                />
+                <SummaryCard
+                  label="Total Meetings"
+                  value={formatNumber(summary.totalMeetings)}
+                />
                 <SummaryCard
                   label="Total Revenue"
                   value={formatNumber(summary.totalRevenue)}
                   prefix="$"
                   accent="text-emerald-600"
                 />
-                <SummaryCard label="Avg Lead Score" value={formatNumber(summary.avgLeadScore)} />
-                <SummaryCard label="Proposals Sent" value={formatNumber(summary.proposalSentCount)} />
-                <SummaryCard label="Proposal Rate" value={`${summary.proposalSentRate}%`} />
-                <SummaryCard label="Leads → Meeting" value={formatNumber(summary.leadsWithMeeting)} />
+                <SummaryCard
+                  label="Avg Lead Score"
+                  value={formatNumber(summary.avgLeadScore)}
+                />
+                <SummaryCard
+                  label="Proposals Sent"
+                  value={formatNumber(summary.proposalSentCount)}
+                />
+                <SummaryCard
+                  label="Proposal Rate"
+                  value={`${summary.proposalSentRate}%`}
+                />
+                <SummaryCard
+                  label="Leads → Meeting"
+                  value={formatNumber(summary.leadsWithMeeting)}
+                />
               </div>
 
               <div className="mb-6">
@@ -314,7 +376,11 @@ const AdminSalesDetails = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fontSize: 12 }}
+                      />
                       <Tooltip />
                       <Legend />
                       <Area
@@ -357,7 +423,11 @@ const AdminSalesDetails = () => {
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                      <Bar
+                        dataKey="value"
+                        fill="#6366F1"
+                        radius={[6, 6, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -389,9 +459,18 @@ const AdminSalesDetails = () => {
                     <BarChart data={leadsByServiceData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
-                      <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={80} />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        tick={{ fontSize: 11 }}
+                        width={80}
+                      />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#06B6D4" radius={[0, 6, 6, 0]} />
+                      <Bar
+                        dataKey="value"
+                        fill="#06B6D4"
+                        radius={[0, 6, 6, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -401,7 +480,12 @@ const AdminSalesDetails = () => {
                     <BarChart data={funnelData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
-                      <YAxis dataKey="stage" type="category" tick={{ fontSize: 11 }} width={120} />
+                      <YAxis
+                        dataKey="stage"
+                        type="category"
+                        tick={{ fontSize: 11 }}
+                        width={120}
+                      />
                       <Tooltip />
                       <Bar dataKey="count" radius={[0, 6, 6, 0]}>
                         {funnelData.map((_, idx) => (
@@ -416,7 +500,9 @@ const AdminSalesDetails = () => {
           )}
 
           {!isLoading && !summary && (
-            <p className="text-sm text-gray-400 text-center py-10">No data found for this salesman.</p>
+            <p className="text-sm text-gray-400 text-center py-10">
+              No data found for this salesman.
+            </p>
           )}
         </>
       )}
@@ -426,28 +512,33 @@ const AdminSalesDetails = () => {
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-gray-500">
-              Status changes, notes, and meetings scheduled — day by day. Defaults to the current month.
+              Status changes, notes, and meetings scheduled — day by day.
+              Defaults to the current month.
             </p>
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 w-fit">
               <div className="flex flex-col">
-                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">From</label>
+                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">
+                  From
+                </label>
                 <input
                   type="date"
                   value={activityStartDate}
                   onChange={(e) => setActivityStartDate(e.target.value)}
                   max={activityEndDate || undefined}
-                  className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                  className="text-sm font-medium focus:outline-none w-32.5 cursor-pointer"
                 />
               </div>
               <span className="text-gray-300">→</span>
               <div className="flex flex-col">
-                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">To</label>
+                <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">
+                  To
+                </label>
                 <input
                   type="date"
                   value={activityEndDate}
                   onChange={(e) => setActivityEndDate(e.target.value)}
                   min={activityStartDate || undefined}
-                  className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                  className="text-sm font-medium focus:outline-none w-32.5 cursor-pointer"
                 />
               </div>
               <button
@@ -469,7 +560,9 @@ const AdminSalesDetails = () => {
             </div>
           </div>
 
-          {isActivityLoading && <p className="text-sm text-gray-400">Loading activity data...</p>}
+          {isActivityLoading && (
+            <p className="text-sm text-gray-400">Loading activity data...</p>
+          )}
 
           {!isActivityLoading && !activityStat && (
             <p className="text-sm text-gray-400 text-center py-10">
@@ -480,9 +573,18 @@ const AdminSalesDetails = () => {
           {!isActivityLoading && activityStat && (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <SummaryCard label="Status Changes" value={formatNumber(activityStat.statusChanges)} />
-                <SummaryCard label="Notes Added" value={formatNumber(activityStat.notesAdded)} />
-                <SummaryCard label="Meetings Scheduled" value={formatNumber(activityStat.meetingsScheduled)} />
+                <SummaryCard
+                  label="Status Changes"
+                  value={formatNumber(activityStat.statusChanges)}
+                />
+                <SummaryCard
+                  label="Notes Added"
+                  value={formatNumber(activityStat.notesAdded)}
+                />
+                <SummaryCard
+                  label="Meetings Scheduled"
+                  value={formatNumber(activityStat.meetingsScheduled)}
+                />
                 <SummaryCard
                   label="Total Activity"
                   value={formatNumber(activityStat.totalActivity)}
@@ -515,9 +617,23 @@ const AdminSalesDetails = () => {
                     <BarChart data={statusDurationChartData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
-                      <YAxis dataKey="status" type="category" tick={{ fontSize: 11 }} width={110} />
-                     <Tooltip formatter={(value: any) => [`${value} days`, "Avg Duration"]} />
-                      <Bar dataKey="days" fill="#F59E0B" radius={[0, 6, 6, 0]} />
+                      <YAxis
+                        dataKey="status"
+                        type="category"
+                        tick={{ fontSize: 11 }}
+                        width={110}
+                      />
+                      <Tooltip
+                        formatter={(value: any) => [
+                          `${value} days`,
+                          "Avg Duration",
+                        ]}
+                      />
+                      <Bar
+                        dataKey="days"
+                        fill="#F59E0B"
+                        radius={[0, 6, 6, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -529,7 +645,10 @@ const AdminSalesDetails = () => {
                     Avg. Conversion Time (New Lead → Qualified)
                   </p>
                   <p className="text-2xl font-bold text-emerald-600">
-                    {activityStat.avgConversionDays} <span className="text-sm text-gray-400 font-medium">days</span>
+                    {activityStat.avgConversionDays}{" "}
+                    <span className="text-sm text-gray-400 font-medium">
+                      days
+                    </span>
                   </p>
                 </div>
               )}

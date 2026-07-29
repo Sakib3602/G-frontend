@@ -76,7 +76,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
       </Helmet>
       <style>{`.font-display { font-family: 'Space Grotesk', sans-serif; }`}</style>
 
-      <div className="fixed top-4 right-4 z-[60]">
+      <div className="fixed top-4 right-4 z-60">
         {showNotification && (
           <Notification
             type="warning"
@@ -118,7 +118,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
                     >
                       {initial}
                     </span>
-                    <span className="text-sm font-semibold text-gray-800 max-w-[120px] truncate">
+                    <span className="text-sm font-semibold text-gray-800 max-w-30 truncate">
                       {displayName}
                     </span>
                     <ChevronDown
@@ -160,7 +160,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
                 <div className="flex items-center gap-3">
                   <Link to="/login">
                     <button
-                      className="px-5 py-2.5 text-sm font-semibold rounded-full transition-all border"
+                      className="cursor-pointer px-5 py-2.5 text-sm font-semibold rounded-full transition-all border"
                       style={{ color: BRAND_DARK, borderColor: BRAND }}
                     >
                       Sign in
@@ -168,7 +168,7 @@ const Navbar: React.FC<NavbarProps> = ({ companyName = "Genesys" }) => {
                   </Link>
                   <Link to="/registration">
                     <button
-                      className="px-5 py-2.5 text-sm font-semibold rounded-full text-white shadow-md transition-all hover:-translate-y-0.5"
+                      className="cursor-pointer px-5 py-2.5 text-sm font-semibold rounded-full text-white shadow-md transition-all hover:-translate-y-0.5"
                       style={{ backgroundColor: BRAND, boxShadow: `0 10px 20px -8px ${BRAND}66` }}
                     >
                       Sign up

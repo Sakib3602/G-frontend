@@ -65,6 +65,7 @@ import TeamInProgressLeads from "@/components/Common/TeamInProgressLeads";
 import DesignerTeamInProgress from "@/components/DesignerDashboard/DesignerTeamInProgress";
 import TeamAssignedLeads from "@/components/Common/TeamAssignedLeads";
 import DesignerAssignedLeads from "@/components/DesignerDashboard/DesignerAssignedLeads";
+import AdminMissingFollowups from "@/components/AdminDashboard/AdminMissingFollowups";
 
 const RoutesAll = () => {
   return (
@@ -287,6 +288,11 @@ const RoutesAll = () => {
           path="pending-assignments"
           element={<AdminPendingAssignments />}
         />
+        <Route
+          path="/dashboard/admin/missed-followups/:id/view"
+          element={<AdminMissingFollowups />}
+        />
+       
       </Route>
 
       {/* Admin dashboard end */}
