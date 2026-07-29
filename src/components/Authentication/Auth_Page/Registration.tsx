@@ -19,7 +19,7 @@ const Registration: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { person, createUser, logOut } = useContext(AuthContext)!;
+  const {  createUser, logOut } = useContext(AuthContext)!;
   
 
   const {

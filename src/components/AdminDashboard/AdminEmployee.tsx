@@ -91,10 +91,7 @@ const AdminEmployee = () => {
         },
       );
     },
-    onError: (error, variables) => {
-      alert(`Failed to change role for employee id: ${variables.id}.  Please try again.`);
-     
-    },
+    
   });
 
   if (isLoading) {
@@ -188,7 +185,7 @@ const AdminEmployee = () => {
                 </td>
 
                 <td
-                  className={`py-4 text-sm whitespace-nowrap max-w-[160px] truncate ${
+                  className={`py-4 text-sm whitespace-nowrap max-w-40 truncate ${
                     isUserRole ? "text-red-700" : "text-gray-600"
                   }`}
                 >
