@@ -29,7 +29,7 @@ const DesignerHome = () => {
 
   const { userData } = useUserDataDesigner();
 
-  console.log("Designer User Data:", userData);
+ 
   const profile = useMemo(() => {
     const displayName =
       userData?.name || person?.displayName || "Creative User";

@@ -21,14 +21,17 @@ import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useQuery } from "@tanstack/react-query";
 import useAxiosSales from "@/uri/useAxiosSales";
 import { Helmet } from "react-helmet";
+import EditProfileButton from "../Common/Editprofilebutton";
 
 const Sales_Home = () => {
   const axiosSales = useAxiosSales();
   const auth = useContext(AuthContext);
   const person = auth?.person;
+  
   if (!auth) {
     throw new Error("AuthContext is not available");
   }
+  
   const { logOut } = auth;
   const { data: userData } = useQuery({
     queryKey: ["user-data", person?.email],
@@ -38,17 +41,21 @@ const Sales_Home = () => {
       return res.data.data;
     },
   });
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // Mock user data
-  const user = {
-    name: userData?.name || "UnKnown User",
-    email: userData?.email || "",
+  // ইউজারের নাম ডায়নামিকভাবে নেওয়া হচ্ছে
+  const userName = userData?.name || "Unknown User";
 
+  // Mock user data 
+  const user = {
+    name: userName,
+    email: userData?.email || "",
+    // নামের প্রথম ও দ্বিতীয় শব্দের প্রথম অক্ষর দিয়ে অ্যাভাটার জেনারেট করা হচ্ছে
     avatar:
       userData?.avatar ||
-      "https://ui-avatars.com/api/?name=User&background=7FA23B&color=fff",
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=7FA23B&color=fff`,
   };
 
   const navItems = [
@@ -195,7 +202,7 @@ const Sales_Home = () => {
           </div>
 
           <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200 cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200">
               <div className="text-right hidden md:block">
                 <p className="text-sm font-semibold text-gray-900 leading-tight">
                   {user.name}
@@ -208,6 +215,12 @@ const Sales_Home = () => {
                 src={user.avatar}
                 alt="Profile"
                 className="w-9 h-9 rounded-full ring-2 ring-gray-100 shadow-sm"
+              />
+              <EditProfileButton
+                axiosInstance={axiosSales}
+                profileEndpoint="/api/v1/profile/me"
+                buttonLabel=""
+                buttonClassName="flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-gray-500 hover:border-[#7FA23B] hover:text-[#7FA23B] transition-colors"
               />
             </div>
           </div>

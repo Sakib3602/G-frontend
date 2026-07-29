@@ -97,7 +97,7 @@ const AdminAddTask: React.FC = () => {
     },
   });
 
-  console.log("AdminAddTask - userData:", userData); // Debugging line
+ 
 
   const queryClient = useQueryClient();
 
@@ -144,8 +144,7 @@ const AdminAddTask: React.FC = () => {
     enabled: activeTab === "completed",
   });
 
-  console.log("AdminAddTask - pendingTasks:", pendingTasks); // Debugging line
-  console.log("AdminAddTask - completedTasks:", completedTasks); // Debugging line
+  
 
   const overdueCount = useMemo(
     () => pendingTasks.filter((t) => isPendingRemaining(t.remainingDate) && t.remainingDate.isOverdue).length,

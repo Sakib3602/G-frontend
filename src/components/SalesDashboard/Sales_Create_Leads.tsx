@@ -30,6 +30,7 @@ const Sales_Create_leads = () => {
   const { userData } = useUserData();
 
   const [showNotification, setShowNotification] = useState(false);
+  const [showNotificationError, setShowNotificationError] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Form state holding all fields from the image + additional necessary fields
@@ -96,6 +97,7 @@ const Sales_Create_leads = () => {
       queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard_data"] });
     },
+    
   });
 
   const MutationCreateLead = useMutation<unknown, Error, LeadFormData>({
@@ -110,6 +112,9 @@ const Sales_Create_leads = () => {
       setShowNotification(true);
       queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
     },
+    onError: () => {
+      setShowNotificationError(true);
+    }
   });
 
   // Dropdown Options
@@ -136,7 +141,7 @@ const Sales_Create_leads = () => {
 
   const regionOptions = ["Global", "BANGLADESH", "INDIA", "PAKISTAN", "SOUTH ASIA", "MIDDLE EAST", "AFRICA", "UK", "EUROPE", "US", "CANADA", "AUSTRALIA", "LATIN AMERICA"];
   const scoreOptions = ["1", "2", "3", "4", "5"];
-  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO", "WEB & Graphic", "Other", "GRAPHIC & MARKETING",  "WEB & MARKETING",  "MARKETING & SOFTWARE", ,"App","WEB & SOFTWARE", "GRAPHIC & SOFTWARE", "WEB & GRAPHIC & SOFTWARE", "WEB & GRAPHIC & MARKETING", "WEB & GRAPHIC & MARKETING & SOFTWARE"];
+  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO", "WEB & Graphic", "Other", "GRAPHIC & MARKETING",  "WEB & MARKETING",  "MARKETING & SOFTWARE", "App","WEB & SOFTWARE", "GRAPHIC & SOFTWARE", "WEB & GRAPHIC & SOFTWARE", "WEB & GRAPHIC & MARKETING", "WEB & GRAPHIC & MARKETING & SOFTWARE"];
 
   const CancelAll = () => {
     setFormData({
@@ -169,6 +174,18 @@ const Sales_Create_leads = () => {
             duration={3000}
             onClose={() => {
               setShowNotification(false);
+            }}
+          />
+        )}
+        {showNotificationError && (
+          <Notification
+            type="error"
+            title="Error Creating Lead"
+            message="An error occurred while creating the lead. Phone number might already exist in the system. Please check and try again."
+            showIcon={true}
+            duration={3000}
+            onClose={() => {
+              setShowNotificationError(false);
             }}
           />
         )}

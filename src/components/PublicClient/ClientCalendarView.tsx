@@ -104,7 +104,7 @@ const ClientCalendarView = () => {
             <span>#</span>
             <span>Schedule Date</span>
             <span>Post Type</span>
-            <span>Headline</span>
+         
             <span>Platforms</span>
             <span>Status</span>
           </div>
@@ -127,7 +127,7 @@ const ClientCalendarView = () => {
                     {formatDate(item.scheduleDate)}
                   </span>
                   <span className="text-slate-600">{item.postType || "—"}</span>
-                  <span className="text-slate-600">{item.postHeadline || "—"}</span>
+                  {/* <span className="text-slate-600">{item.postHeadline || "—"}</span> */}
                   <span className="flex flex-wrap gap-1">
                     {(item.platforms ?? []).map((p) => (
                       <span

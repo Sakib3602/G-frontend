@@ -97,7 +97,7 @@ const DesignerRunningWorks = () => {
 
     const submitLink = () => {
         if (!linkTask) return;
-        console.log("Done task link submitted", { taskId: linkTask._id, link: linkValue });
+       
         mutationDoneTask.mutate({ taskId: linkTask._id, link: linkValue });
         setIsLinkOpen(false);
         setLinkTask(null);

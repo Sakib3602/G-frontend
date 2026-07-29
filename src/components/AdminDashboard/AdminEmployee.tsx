@@ -65,7 +65,7 @@ const AdminEmployee = () => {
 
 
   const handleRoleChange = async (id: string, newRole: string) => {
-    console.log("Changing role for employee id:", id);
+   
     mutationRole.mutate({ id, newRole });
   };
 
@@ -93,7 +93,7 @@ const AdminEmployee = () => {
     },
     onError: (error, variables) => {
       alert(`Failed to change role for employee id: ${variables.id}.  Please try again.`);
-      console.log("Role change failed for id:", variables.id, error);
+     
     },
   });
 

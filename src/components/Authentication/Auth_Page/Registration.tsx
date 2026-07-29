@@ -20,7 +20,7 @@ const Registration: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { person, createUser, logOut } = useContext(AuthContext)!;
-  console.log(person, "from registation page");
+  
 
   const {
     register,
@@ -92,7 +92,7 @@ const Registration: React.FC = () => {
     try {
       const result: UserCredential = await createUser(data.email, data.password);
       const user = result.user;
-      console.log(user, "current user");
+      
       await sendEmailVerification(user);
       await logOut();
       userRegisterMutation.mutate(data);

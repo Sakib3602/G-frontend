@@ -426,7 +426,7 @@ const DesignerMyTasks = () => {
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => { console.log(selectedTask._id); setIsModalOpen(false); setSelectedTask(null); }}
+                                                onClick={() => { setIsModalOpen(false); setSelectedTask(null); }}
                                                 className="px-3 py-2 text-sm rounded-md bg-[#F16C65] text-white hover:bg-[#e4564f]"
                                             >
                                                 Start Work
