@@ -327,7 +327,7 @@ const LeadTimelineModal = ({ leadId, leadName, onClose }: { leadId: string; lead
   const timeline = data?.timeline || [];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="absolute inset-0" onClick={onClose}></div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-xl flex flex-col max-h-[88vh] relative z-10 overflow-hidden">
@@ -353,7 +353,7 @@ const LeadTimelineModal = ({ leadId, leadName, onClose }: { leadId: string; lead
 
           {!isLoading && !isError && timeline.length > 0 && (
             <div className="relative pl-6">
-              <div className="absolute left-[7px] top-1 bottom-1 w-px bg-gray-200"></div>
+              <div className="absolute left-1.75 top-1 bottom-1 w-px bg-gray-200"></div>
 
               <div className="space-y-5">
                 {timeline.map((event, idx) => {
@@ -489,6 +489,7 @@ const AdminViewLeads = () => {
   });
 
   // ✅ leads এখানে ডিফাইন হয় — useEffect অবশ্যই এই লাইনের পরে থাকতে হবে
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const leads = data?.pages.flatMap((p) => p.data) || [];
   const summary = data?.pages[0]?.summary;
   const availableStatuses = data?.pages[0]?.availableStatuses || [];
@@ -583,7 +584,7 @@ const AdminViewLeads = () => {
                 }}
                 max={endDate || undefined}
                 disabled={todayWork}
-                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-sm font-medium focus:outline-none w-32.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             <span className="text-gray-300">→</span>
@@ -598,7 +599,7 @@ const AdminViewLeads = () => {
                 }}
                 min={startDate || undefined}
                 disabled={todayWork}
-                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-sm font-medium focus:outline-none w-32.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             {hasDateFilter && !todayWork && (
@@ -653,7 +654,7 @@ const AdminViewLeads = () => {
 
       <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm bg-white">
         <div ref={tableScrollRef} onScroll={syncFromTable} className="overflow-x-auto hidden-native-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[1040px]">
+          <table className="w-full text-left border-collapse min-w-260">
             <thead className="bg-gray-50/80">
               <tr>
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">#</th>

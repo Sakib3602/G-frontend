@@ -54,6 +54,13 @@ export interface IMeeting {
   clientPhone: string;
 }
 
+// ✅ নতুন — Sales team member (Transfer dropdown এর জন্য)
+export interface ISalesTeamMember {
+  _id: string;
+  name: string;
+  email: string;
+}
+
 interface LeadsPage {
   data: LeadData[];
   nextCursor: string | null;
@@ -109,6 +116,7 @@ export default function Sales_My_Leads() {
   const [showNoti, setShowNoti] = useState(false);
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [showNotiReminder, setShowNotiReminder] = useState(false);
+  const [showNotiTransfer, setShowNotiTransfer] = useState(false); // ✅ নতুন
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -126,11 +134,21 @@ export default function Sales_My_Leads() {
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [editForm, setEditForm] = useState<Partial<LeadData>>({});
 
-  // ✅ নতুন — Follow-up / Reminder Modal State
+  // ✅ Follow-up / Reminder Modal State
   const [reminderLead, setReminderLead] = useState<LeadData | null>(null);
   const [reminderDate, setReminderDate] = useState("");
   const [reminderTime, setReminderTime] = useState("");
   const [reminderNoteText, setReminderNoteText] = useState("");
+
+  // ✅ নতুন — Transfer Lead Modal State
+  const [transferLead, setTransferLead] = useState<LeadData | null>(null);
+  const [salesTeam, setSalesTeam] = useState<ISalesTeamMember[]>([]);
+  const [isTeamLoading, setIsTeamLoading] = useState(false);
+  const [selectedTransferTo, setSelectedTransferTo] = useState("");
+  const [transferNote, setTransferNote] = useState("");
+  const [myPendingTransferLeadIds, setMyPendingTransferLeadIds] = useState<
+    Set<string>
+  >(new Set());
 
   const formatLastWork = (dateStr?: string) => {
     if (!dateStr) return "—";
@@ -213,6 +231,24 @@ export default function Sales_My_Leads() {
 
   const currentIsLoading = isSearchMode ? isSearchLoading : isLoading;
   const currentIsError = isSearchMode ? isSearchError : isError;
+
+  // ✅ নতুন — এই sales rep এর pending transfer request গুলো fetch করি,
+  // যাতে "Transfer" বাটনটা "Transfer Pending" দেখায়
+  useEffect(() => {
+    if (!userData?._id) return;
+    axiosSales
+      .get(`/api/v1/sales/my-transfer-requests/${userData._id}`)
+      .then((res) => {
+        const ids = new Set<string>(
+          (res.data?.data ?? []).map((r: any) => String(r.leadId)),
+        );
+        setMyPendingTransferLeadIds(ids);
+      })
+      .catch(() => {
+        // silent fail — badge শুধু cosmetic, ব্লক করার দরকার নেই
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData?._id]);
 
   const downloadCSV = () => {
     if (!leadsData || leadsData.length === 0) return;
@@ -419,7 +455,7 @@ export default function Sales_My_Leads() {
     mutationUpdateDetails.mutate({ leadId, payload: editForm });
   };
 
-  // ✅ নতুন — Follow-up / Reminder Logic
+  // ✅ Follow-up / Reminder Logic
   const openReminderPopup = (lead: LeadData) => {
     setReminderLead(lead);
     if (lead.reminderAt) {
@@ -485,6 +521,65 @@ export default function Sales_My_Leads() {
     });
   };
 
+  // ✅ নতুন — Transfer Lead Logic
+  const openTransferPopup = (lead: LeadData) => {
+    setTransferLead(lead);
+    setSelectedTransferTo("");
+    setTransferNote("");
+    setIsTeamLoading(true);
+    axiosSales
+      .get(`/api/v1/sales/team`, {
+        params: { excludeId: userData?._id },
+      })
+      .then((res) => setSalesTeam(res.data?.data ?? []))
+      .catch(() => setSalesTeam([]))
+      .finally(() => setIsTeamLoading(false));
+  };
+
+  const mutationTransferRequest = useMutation({
+    mutationFn: async ({
+      leadId,
+      toSalesmanId,
+      note,
+    }: {
+      leadId: string;
+      toSalesmanId: string;
+      note: string;
+    }) => {
+      const res = await axiosSales.post(
+        `/api/v1/sales/transfer-request/${leadId}`,
+        {
+          toSalesmanId,
+          note,
+          fromSalesmanId: userData?._id,
+        },
+      );
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      setShowNotiTransfer(true);
+      setMyPendingTransferLeadIds((prev) => {
+        const next = new Set(prev);
+        next.add(variables.leadId);
+        return next;
+      });
+      setTransferLead(null);
+      setSelectedTransferTo("");
+      setTransferNote("");
+    },
+  });
+
+  const handleTransferSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferLead || !selectedTransferTo) return;
+    const leadId = transferLead._id || transferLead.id;
+    mutationTransferRequest.mutate({
+      leadId,
+      toSalesmanId: selectedTransferTo,
+      note: transferNote.trim(),
+    });
+  };
+
   if (currentIsLoading && !isSearchMode) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-white">
@@ -538,6 +633,16 @@ export default function Sales_My_Leads() {
             showIcon
             duration={3000}
             onClose={() => setShowNotiReminder(false)}
+          />
+        )}
+        {showNotiTransfer && (
+          <Notification
+            type="success"
+            title="Transfer Requested!"
+            message="Admin approval-এর পর lead-টি transfer হয়ে যাবে."
+            showIcon
+            duration={3000}
+            onClose={() => setShowNotiTransfer(false)}
           />
         )}
       </div>
@@ -758,6 +863,14 @@ export default function Sales_My_Leads() {
                           </span>
                         </div>
                       )}
+                      {/* ✅ নতুন — Transfer pending থাকলে ছোট ব্যাজ */}
+                      {myPendingTransferLeadIds.has(lead._id) && (
+                        <div className="mt-1">
+                          <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+                            ⇄ Transfer Pending
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-5 py-3 w-[1%]">
@@ -777,12 +890,20 @@ export default function Sales_My_Leads() {
                             ? `(${lead.indicationsHistory.length})`
                             : ""}
                         </button>
-                        {/* ✅ নতুন — ৩য় বাটন */}
                         <button
                           onClick={() => openReminderPopup(lead)}
                           className="whitespace-nowrap px-3 py-1.5 rounded border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] font-bold transition-all shadow-xs"
                         >
                           Follow-up
+                        </button>
+                        {/* ✅ নতুন — ৪র্থ বাটন: Transfer */}
+                        <button
+                          onClick={() => openTransferPopup(lead)}
+                          className="whitespace-nowrap px-3 py-1.5 rounded border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold transition-all shadow-xs"
+                        >
+                          {myPendingTransferLeadIds.has(lead._id)
+                            ? "Transfer Pending"
+                            : "Transfer"}
                         </button>
                       </div>
                     </td>
@@ -1543,7 +1664,7 @@ export default function Sales_My_Leads() {
         </div>
       )}
 
-      {/* --- ✅ নতুন — FOLLOW-UP / REMINDER MODAL --- */}
+      {/* --- FOLLOW-UP / REMINDER MODAL --- */}
       {reminderLead && (
         <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div
@@ -1654,6 +1775,112 @@ export default function Sales_My_Leads() {
                   {mutationSetReminder.isPending
                     ? "Saving..."
                     : "Set Follow-up"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- ✅ নতুন — TRANSFER LEAD MODAL --- */}
+      {transferLead && (
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div
+            className="absolute inset-0"
+            onClick={() => setTransferLead(null)}
+          ></div>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden border border-slate-200">
+            <div className="px-6 py-5 flex justify-between items-start border-b border-slate-100 bg-slate-50/50">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">
+                  Transfer Lead
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  <span className="font-bold text-slate-800">
+                    {transferLead.leadName}
+                  </span>{" "}
+                  — will require admin approval before transferring.
+                </p>
+              </div>
+              <button
+                onClick={() => setTransferLead(null)}
+                className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleTransferSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                  Transfer To <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedTransferTo}
+                  onChange={(e) => setSelectedTransferTo(e.target.value)}
+                  disabled={isTeamLoading}
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:outline-none focus:border-[#99B562] disabled:opacity-50"
+                >
+                  <option value="">
+                    {isTeamLoading ? "Loading team..." : "Select salesman..."}
+                  </option>
+                  {salesTeam.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name} ({s.email})
+                    </option>
+                  ))}
+                </select>
+                {!isTeamLoading && salesTeam.length === 0 && (
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    No other sales team members found.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                  Note (optional)
+                </label>
+                <textarea
+                  value={transferNote}
+                  onChange={(e) => setTransferNote(e.target.value)}
+                  rows={2}
+                  placeholder="Why are you transferring this lead?"
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-[#99B562] resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setTransferLead(null)}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    mutationTransferRequest.isPending || !selectedTransferTo
+                  }
+                  className="px-4 py-2 rounded bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 disabled:opacity-40"
+                >
+                  {mutationTransferRequest.isPending
+                    ? "Sending..."
+                    : "Send Request"}
                 </button>
               </div>
             </form>

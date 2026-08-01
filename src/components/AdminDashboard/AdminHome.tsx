@@ -12,6 +12,7 @@ import {
   HiOutlineLogout,
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
+  HiOutlineSwitchHorizontal,
 } from "react-icons/hi";
 import { SiCardmarket , SiMoneygram  } from "react-icons/si";
 
@@ -61,9 +62,15 @@ const MENU_ITEMS = [
     path: "/dashboard/admin/add-task",
     icon: HiOutlineQuestionMarkCircle,
   },
+  {
+  name: "Lead Transfers",
+  path: "/dashboard/admin/lead-transfers",
+  icon: HiOutlineSwitchHorizontal,
+},
+ 
 
   {
-    name: "Compliance ",
+    name: "Complines",
     path: "/dashboard/admin/compliance",
     icon: Shield,
   },

@@ -66,6 +66,7 @@ import DesignerTeamInProgress from "@/components/DesignerDashboard/DesignerTeamI
 import TeamAssignedLeads from "@/components/Common/TeamAssignedLeads";
 import DesignerAssignedLeads from "@/components/DesignerDashboard/DesignerAssignedLeads";
 import AdminMissingFollowups from "@/components/AdminDashboard/AdminMissingFollowups";
+import AdminLeadTransfers from "@/components/AdminDashboard/AdminLeadTransfers";
 
 const RoutesAll = () => {
   return (
@@ -292,6 +293,7 @@ const RoutesAll = () => {
           path="/dashboard/admin/missed-followups/:id/view"
           element={<AdminMissingFollowups />}
         />
+        <Route path="lead-transfers" element={<AdminLeadTransfers />} />
        
       </Route>
 
