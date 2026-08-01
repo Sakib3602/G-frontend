@@ -240,6 +240,10 @@ const LeadDetailsModal = ({ lead, onClose }: { lead: Lead; onClose: () => void }
                 <p className="text-[10px] uppercase text-gray-400 font-bold mb-0.5">Created</p>
                 <p className="text-sm text-[#1E293B]">{formatDateTime(lead.createdAt)}</p>
               </div>
+              <div>
+                <p className="text-[10px] uppercase text-gray-400 font-bold mb-0.5">Last Work</p>
+                <p className="text-sm text-[#1E293B]">{formatDateTime(lead.updatedAt)}</p>
+              </div>
             </div>
           </div>
 
@@ -445,6 +449,9 @@ const AdminViewLeads = () => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // ✅ নতুন — "Today's Work" টগল
+  const [todayWork, setTodayWork] = useState(false);
+
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [timelineLead, setTimelineLead] = useState<{ id: string; name: string } | null>(null);
 
@@ -455,15 +462,22 @@ const AdminViewLeads = () => {
   const [barRect, setBarRect] = useState<{ left: number; width: number } | null>(null);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<LeadsPage>({
-    queryKey: ["leads-by-salesman", id, status, startDate, endDate, sortBy, sortOrder],
+    queryKey: ["leads-by-salesman", id, status, startDate, endDate, sortBy, sortOrder, todayWork],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       params.set("status", status);
       params.set("sortBy", sortBy);
       params.set("sortOrder", sortOrder);
       params.set("limit", String(PAGE_SIZE));
-      if (startDate) params.set("startDate", startDate);
-      if (endDate) params.set("endDate", endDate);
+
+      if (todayWork) {
+        // ✅ Today's Work মোডে backend নিজেই updatedAt দিয়ে filter + sort করবে
+        params.set("todayWork", "true");
+      } else {
+        if (startDate) params.set("startDate", startDate);
+        if (endDate) params.set("endDate", endDate);
+      }
+
       if (pageParam) params.set("cursor", pageParam as string);
 
       const res = await axiosAdmin.get(`/leads-by-salesman/${id}?${params.toString()}`);
@@ -509,6 +523,18 @@ const AdminViewLeads = () => {
     setEndDate("");
   };
 
+  const toggleTodayWork = () => {
+    setTodayWork((prev) => {
+      const next = !prev;
+      if (next) {
+        // Today's Work চালু হলে ম্যানুয়াল date range বাতিল
+        setStartDate("");
+        setEndDate("");
+      }
+      return next;
+    });
+  };
+
   const toggleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -551,9 +577,13 @@ const AdminViewLeads = () => {
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (todayWork) setTodayWork(false);
+                }}
                 max={endDate || undefined}
-                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                disabled={todayWork}
+                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             <span className="text-gray-300">→</span>
@@ -562,12 +592,16 @@ const AdminViewLeads = () => {
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  if (todayWork) setTodayWork(false);
+                }}
                 min={startDate || undefined}
-                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                disabled={todayWork}
+                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
-            {hasDateFilter && (
+            {hasDateFilter && !todayWork && (
               <button
                 onClick={clearDateFilter}
                 title="Clear date filter"
@@ -577,6 +611,18 @@ const AdminViewLeads = () => {
               </button>
             )}
           </div>
+
+          {/* ✅ নতুন — Today's Work বাটন */}
+          <button
+            onClick={toggleTodayWork}
+            className={`px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm border transition-colors whitespace-nowrap ${
+              todayWork
+                ? "bg-[#1E293B] text-white border-[#1E293B]"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            {todayWork ? "✓ Today's Work" : "Today's Work"}
+          </button>
 
           <div className="relative w-fit">
             <select
@@ -616,10 +662,10 @@ const AdminViewLeads = () => {
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Service</th>
                 <SortHeader field="leadScore" label="Score" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Proposal</th>
-                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Deal Money</th>
+                <SortHeader field="updatedAt" label="Last Work" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <SortHeader field="createdAt" label="Created" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Status</th>
-                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider text-right">Actions</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider text-right">Timeline</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -644,7 +690,11 @@ const AdminViewLeads = () => {
 
               {!isLoading &&
                 leads.map((l, idx) => (
-                  <tr key={l._id} className="hover:bg-gray-50/60 transition-colors">
+                  <tr
+                    key={l._id}
+                    onClick={() => setSelectedLead(l)}
+                    className="hover:bg-gray-50/60 transition-colors cursor-pointer"
+                  >
                     <td className="p-4 text-sm font-medium text-gray-400">{idx + 1}</td>
                     <td className="p-4 text-sm font-semibold">
                       {l.leadName}
@@ -664,7 +714,7 @@ const AdminViewLeads = () => {
                         <span className="text-gray-400">No</span>
                       )}
                     </td>
-                    <td className="p-4 text-sm font-mono">${formatNumber(l.dealmoney)}</td>
+                    <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.updatedAt)}</td>
                     <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.createdAt)}</td>
                     <td className="p-4">
                       <span
@@ -675,13 +725,10 @@ const AdminViewLeads = () => {
                     </td>
                     <td className="p-4 text-right whitespace-nowrap">
                       <button
-                        onClick={() => setSelectedLead(l)}
-                        className="text-xs font-semibold text-gray-600 hover:text-gray-900 mr-3"
-                      >
-                        Details
-                      </button>
-                      <button
-                        onClick={() => setTimelineLead({ id: l._id, name: l.leadName })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTimelineLead({ id: l._id, name: l.leadName });
+                        }}
                         className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
                       >
                         <FiClock size={12} /> Timeline

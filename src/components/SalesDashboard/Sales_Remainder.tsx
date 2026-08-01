@@ -18,7 +18,7 @@ export interface LeadData {
   owner: string;
   status: string;
   indications?: string;
-  indicationsHistory?: INoteEntry[]; // ✅ নতুন
+  indicationsHistory?: INoteEntry[];
   companyName?: string;
   leadScore: number;
   email?: string;
@@ -32,6 +32,37 @@ export interface LeadData {
   reminderNote?: string;
 }
 
+// ✅ নতুন — Professional stat card component
+const StatCard = ({
+  label,
+  value,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  accent: "slate" | "emerald" | "amber";
+}) => {
+  const accentMap = {
+    slate: { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-700", iconBg: "bg-slate-200/60" },
+    emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", iconBg: "bg-emerald-200/50" },
+    amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", iconBg: "bg-amber-200/50" },
+  };
+  const c = accentMap[accent];
+  return (
+    <div className={`flex items-center gap-3 ${c.bg} border ${c.border} rounded-xl px-4 py-3 min-w-35`}>
+      <div className={`w-9 h-9 rounded-lg ${c.iconBg} flex items-center justify-center shrink-0 ${c.text}`}>
+        {icon}
+      </div>
+      <div>
+        <p className={`text-xl font-bold ${c.text} leading-none`}>{value}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mt-1">{label}</p>
+      </div>
+    </div>
+  );
+};
+
 export default function Sales_Remainder() {
   const [showNotiEmailSent, setShowNotiEmailSent] = useState(false);
   const [showNotiDone, setShowNotiDone] = useState(false);
@@ -41,12 +72,17 @@ export default function Sales_Remainder() {
   const [rescheduleTime, setRescheduleTime] = useState("");
   const [rescheduleNote, setRescheduleNote] = useState("");
 
+  const getTodayStr = () => new Date().toISOString().split("T")[0];
+
+  const [rangeStartDate, setRangeStartDate] = useState(getTodayStr());
+  const [rangeEndDate, setRangeEndDate] = useState(getTodayStr());
+  const hasRangeFilter = !!(rangeStartDate || rangeEndDate);
+
   // Details modal state (edit-able)
   const [selectedLeadDetails, setSelectedLeadDetails] = useState<LeadData | null>(null);
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [editForm, setEditForm] = useState<Partial<LeadData>>({});
 
-  // ✅ নতুন — Note history state
   const [newNoteText, setNewNoteText] = useState("");
   const [showNoteHistory, setShowNoteHistory] = useState(true);
 
@@ -66,6 +102,25 @@ export default function Sales_Remainder() {
       return res.data.data;
     },
   });
+
+  const { data: summaryData, isLoading: isSummaryLoading } = useQuery({
+    queryKey: ["reminder-summary", userData?._id, rangeStartDate, rangeEndDate],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (rangeStartDate) params.set("startDate", rangeStartDate);
+      if (rangeEndDate) params.set("endDate", rangeEndDate);
+      const res = await axiosSales.get(`/api/v1/sales/reminder-summary/${userData?._id}?${params.toString()}`);
+      return res.data as {
+        summary: { totalGiven: number; missed: number };
+      };
+    },
+    enabled: Boolean(userData?._id) && hasRangeFilter,
+  });
+
+  const clearRangeFilter = () => {
+    setRangeStartDate(getTodayStr());
+    setRangeEndDate(getTodayStr());
+  };
 
   const getLeadId = (lead: LeadData) => lead._id || lead.id;
 
@@ -99,6 +154,7 @@ export default function Sales_Remainder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rem"] });
+      queryClient.invalidateQueries({ queryKey: ["reminder-summary"] });
       setShowNotiDone(true);
     },
   });
@@ -110,6 +166,7 @@ export default function Sales_Remainder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rem"] });
+      queryClient.invalidateQueries({ queryKey: ["reminder-summary"] });
       setActiveRescheduleId(null);
       setRescheduleDate("");
       setRescheduleTime("");
@@ -132,7 +189,6 @@ export default function Sales_Remainder() {
     mutationReschedule.mutate({ leadId, reminderAt: isoDateTime, reminderNote: rescheduleNote.trim() });
   };
 
-  // Details modal open + edit logic
   const openDetailsModal = (lead: LeadData) => {
     setSelectedLeadDetails(lead);
     setIsEditingDetails(false);
@@ -167,7 +223,6 @@ export default function Sales_Remainder() {
     mutationUpdateDetails.mutate({ leadId, payload: editForm });
   };
 
-  // ✅ নতুন — Note push mutation (পুরানো মুছবে না)
   const mutationAddNote = useMutation({
     mutationFn: async ({ leadId, text }: { leadId: string; text: string }) => {
       const res = await axiosSales.post(`/api/v1/sales/add-note/${leadId}`, {
@@ -225,17 +280,108 @@ export default function Sales_Remainder() {
 
       <div className="w-full bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans min-h-screen text-slate-900 antialiased">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8 border-b border-slate-200 pb-6">
+          {/* ---------- Header ---------- */}
+          <div className="mb-6">
             <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">Follow-up Calendar</p>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Reminders</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Overdue and today's follow-ups. Click a row to view full lead details. Missed ones stay here until you complete or reschedule them.
+              Overdue and today's follow-ups always show below automatically. Use the date filter to pull a report for any past period.
             </p>
           </div>
 
+          {/* ---------- Report Filter Bar ---------- */}
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-700">Historical Report</p>
+                  <p className="text-[11px] text-slate-400">Pick a range to see how many follow-ups were given and how many were missed</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                  <div className="flex flex-col">
+                    <label className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">From</label>
+                    <input
+                      type="date"
+                      value={rangeStartDate}
+                      onChange={(e) => setRangeStartDate(e.target.value)}
+                      max={rangeEndDate || undefined}
+                      className="text-sm font-medium bg-transparent focus:outline-none w-31.25 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-slate-300">→</span>
+                  <div className="flex flex-col">
+                    <label className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">To</label>
+                    <input
+                      type="date"
+                      value={rangeEndDate}
+                      onChange={(e) => setRangeEndDate(e.target.value)}
+                      min={rangeStartDate || undefined}
+                      className="text-sm font-medium bg-transparent focus:outline-none w-31.25 cursor-pointer"
+                    />
+                  </div>
+                </div>
+                {hasRangeFilter && (
+                  <button
+                    onClick={clearRangeFilter}
+                    title="Clear filter"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Summary cards */}
+            {hasRangeFilter && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                {isSummaryLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-slate-400"></div>
+                    Calculating report...
+                  </div>
+                ) : summaryData ? (
+                  <div className="flex flex-wrap gap-3">
+                    <StatCard
+                      label="Total Given"
+                      value={summaryData.summary.totalGiven}
+                      accent="slate"
+                      icon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      }
+                    />
+                    <StatCard
+                      label="Missed"
+                      value={summaryData.summary.missed}
+                      accent="amber"
+                      icon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                      }
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          {/* ---------- Pending Follow-ups Table (always live, no filter needed) ---------- */}
           <div className="bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden">
             <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 flex justify-between items-center">
-              <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending Follow-ups</h2>
+              <h2 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending Follow-ups (Today + Overdue)</h2>
               <span className="text-xs font-mono font-bold text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded">
                 {reminderLeads.length}
               </span>
@@ -287,7 +433,7 @@ export default function Sales_Remainder() {
                               {new Date(lead.reminderAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </td>
-                          <td className="px-5 py-3 text-xs text-slate-600 italic max-w-[220px] truncate">
+                          <td className="px-5 py-3 text-xs text-slate-600 italic max-w-55 truncate">
                             {lead.reminderNote || "—"}
                           </td>
                           <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
@@ -354,7 +500,7 @@ export default function Sales_Remainder() {
 
       {/* LEAD DETAILS MODAL (Edit-able + Notes) */}
       {selectedLeadDetails && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
           <div
             className="absolute inset-0"
             onClick={() => {
@@ -385,7 +531,6 @@ export default function Sales_Remainder() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
-              {/* Top Meta Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-white border border-slate-200 rounded-lg p-3">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
@@ -405,7 +550,6 @@ export default function Sales_Remainder() {
                 </div>
               </div>
 
-              {/* Follow-up Info */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1">Scheduled Follow-up</p>
                 <p className="text-sm text-amber-900 font-semibold">
@@ -417,7 +561,6 @@ export default function Sales_Remainder() {
                 )}
               </div>
 
-              {/* Extended Details Grids (editable) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">Contact Profile</h3>
@@ -535,7 +678,6 @@ export default function Sales_Remainder() {
                 </div>
               </div>
 
-              {/* Save / Edit controls */}
               <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
                 {isEditingDetails ? (
                   <>
@@ -566,7 +708,6 @@ export default function Sales_Remainder() {
                 )}
               </div>
 
-              {/* ✅ নতুন — Follow-up Note History সেকশন */}
               <div className="space-y-3 pt-2 border-t border-slate-200">
                 <button
                   type="button"

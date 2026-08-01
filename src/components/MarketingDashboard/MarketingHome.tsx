@@ -20,6 +20,8 @@ import { Link, Outlet, useLocation } from "react-router";
 
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
+import EditProfileButton from "../Common/Editprofilebutton"; // EditProfileButton ইম্পোর্ট করা হয়েছে
+import useAxiosMarketing from "@/uri/useAxiosMarketing"; // আপনার মার্কেটিং এর axios হুক (প্রয়োজনে নাম পরিবর্তন করে নিবেন)
 
 const MarketingHome = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -27,16 +29,24 @@ const MarketingHome = () => {
 
   const { userData } = useUserDataMarketing();
   const auth = useContext(AuthContext);
+  
+  // Marketing এর জন্য Axios ইন্সট্যান্স (আপনার প্রজেক্টের সাথে মিলিয়ে নিবেন)
+  const axiosMarketing = useAxiosMarketing(); 
+
   if (!auth) throw new Error("AuthContext is not available");
 
   const { logOut } = auth;
 
+  // ইউজারের নাম ডায়নামিকভাবে নেওয়া হচ্ছে
+  const userName = userData?.name || "Unknown User";
+
   const user = {
-    name: userData?.name || "Unknown User",
+    name: userName,
     role: userData?.role ? `${userData.role} Manager` : "Marketing Manager",
+    // নামের প্রথম ও দ্বিতীয় শব্দের প্রথম অক্ষর দিয়ে অ্যাভাটার জেনারেট করা হচ্ছে
     avatar:
       userData?.avatar ||
-      "https://ui-avatars.com/api/?name=M+M&background=C9A646&color=fff",
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=C9A646&color=fff`,
   };
 
   const navItems = [
@@ -109,7 +119,7 @@ const MarketingHome = () => {
       {/* Sidebar */}
       <aside
         className={`${isSidebarOpen ? "w-64" : "w-20"}
-        bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}
+        bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-20`}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-center border-b border-gray-100">
@@ -174,13 +184,13 @@ const MarketingHome = () => {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Navbar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 rounded-md text-slate-500 hover:bg-gray-100"
+              className="p-2 rounded-md text-slate-500 hover:bg-gray-100 transition-colors"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -190,14 +200,9 @@ const MarketingHome = () => {
           </div>
 
           <div className="flex items-center gap-5">
-            {/* <button className="relative p-2 rounded-full text-slate-500 hover:bg-gray-100">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#C9A646] rounded-full"></span>
-            </button> */}
-
             <div className="h-6 w-px bg-gray-200"></div>
 
-            <div className="flex items-center gap-3 cursor-pointer">
+            <div className="flex items-center gap-3">
               <div className="text-right hidden md:block">
                 <p className="text-sm font-medium text-slate-700">
                   {user.name}
@@ -207,7 +212,15 @@ const MarketingHome = () => {
               <img
                 src={user.avatar}
                 alt="profile"
-                className="w-8 h-8 rounded-full border"
+                className="w-8 h-8 rounded-full border ring-2 ring-gray-50 shadow-sm"
+              />
+              
+              {/* Edit Profile Button এখানে যুক্ত করা হয়েছে */}
+              <EditProfileButton
+                axiosInstance={axiosMarketing}
+                profileEndpoint="/api/v1/profile/me"
+                buttonLabel=""
+                buttonClassName="flex items-center justify-center h-8 w-8 rounded-full border border-gray-200 text-gray-500 hover:border-[#C9A646] hover:text-[#C9A646] transition-colors"
               />
             </div>
           </div>
@@ -227,7 +240,7 @@ const MarketingHome = () => {
               }}
             />
             {/* Your Content/Components */}
-            <div className="relative z-10">
+            <div className="relative z-10 p-6 lg:p-4">
               <Outlet />
             </div>
           </div>

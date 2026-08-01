@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
 import { FiArrowLeft, FiX, FiClock, FiMail, FiPhone } from "react-icons/fi";
 
@@ -26,6 +26,8 @@ interface MissedFollowupsResponse {
   groupedByDay: DayGroup[];
   summary: { totalMissed: number };
 }
+
+const getTodayStr = () => new Date().toISOString().split("T")[0];
 
 const formatDayLabel = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -63,15 +65,15 @@ const AdminMissingFollowups = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const axiosAdmin = useAxiosAdmin();
-  const queryClient = useQueryClient();
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // ✅ ডিফল্টে আজকের date — শুধু আজকের missed reminders দেখাবে
+  const [startDate, setStartDate] = useState(getTodayStr());
+  const [endDate, setEndDate] = useState(getTodayStr());
 
   const hasDateFilter = !!(startDate || endDate);
   const clearDateFilter = () => {
-    setStartDate("");
-    setEndDate("");
+    setStartDate(getTodayStr());
+    setEndDate(getTodayStr());
   };
 
   const { data, isLoading, isError } = useQuery<MissedFollowupsResponse>({
@@ -85,16 +87,6 @@ const AdminMissingFollowups = () => {
       return res.data;
     },
     enabled: !!id,
-  });
-
-  const mutationClearReminder = useMutation({
-    mutationFn: async (reportId: string) => {
-      const res = await axiosAdmin.put(`/clear-reminder/${reportId}`);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["missed-followups", id] });
-    },
   });
 
   const groupedByDay = data?.groupedByDay ?? [];
@@ -143,7 +135,7 @@ const AdminMissingFollowups = () => {
           {hasDateFilter && (
             <button
               onClick={clearDateFilter}
-              title="Clear date filter"
+              title="Reset to today"
               className="text-gray-400 hover:text-rose-500 transition-colors ml-1"
             >
               <FiX size={16} />
@@ -222,14 +214,6 @@ const AdminMissingFollowups = () => {
                         </span>
                       )}
                     </div>
-
-                    <button
-                      onClick={() => mutationClearReminder.mutate(reminder._id)}
-                      disabled={mutationClearReminder.isPending}
-                      className="w-full mt-3 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors disabled:opacity-50"
-                    >
-                      ✓ Mark as Followed Up
-                    </button>
                   </div>
                 ))}
               </div>

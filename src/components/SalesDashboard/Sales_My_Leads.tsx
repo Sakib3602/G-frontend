@@ -17,7 +17,6 @@ export interface INoteEntry {
   createdAt?: string;
   createdBy?: string;
 }
-
 export interface LeadData {
   id: string;
   _id: string;
@@ -37,8 +36,8 @@ export interface LeadData {
   ServiceNeed?: string;
   reminderAt?: string | null;
   reminderNote?: string;
+  updatedAt?: string; // ✅ নতুন
 }
-
 export interface IMeeting {
   title: string;
   leadId?: string;
@@ -133,6 +132,15 @@ export default function Sales_My_Leads() {
   const [reminderTime, setReminderTime] = useState("");
   const [reminderNoteText, setReminderNoteText] = useState("");
 
+  const formatLastWork = (dateStr?: string) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   const queryClient = useQueryClient();
   const { userData } = useUserData();
 
@@ -188,6 +196,8 @@ export default function Sales_My_Leads() {
     () => data?.pages.flatMap((page) => page.data) ?? [],
     [data],
   );
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const activeDataset: LeadData[] = isSearchMode
     ? (searchResults?.data ?? [])
     : leadsData;
@@ -533,7 +543,7 @@ export default function Sales_My_Leads() {
       </div>
 
       <div className="w-full min-h-screen bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans text-slate-900 antialiased">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-350 mx-auto">
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
             <div>
               <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">
@@ -667,7 +677,7 @@ export default function Sales_My_Leads() {
                     Pipeline Status
                   </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                    Company{" "}
+                    Last Work
                   </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                     Email Address
@@ -677,6 +687,9 @@ export default function Sales_My_Leads() {
                   </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                     Service Category
+                  </th>
+                  <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                    Company
                   </th>
                 </tr>
               </thead>
@@ -806,8 +819,8 @@ export default function Sales_My_Leads() {
                       </div>
                     </td>
 
-                    <td className="px-5 py-3 text-slate-600 font-medium text-xs">
-                      {lead.companyName || "—"}
+                    <td className="px-5 py-3 text-slate-600 font-medium text-xs whitespace-nowrap">
+                      {formatLastWork(lead.updatedAt)}
                     </td>
                     <td className="px-5 py-3">
                       <a
@@ -824,6 +837,9 @@ export default function Sales_My_Leads() {
                       <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider">
                         {lead.ServiceNeed || "General"}
                       </span>
+                    </td>
+                    <td className="px-5 py-3 text-slate-600 font-medium text-xs">
+                      {lead.companyName || "—"}
                     </td>
                   </tr>
                 ))}
@@ -847,7 +863,7 @@ export default function Sales_My_Leads() {
 
       {/* --- LEAD DETAILS MODAL (Edit-able) --- */}
       {selectedLeadDetails && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
           <div
             className="absolute inset-0"
             onClick={() => {
@@ -1147,7 +1163,7 @@ export default function Sales_My_Leads() {
 
       {/* --- MEETING MODAL --- */}
       {meetingLead && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl relative overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
             <div className="px-6 py-5 flex justify-between items-start border-b border-slate-100 bg-slate-50/50">
               <div>
@@ -1418,7 +1434,7 @@ export default function Sales_My_Leads() {
 
       {/* --- NOTE MODAL --- */}
       {noteLead && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-80 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div
             className="absolute inset-0"
             onClick={() => {
@@ -1529,7 +1545,7 @@ export default function Sales_My_Leads() {
 
       {/* --- ✅ নতুন — FOLLOW-UP / REMINDER MODAL --- */}
       {reminderLead && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div
             className="absolute inset-0"
             onClick={() => setReminderLead(null)}
