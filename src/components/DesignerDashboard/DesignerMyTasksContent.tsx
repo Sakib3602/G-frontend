@@ -176,7 +176,7 @@ const StatCard = ({
   );
 };
 
-// ─── Delivery Link Cell (editable only for normal designers) ──
+// ─── Delivery Link Cell (editable for both normal & full-access designers) ──
 
 const DeliveryLinkCell = ({
   itemId,
@@ -566,6 +566,10 @@ const CalendarTable = ({
     );
   }
 
+  // Full-access designer এখন Creative Team + Delivery Link দুইটাই পাবে —
+  // তাই column count normal view এর চেয়ে একটা বেশি।
+  const columnCount = fullAccess ? 10 : 9;
+
   return (
     <div className="w-full">
       <div className="mb-6">
@@ -585,7 +589,7 @@ const CalendarTable = ({
           {mine
             ? "Your assigned content items, sorted by delivery date."
             : fullAccess
-              ? "Creative Team, Post Type and Status — Everything can be edited here."
+              ? "Creative Team, Post Type, Status and Delivery Link — Everything can be edited here."
               : "Your assigned content items, sorted by delivery date."}
         </p>
       </div>
@@ -598,7 +602,10 @@ const CalendarTable = ({
 
       <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/30 shadow-xl backdrop-blur-2xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1050px" }}>
+          <table
+            className="w-full text-left"
+            style={{ tableLayout: "fixed", minWidth: fullAccess ? "1180px" : "1050px" }}
+          >
             <colgroup>
               <col style={{ width: "36px" }} />
               <col style={{ width: "120px" }} />
@@ -609,20 +616,35 @@ const CalendarTable = ({
               <col style={{ width: "130px" }} />
               <col style={{ width: "130px" }} />
               <col style={{ width: "180px" }} />
+              {fullAccess && <col style={{ width: "180px" }} />}
             </colgroup>
             <thead className="bg-white/50">
               <tr className="border-b-2 border-slate-200">
-                {[
-                  "#",
-                  "Client",
-                  "Schedule Date",
-                  "Delivery Date",
-                  "Platforms",
-                  "Post Headline",
-                  "Post Type",
-                  "Status",
-                  fullAccess ? "Creative Team" : "Delivery Link",
-                ].map((h) => (
+                {(fullAccess
+                  ? [
+                      "#",
+                      "Client",
+                      "Schedule Date",
+                      "Delivery Date",
+                      "Platforms",
+                      "Post Headline",
+                      "Post Type",
+                      "Status",
+                      "Creative Team",
+                      "Delivery Link",
+                    ]
+                  : [
+                      "#",
+                      "Client",
+                      "Schedule Date",
+                      "Delivery Date",
+                      "Platforms",
+                      "Post Headline",
+                      "Post Type",
+                      "Status",
+                      "Delivery Link",
+                    ]
+                ).map((h) => (
                   <th
                     key={h}
                     className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-slate-400"
@@ -635,7 +657,7 @@ const CalendarTable = ({
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-400">
+                  <td colSpan={columnCount} className="px-4 py-10 text-center text-sm text-slate-400">
                     {mine ? "You haven't assigned any items yet." : "No content items found."}
                   </td>
                 </tr>
@@ -752,6 +774,20 @@ const CalendarTable = ({
                           />
                         )}
                       </td>
+                      {/* NEW: Delivery Link column — এখন full-access designer-ও link boshate parbe */}
+                      {fullAccess && (
+                        <td className="px-3 py-2.5">
+                          <DeliveryLinkCell
+                            itemId={item._id}
+                            value={item.deliveryLink ?? ""}
+                            onSave={handleSaveLink}
+                            saving={
+                              updateLinkMutation.isPending &&
+                              updateLinkMutation.variables?.id === item._id
+                            }
+                          />
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -845,9 +881,8 @@ const DesignerMyTasksContent = () => {
   }
 
   const fullAccess = accessInfo?.fullAccess ?? false;
+  
 
-  // Normal designer — আগের মতোই flat "My Tasks" view (নিজের creativeTeamId
-  // এ assign হওয়া সব item, full-access designer assign করলেও এখানেই আসবে)।
   if (!fullAccess) {
     return (
       <div className="min-h-full w-full px-6 py-8">
