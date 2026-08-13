@@ -56,6 +56,14 @@ interface ClientOption {
   itemCount: number;
 }
 
+interface CalendarOption {
+  _id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  itemCount: number;
+}
+
 interface DashboardStats {
   running: number;
   dueThisMonth: number;
@@ -67,6 +75,11 @@ interface CalendarItemsResponse {
   stats: DashboardStats;
   fullAccess: boolean;
   mine?: boolean;
+}
+
+interface ClientsListResponse {
+  fullAccess: boolean;
+  data: ClientOption[];
 }
 
 // ─── Constants ────────────────────────────────────────────────
@@ -102,7 +115,7 @@ const PLATFORM_SHORT: Record<Platform, string> = {
 // ব্যাকএন্ডের POST_TYPE_OPTIONS এর সাথে হুবহু মিলিয়ে রাখো — নাহলে
 // dropdown এ পাঠানো value backend এ invalid বলে reject হবে।
 const POST_TYPE_OPTIONS = [
-   "Static",
+  "Static",
   "Reel",
   "Motion Graphics",
   "Memes (Static)",
@@ -309,8 +322,6 @@ const PostTypeCell = ({
 };
 
 // ─── Status Cell (editable only for full-access designer) ─────
-// NEW: full-access designer (oi 2 ta email) এখন থেকে main table থেকেই
-// status বদলাতে পারবে, শুধু Overdue section এ না।
 
 const StatusCell = ({
   itemId,
@@ -384,25 +395,17 @@ const ClientCard = ({
   );
 };
 
-// ─── Client List Screen (full-access designer, before picking a client) ──
+// ─── Client List Screen (both normal & full-access designer) ──
 
 const ClientListScreen = ({
+  clients,
+  isLoading,
   onSelectClient,
 }: {
+  clients: ClientOption[];
+  isLoading: boolean;
   onSelectClient: (client: ClientOption) => void;
 }) => {
-  const axiosDesigner = useAxiosDesigner();
-
-  const { data, isLoading } = useQuery<ClientOption[]>({
-    queryKey: ["designerClientsList"],
-    queryFn: async () => {
-      const res = await axiosDesigner.get("/api/v1/designer/clients-list");
-      return res.data.data;
-    },
-  });
-
-  const clients = data ?? [];
-
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-slate-400">
@@ -415,16 +418,16 @@ const ClientListScreen = ({
     <div className="w-full">
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-          All Clients
+          My Clients
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">
-          Browse all clients' calendars, edit Creative Team / Post Type / Status.
+          Select a client, then a calendar (month) to view content items.
         </p>
       </div>
 
       {clients.length === 0 ? (
         <div className="rounded-xl border border-white/50 bg-white/30 p-10 text-center text-sm text-slate-400">
-          No clients found.
+          No clients found. You don't have any items assigned yet.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -441,20 +444,100 @@ const ClientListScreen = ({
   );
 };
 
-// ─── Calendar Table (shared by normal designer + client-detail + "mine" view) ──
+// ─── Calendar (month) List Screen ──────────────────────────────
+
+const CalendarListScreen = ({
+  clientId,
+  clientName,
+  onSelectCalendar,
+  onBack,
+}: {
+  clientId: string;
+  clientName: string;
+  onSelectCalendar: (cal: CalendarOption) => void;
+  onBack: () => void;
+}) => {
+  const axiosDesigner = useAxiosDesigner();
+
+  const { data, isLoading } = useQuery<CalendarOption[]>({
+    queryKey: ["designerCalendarsForClient", clientId],
+    queryFn: async () => {
+      const res = await axiosDesigner.get(`/api/v1/designer/calendars/${clientId}`);
+      return res.data.data;
+    },
+  });
+
+  const calendars = data ?? [];
+
+  return (
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
+      >
+        ← Back to clients
+      </button>
+
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+          {clientName}
+        </h1>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Select a calendar (month) to view its content items.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="flex h-48 items-center justify-center text-sm text-slate-400">
+          Loading calendars...
+        </div>
+      ) : calendars.length === 0 ? (
+        <div className="rounded-xl border border-white/50 bg-white/30 p-10 text-center text-sm text-slate-400">
+          No calendars found here.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {calendars.map((cal) => (
+            <button
+              key={cal._id}
+              type="button"
+              onClick={() => onSelectCalendar(cal)}
+              className="flex flex-col items-start gap-2 rounded-xl border border-white/50 bg-white/40 p-4 text-left shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/60 hover:shadow-md"
+            >
+              <p className="text-sm font-semibold text-slate-800">{cal.title}</p>
+              <p className="text-xs text-slate-500">
+                {fmt(cal.startDate)} → {fmt(cal.endDate)}
+              </p>
+              <p className="text-[11px] text-slate-400">
+                {cal.itemCount} item{cal.itemCount === 1 ? "" : "s"}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Calendar Table (items for one client + one calendar/month, or "mine") ──
 
 const CalendarTable = ({
   clientId,
+  calendarId,
   clientName,
   mine,
   fullAccessOverride,
   onBack,
 }: {
-  // clientId থাকলে শুধু ওই client এর item আসবে (full-access flow)
+  // marketer flow er moto: ekta specific client + ekta specific calendar
+  // (month batch) er item dekhano hoy.
   clientId?: string;
+  calendarId?: string;
   clientName?: string;
   // mine=true হলে শুধু নিজের creativeTeamId তে assign হওয়া item আসবে
-  // (full-access designer নিজেকে assign করলে সেটা এখানে দেখতে পাবে)
+  // (full-access designer নিজেকে assign করলে সেটা এখানে দেখতে পাবে) — এটা
+  // client/calendar select না করেই cross-client flat view.
   mine?: boolean;
   // fullAccessOverride true মানে আমরা জানি এইটা full-access designer এর
   // view, তাই creativeTeam/postType/status dropdown দেখাতে হবে।
@@ -464,16 +547,20 @@ const CalendarTable = ({
   const axiosDesigner = useAxiosDesigner();
   const queryClient = useQueryClient();
 
-  const queryKeySuffix = clientId ? `client:${clientId}` : mine ? "mine" : "own";
+  const queryKeySuffix = mine
+    ? "mine"
+    : `client:${clientId}:calendar:${calendarId}`;
 
   const { data, isLoading } = useQuery<CalendarItemsResponse>({
     queryKey: ["designerCalendarItems", queryKeySuffix],
     queryFn: async () => {
-      const params = clientId
-        ? { clientId }
-        : mine
-          ? { mine: "true" }
-          : undefined;
+      const params: Record<string, string> = {};
+      if (mine) {
+        params.mine = "true";
+      } else {
+        if (clientId) params.clientId = clientId;
+        if (calendarId) params.calendarId = calendarId;
+      }
       const res = await axiosDesigner.get("/api/v1/designer/calendar-items", {
         params,
       });
@@ -535,6 +622,7 @@ const CalendarTable = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["designerCalendarItems"] });
       queryClient.invalidateQueries({ queryKey: ["designerClientsList"] });
+      queryClient.invalidateQueries({ queryKey: ["designerCalendarsForClient"] });
     },
     onError: (err) => {
       console.error("Failed to update calendar item:", err);
@@ -590,7 +678,7 @@ const CalendarTable = ({
             ? "Your assigned content items, sorted by delivery date."
             : fullAccess
               ? "Creative Team, Post Type, Status and Delivery Link — Everything can be edited here."
-              : "Your assigned content items, sorted by delivery date."}
+              : "Your assigned content items for this month."}
         </p>
       </div>
 
@@ -658,7 +746,7 @@ const CalendarTable = ({
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={columnCount} className="px-4 py-10 text-center text-sm text-slate-400">
-                    {mine ? "You haven't assigned any items yet." : "No content items found."}
+                    {mine ? "You haven't assigned any items yet." : "No content items found for this month."}
                   </td>
                 </tr>
               ) : (
@@ -774,7 +862,7 @@ const CalendarTable = ({
                           />
                         )}
                       </td>
-                      {/* NEW: Delivery Link column — এখন full-access designer-ও link boshate parbe */}
+                      {/* Delivery Link column — full-access designer-ও link boshate parbe */}
                       {fullAccess && (
                         <td className="px-3 py-2.5">
                           <DeliveryLinkCell
@@ -800,6 +888,7 @@ const CalendarTable = ({
   );
 };
 
+// ─── Full-access top menu: Browse by Client vs My Assigned Items ──
 
 const FullAccessMenu = ({
   onBrowseClients,
@@ -813,7 +902,7 @@ const FullAccessMenu = ({
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">Content Calendar</h1>
         <p className="mt-0.5 text-sm text-slate-500">
-        Your assigned content items, sorted by delivery date. Creative Team / Post Type / Status can be edited here.
+          Browse clients month-by-month, or jump straight to your own assigned items.
         </p>
       </div>
 
@@ -825,7 +914,7 @@ const FullAccessMenu = ({
         >
           <span className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Browse by Client</span>
           <p className="text-sm text-slate-600">
-            View all clients' calendars, edit Creative Team / Post Type / Status.
+            Select a client, then a calendar (month), edit Creative Team / Post Type / Status.
           </p>
         </button>
 
@@ -836,7 +925,7 @@ const FullAccessMenu = ({
         >
           <span className="text-sm font-semibold uppercase tracking-wide text-indigo-700">My Assigned Items</span>
           <p className="text-sm text-slate-600">
-           Your assigned content items, sorted by delivery date. Creative Team / Post Type / Status can be edited here.
+            All your assigned content items across every client, sorted by delivery date.
           </p>
         </button>
       </div>
@@ -846,33 +935,29 @@ const FullAccessMenu = ({
 
 // ─── Main ─────────────────────────────────────────────────────
 
-type FullAccessView = "menu" | "clients" | "client-detail" | "mine";
+type ViewState = "menu" | "clients" | "calendars" | "table" | "mine";
 
 const DesignerMyTasksContent = () => {
   const axiosDesigner = useAxiosDesigner();
-  const [view, setView] = useState<FullAccessView>("menu");
+  const [view, setView] = useState<ViewState>("clients");
   const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null);
+  const [selectedCalendar, setSelectedCalendar] = useState<CalendarOption | null>(null);
 
-  // fullAccess কিনা সেটা বোঝার জন্য /clients-list কল করে দেখি — 403
-  // এলে normal designer, 200 এলে full-access designer।
-  const { data: accessInfo, isLoading: accessLoading } = useQuery<{
-    fullAccess: boolean;
-  }>({
-    queryKey: ["designerFullAccessCheck"],
+  // একবারই clients-list কল হয় — fullAccess flag ও client list দুটোই এখান থেকে আসে।
+  // Normal designer হলে backend শুধু তার নিজের assign করা item-ওয়ালা client গুলো
+  // পাঠাবে, full-access designer হলে সব client।
+  const { data: clientsResp, isLoading: clientsLoading } = useQuery<ClientsListResponse>({
+    queryKey: ["designerClientsList"],
     queryFn: async () => {
-      try {
-        await axiosDesigner.get("/api/v1/designer/clients-list");
-        return { fullAccess: true };
-      } catch (err: any) {
-        if (err?.response?.status === 403) {
-          return { fullAccess: false };
-        }
-        throw err;
-      }
+      const res = await axiosDesigner.get("/api/v1/designer/clients-list");
+      return res.data;
     },
   });
 
-  if (accessLoading) {
+  const fullAccess = clientsResp?.fullAccess ?? false;
+  const clients = clientsResp?.data ?? [];
+
+  if (clientsLoading) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-slate-400">
         Loading...
@@ -880,50 +965,51 @@ const DesignerMyTasksContent = () => {
     );
   }
 
-  const fullAccess = accessInfo?.fullAccess ?? false;
-  
+  const handleSelectClient = (client: ClientOption) => {
+    setSelectedClient(client);
+    setSelectedCalendar(null);
+    setView("calendars");
+  };
 
-  if (!fullAccess) {
-    return (
-      <div className="min-h-full w-full px-6 py-8">
-        <CalendarTable fullAccessOverride={false} />
-      </div>
-    );
-  }
+  const handleSelectCalendar = (cal: CalendarOption) => {
+    setSelectedCalendar(cal);
+    setView("table");
+  };
 
-  // Full-access designer — প্রথমে মেনু: Browse by Client / My Assigned Items
   return (
     <div className="min-h-full w-full px-6 py-8">
-      {view === "menu" && (
+      {/* Full-access designer আগে একটা choice menu দেখবে: Browse by Client / My Assigned Items */}
+      {fullAccess && view === "menu" && (
         <FullAccessMenu
           onBrowseClients={() => setView("clients")}
           onViewMine={() => setView("mine")}
         />
       )}
 
-      {view === "clients" && !selectedClient && (
+      {view === "clients" && (
         <>
-          <button
-            type="button"
-            onClick={() => setView("menu")}
-            className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
-          >
-            ← Back to menu
-          </button>
+          {fullAccess && (
+            <button
+              type="button"
+              onClick={() => setView("menu")}
+              className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
+            >
+              ← Back to menu
+            </button>
+          )}
           <ClientListScreen
-            onSelectClient={(client) => {
-              setSelectedClient(client);
-              setView("client-detail");
-            }}
+            clients={clients}
+            isLoading={clientsLoading}
+            onSelectClient={handleSelectClient}
           />
         </>
       )}
 
-      {view === "client-detail" && selectedClient && (
-        <CalendarTable
+      {view === "calendars" && selectedClient && (
+        <CalendarListScreen
           clientId={selectedClient._id}
           clientName={selectedClient.name}
-          fullAccessOverride={true}
+          onSelectCalendar={handleSelectCalendar}
           onBack={() => {
             setSelectedClient(null);
             setView("clients");
@@ -931,12 +1017,22 @@ const DesignerMyTasksContent = () => {
         />
       )}
 
+      {view === "table" && selectedClient && selectedCalendar && (
+        <CalendarTable
+          clientId={selectedClient._id}
+          calendarId={selectedCalendar._id}
+          clientName={`${selectedClient.name} — ${selectedCalendar.title}`}
+          fullAccessOverride={fullAccess}
+          onBack={() => setView("calendars")}
+        />
+      )}
+
       {view === "mine" && (
         <CalendarTable
           mine={true}
           clientName="My Assigned Items"
-          fullAccessOverride={true}
-          onBack={() => setView("menu")}
+          fullAccessOverride={fullAccess}
+          onBack={() => setView(fullAccess ? "menu" : "clients")}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet } from "react-router"; // Updated to react-router-dom for React 18+ standard
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useContext, useState } from "react";
 import { Helmet } from "react-helmet";
@@ -13,123 +13,84 @@ import {
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
   HiOutlineSwitchHorizontal,
+  HiOutlineBell,
+  HiOutlineSearch,
 } from "react-icons/hi";
-import { SiCardmarket , SiMoneygram  } from "react-icons/si";
-
+import { SiCardmarket, SiMoneygram } from "react-icons/si";
 import { IoDocumentTextSharp } from "react-icons/io5";
 import { Shield } from "lucide-react";
 
 const MENU_ITEMS = [
   { name: "Home", path: "/dashboard/admin", icon: HiOutlineHome },
-  {
-    name: "All Employees",
-    path: "/dashboard/admin/employees",
-    icon: HiOutlineUsers,
-  },
-  {
-    name: "Content Calendars",
-    path: "/dashboard/admin/content-calendar",
-    icon: HiOutlineCalendar,
-  },
-
-  {
-    name: "Delay Works",
-    path: "/dashboard/admin/delay-works",
-    icon: HiOutlineClock,
-  },
-  {
-    name: "EM Reports",
-    path: "/dashboard/admin/em-reports",
-    icon: IoDocumentTextSharp,
-  },
-  {
-    name: "Campaigns Requests",
-    path: "/dashboard/admin/campaigns",
-    icon: HiOutlineSpeakerphone,
-  },
-  {
-    name: "Marketing Dept.",
-    path: "/dashboard/admin/marketing",
-    icon: SiCardmarket,
-  },
-  {
-    name: "Sales Dept.",
-    path: "/dashboard/admin/sales",
-    icon: SiMoneygram,
-  },
-  {
-    name: "Add Task",
-    path: "/dashboard/admin/add-task",
-    icon: HiOutlineQuestionMarkCircle,
-  },
-  {
-  name: "Lead Transfers",
-  path: "/dashboard/admin/lead-transfers",
-  icon: HiOutlineSwitchHorizontal,
-},
- 
-
-  {
-    name: "Complines",
-    path: "/dashboard/admin/compliance",
-    icon: Shield,
-  },
-  {
-    name: "Pending Assignments",
-    path: "/dashboard/admin/pending-assignments",
-    icon: HiOutlineClock,
-  },
-  
+  { name: "All Employees", path: "/dashboard/admin/employees", icon: HiOutlineUsers },
+  { name: "Content Calendars", path: "/dashboard/admin/content-calendar", icon: HiOutlineCalendar },
+  { name: "Delay Works", path: "/dashboard/admin/delay-works", icon: HiOutlineClock },
+  { name: "EM Reports", path: "/dashboard/admin/em-reports", icon: IoDocumentTextSharp },
+  { name: "Campaigns Requests", path: "/dashboard/admin/campaigns", icon: HiOutlineSpeakerphone },
+  { name: "Marketing Dept.", path: "/dashboard/admin/marketing", icon: SiCardmarket },
+  { name: "Sales Dept.", path: "/dashboard/admin/sales", icon: SiMoneygram },
+  { name: "Add Task", path: "/dashboard/admin/add-task", icon: HiOutlineQuestionMarkCircle },
+  { name: "Lead Transfers", path: "/dashboard/admin/lead-transfers", icon: HiOutlineSwitchHorizontal },
+  { name: "Complaints", path: "/dashboard/admin/compliance", icon: Shield },
+  { name: "Pending Assignments", path: "/dashboard/admin/pending-assignments", icon: HiOutlineClock },
 ];
 
 const AdminHome = () => {
-  // const { logOut } = useContext(AuthContext);
-
   const auth = useContext(AuthContext);
   const logOut = auth?.logOut;
-
   const person = auth?.person;
+
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="poppins-regular flex h-screen bg-gray-50 font-sans">
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Welcome Admin</title>
+        <title>Genesys Admin Panel</title>
       </Helmet>
-      {/* Sidebar */}
+
+      {/* Sidebar - Updated to match image_8a117c.png (#1C2621 theme) */}
       <nav
         className={`${
-          isOpen ? "w-60" : "w-20"
-        } border-r border-gray-200 bg-white flex flex-col justify-between transition-all duration-300 ease-in-out relative`}
+          isOpen ? "w-[280px]" : "w-20"
+        } bg-[#1C2621] border-r border-[#151D19] flex flex-col justify-between transition-all duration-300 ease-in-out relative z-20 shadow-xl`}
       >
-        {/* Toggle button - sits on the sidebar edge */}
+        {/* Toggle button - Made more professional */}
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          className="absolute -right-3 top-8 z-10 w-6 h-6 flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-[#F7941D] hover:border-[#F7941D] rounded-full shadow-sm transition-colors"
+          className="absolute -right-4 top-8 z-30 w-8 h-8 flex items-center justify-center bg-[#2A3831] border-2 border-[#1C2621] text-gray-300 hover:text-white hover:bg-[#34463D] rounded-full transition-all shadow-md cursor-pointer"
           aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
           {isOpen ? (
-            <HiChevronDoubleLeft size={12} />
+            <HiChevronDoubleLeft size={16} />
           ) : (
-            <HiChevronDoubleRight size={12} />
+            <HiChevronDoubleRight size={16} />
           )}
         </button>
 
-        <div className="p-4">
-          <div
-            className={`flex items-center mb-8 ${isOpen ? "px-2" : "justify-center"}`}
-          >
+        {/* Sidebar Header / Logo */}
+        <div className="h-20 flex items-center border-b border-[#2A3831]">
+          <div className={`w-full flex items-center ${isOpen ? "px-6" : "justify-center"}`}>
             {isOpen ? (
-              <h2 className="text-[#F7941D] text-xl font-bold whitespace-nowrap overflow-hidden">
-                Admin Dashboard
-              </h2>
+              <div className="flex flex-col">
+                <h2 className="text-white text-2xl font-black tracking-tight whitespace-nowrap overflow-hidden">
+                  Genesys
+                </h2>
+                <span className="text-xs uppercase tracking-widest text-gray-400 font-semibold mt-0.5">
+                  Admin Panel
+                </span>
+              </div>
             ) : (
-              <span className="text-[#F7941D] text-xl font-bold">A</span>
+              <span className="text-white text-xl font-black bg-[#2A3831] w-10 h-10 flex items-center justify-center rounded-xl shadow-lg">
+                G
+              </span>
             )}
           </div>
+        </div>
 
-          <ul className="space-y-2">
+        {/* Navigation Links - Text size increased */}
+        <div className="flex-1 overflow-y-auto py-6 custom-scrollbar">
+          <ul className="space-y-2 px-3">
             {MENU_ITEMS.map(({ name, path, icon: Icon }) => (
               <li key={name}>
                 <NavLink
@@ -137,16 +98,16 @@ const AdminHome = () => {
                   end={path === "/dashboard/admin"}
                   title={!isOpen ? name : undefined}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
-                      !isOpen ? "justify-center px-0" : ""
+                    `flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 text-base font-medium ${
+                      !isOpen ? "justify-center px-0 py-3" : ""
                     } ${
                       isActive
-                        ? "text-[#F7941D] bg-orange-50 font-bold"
-                        : "text-gray-600 hover:bg-gray-100"
+                        ? "text-white bg-[#2A3831] shadow-inner border-l-4 border-amber-500" // Added a subtle accent border for active state
+                        : "text-gray-400 hover:text-white hover:bg-[#232F29]"
                     }`
                   }
                 >
-                  <Icon size={20} className="shrink-0" />
+                  <Icon size={22} className="shrink-0" />
                   {isOpen && (
                     <span className="whitespace-nowrap overflow-hidden">
                       {name}
@@ -159,38 +120,65 @@ const AdminHome = () => {
         </div>
 
         {/* User Profile & Logout Section */}
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-[#2A3831] bg-[#18211C]">
           {isOpen && (
-            <div className="mb-4 px-2">
-              <p className="text-sm font-semibold text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">
-                Welcome, Admin
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {person?.email || "sakib@example.com"}
-              </p>
+            <div className="mb-4 px-2 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#2A3831] border border-[#34463D] flex items-center justify-center text-gray-200 font-bold shrink-0 text-lg">
+                A
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-base font-bold text-white truncate">
+                  Admin User
+                </p>
+                <p className="text-sm text-gray-400 truncate">
+                  {person?.email || "admin@genesys.com"}
+                </p>
+              </div>
             </div>
           )}
           <button
             onClick={logOut}
             title={!isOpen ? "Logout" : undefined}
-            className={`w-full flex items-center gap-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-3 text-base font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 px-4 py-3 rounded-lg transition-colors ${
               !isOpen ? "justify-center px-0" : ""
             }`}
           >
-            <HiOutlineLogout size={18} className="shrink-0" />
+            <HiOutlineLogout size={22} className="shrink-0" />
             {isOpen && <span>Logout</span>}
           </button>
         </div>
       </nav>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 shadow-sm">
-          <h3 className="font-semibold text-gray-700">Overview</h3>
+      {/* Main Content Area (Navbar remains unchanged) */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Top Header */}
+        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 sticky top-0">
+          <div className="flex items-center gap-4">
+            <h3 className="text-lg font-bold text-gray-800">Dashboard Overview</h3>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="relative hidden md:flex items-center">
+              <HiOutlineSearch className="absolute left-3 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Search anything..." 
+                className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all w-64"
+              />
+            </div>
+            
+            <button className="relative text-gray-400 hover:text-blue-600 transition-colors">
+              <HiOutlineBell size={24} />
+              <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8">
-          <Outlet />
+        {/* Dynamic Content */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50/50">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

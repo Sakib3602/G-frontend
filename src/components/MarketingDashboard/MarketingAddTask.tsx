@@ -138,6 +138,7 @@ const MarketingAddTask: React.FC = () => {
     });
   };
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const selectedCampaignId = watch("campaignId");
   const selectedLeadId = watch("leadId");
 
@@ -175,7 +176,7 @@ const MarketingAddTask: React.FC = () => {
       showNotification && <Alert title="Task is Assigned!"  message="Your Task Successfuly Assigned." onClose={() => setShowNotification(false)}></Alert>
     }
     <div className="mx-auto   max-w-4xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)]">
-      <div className=" bg-[linear-gradient(135deg,_rgba(201,166,70,0.16),_rgba(248,250,252,1)_60%)] px-6 py-8 sm:px-8">
+      <div className=" bg-[linear-gradient(135deg,rgba(201,166,70,0.16),rgba(248,250,252,1)_60%)] px-6 py-8 sm:px-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A646]/20 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A22] shadow-sm">
           <span className="h-2 w-2 rounded-full bg-[#C9A646]" />
           Marketing task studio
@@ -314,12 +315,12 @@ const MarketingAddTask: React.FC = () => {
               </div>
             </div>
 
-            <div className="max-h-[300px] space-y-2.5 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+            <div className="max-h-75 space-y-2.5 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
               {isTeamMembersLoading && <p className="px-1 text-xs text-slate-500">Loading team members...</p>}
               {teamMembers.map((member) => (
                 <label
                   key={member.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-3 transition hover:border-[#C9A646]/40 hover:shadow-sm has-[:checked]:border-[#C9A646] has-[:checked]:bg-[#C9A646]/5"
+                  className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-3 transition hover:border-[#C9A646]/40 hover:shadow-sm has-checked:border-[#C9A646] has-checked:bg-[#C9A646]/5"
                 >
                   <input
                     type="radio"

@@ -13,7 +13,8 @@ import {
   TimerReset,
   CheckCircle,
   ListFilter,
-  Shield
+  Shield,
+  Loader
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Link, Outlet, useLocation } from "react-router";
@@ -101,10 +102,10 @@ const MarketingHome = () => {
     {
       name: "In Progress",
       path: "/dashboard/marketing/in-progress",
-      icon: ListFilter,
+      icon: Loader,
     },
     {
-      name: "Compliance",
+      name: "Complaints",
       path: "/dashboard/marketing/compliance",
       icon: Shield,
     },

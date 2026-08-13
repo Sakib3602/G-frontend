@@ -664,7 +664,7 @@ const MarketingCreateCampaign = () => {
                       {...register("targetLeads", {
                         required: "Target leads is required",
                         valueAsNumber: true,
-                        min: { value: 1, message: "Must target at least 1 lead" },
+                        min: { value: 0, message: "Must target at least 1 lead" },
                       })}
                     />
                     {errors.targetLeads && <p className="mcf-error-msg">{errors.targetLeads.message}</p>}
