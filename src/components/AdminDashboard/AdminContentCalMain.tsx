@@ -669,14 +669,37 @@ const AdminContentCalMain = () => {
 
   return (
     <div className="min-h-full w-full">
+      {/* 
+        =======================================================
+        Added Custom CSS for beautiful slim scrollbars 
+        =======================================================
+      */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 8px;
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f8fafc;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+
       <div className="px-8 pt-8 pb-4">
         {/* Header */}
-       <button
-               onClick={() => navigate(-1)}
-               className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-black mb-4"
-             >
-               <FiArrowLeft /> Back to List
-             </button>
+        <button
+          onClick={() => navigate(-1)}
+          className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-black mb-4"
+        >
+          <FiArrowLeft /> Back to List
+        </button>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <div className="mb-1 inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
@@ -840,7 +863,13 @@ const AdminContentCalMain = () => {
               Loading rows...
             </div>
           ) : (
-            <div className="overflow-x-auto overflow-y-visible px-4 pb-8">
+            /* 
+              =======================================================
+              Changed class: added max-h-[65vh], overflow-y-auto, 
+              and custom-scrollbar for the table container.
+              =======================================================
+            */
+            <div className="overflow-x-auto overflow-y-auto max-h-[65vh] custom-scrollbar px-4 pb-4">
               <table
                 className="w-full text-left"
                 style={{ tableLayout: "fixed", minWidth: "1100px" }}
@@ -858,7 +887,13 @@ const AdminContentCalMain = () => {
                   <col style={{ width: "120px" }} />
                   <col style={{ width: "150px" }} />
                 </colgroup>
-                <thead className="sticky top-0 z-10 bg-white/90 backdrop-blur">
+                {/* 
+                  =======================================================
+                  Changed class: updated z-index to z-20 and added shadow-sm 
+                  to make the sticky header prominent.
+                  =======================================================
+                */}
+                <thead className="sticky top-0 z-20 bg-white/95 backdrop-blur shadow-sm">
                   <tr className="border-b-2 border-slate-200">
                     {[
                       "#",

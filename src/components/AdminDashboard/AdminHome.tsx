@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router"; // Updated to react-router-dom for React 18+ standard
+import { NavLink, Outlet } from "react-router"; // Updated to react-router-dom
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useContext, useState } from "react";
 import { Helmet } from "react-helmet";
@@ -13,8 +13,6 @@ import {
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
   HiOutlineSwitchHorizontal,
-  HiOutlineBell,
-  HiOutlineSearch,
 } from "react-icons/hi";
 import { SiCardmarket, SiMoneygram } from "react-icons/si";
 import { IoDocumentTextSharp } from "react-icons/io5";
@@ -49,16 +47,16 @@ const AdminHome = () => {
         <title>Genesys Admin Panel</title>
       </Helmet>
 
-      {/* Sidebar - Updated to match image_8a117c.png (#1C2621 theme) */}
+      {/* Sidebar - Updated to White & Gold theme */}
       <nav
         className={`${
           isOpen ? "w-[280px]" : "w-20"
-        } bg-[#1C2621] border-r border-[#151D19] flex flex-col justify-between transition-all duration-300 ease-in-out relative z-20 shadow-xl`}
+        } bg-white border-r border-gray-200 flex flex-col justify-between transition-all duration-300 ease-in-out relative z-20 shadow-lg`}
       >
-        {/* Toggle button - Made more professional */}
+        {/* Toggle button */}
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          className="absolute -right-4 top-8 z-30 w-8 h-8 flex items-center justify-center bg-[#2A3831] border-2 border-[#1C2621] text-gray-300 hover:text-white hover:bg-[#34463D] rounded-full transition-all shadow-md cursor-pointer"
+          className="absolute -right-4 top-8 z-30 w-8 h-8 flex items-center justify-center bg-white border-2 border-gray-200 text-gray-500 hover:text-[#D4AF37] hover:border-[#D4AF37] rounded-full transition-all shadow-md cursor-pointer"
           aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
           {isOpen ? (
@@ -69,26 +67,26 @@ const AdminHome = () => {
         </button>
 
         {/* Sidebar Header / Logo */}
-        <div className="h-20 flex items-center border-b border-[#2A3831]">
+        <div className="h-20 flex items-center border-b border-gray-100">
           <div className={`w-full flex items-center ${isOpen ? "px-6" : "justify-center"}`}>
             {isOpen ? (
               <div className="flex flex-col">
-                <h2 className="text-white text-2xl font-black tracking-tight whitespace-nowrap overflow-hidden">
+                <h2 className="text-gray-800 text-2xl font-black tracking-tight whitespace-nowrap overflow-hidden">
                   Genesys
                 </h2>
-                <span className="text-xs uppercase tracking-widest text-gray-400 font-semibold mt-0.5">
+                <span className="text-xs uppercase tracking-widest text-[#D4AF37] font-bold mt-0.5">
                   Admin Panel
                 </span>
               </div>
             ) : (
-              <span className="text-white text-xl font-black bg-[#2A3831] w-10 h-10 flex items-center justify-center rounded-xl shadow-lg">
+              <span className="text-white text-xl font-black bg-[#D4AF37] w-10 h-10 flex items-center justify-center rounded-xl shadow-md">
                 G
               </span>
             )}
           </div>
         </div>
 
-        {/* Navigation Links - Text size increased */}
+        {/* Navigation Links */}
         <div className="flex-1 overflow-y-auto py-6 custom-scrollbar">
           <ul className="space-y-2 px-3">
             {MENU_ITEMS.map(({ name, path, icon: Icon }) => (
@@ -102,8 +100,8 @@ const AdminHome = () => {
                       !isOpen ? "justify-center px-0 py-3" : ""
                     } ${
                       isActive
-                        ? "text-white bg-[#2A3831] shadow-inner border-l-4 border-amber-500" // Added a subtle accent border for active state
-                        : "text-gray-400 hover:text-white hover:bg-[#232F29]"
+                        ? "text-[#D4AF37] bg-amber-50 shadow-sm border-l-4 border-[#D4AF37]" 
+                        : "text-gray-600 hover:text-[#D4AF37] hover:bg-amber-50/50"
                     }`
                   }
                 >
@@ -120,17 +118,17 @@ const AdminHome = () => {
         </div>
 
         {/* User Profile & Logout Section */}
-        <div className="p-4 border-t border-[#2A3831] bg-[#18211C]">
+        <div className="p-4 border-t border-gray-200 bg-gray-50/80">
           {isOpen && (
             <div className="mb-4 px-2 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#2A3831] border border-[#34463D] flex items-center justify-center text-gray-200 font-bold shrink-0 text-lg">
+              <div className="w-10 h-10 rounded-full bg-[#D4AF37] border-2 border-white flex items-center justify-center text-white font-bold shrink-0 text-lg shadow-sm">
                 A
               </div>
               <div className="overflow-hidden">
-                <p className="text-base font-bold text-white truncate">
+                <p className="text-base font-bold text-gray-800 truncate">
                   Admin User
                 </p>
-                <p className="text-sm text-gray-400 truncate">
+                <p className="text-sm text-gray-500 truncate">
                   {person?.email || "admin@genesys.com"}
                 </p>
               </div>
@@ -139,7 +137,7 @@ const AdminHome = () => {
           <button
             onClick={logOut}
             title={!isOpen ? "Logout" : undefined}
-            className={`w-full flex items-center gap-3 text-base font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 px-4 py-3 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-3 text-base font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-3 rounded-lg transition-colors ${
               !isOpen ? "justify-center px-0" : ""
             }`}
           >
@@ -149,33 +147,17 @@ const AdminHome = () => {
         </div>
       </nav>
 
-      {/* Main Content Area (Navbar remains unchanged) */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Top Header */}
         <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 sticky top-0">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-bold text-gray-800">Dashboard Overview</h3>
           </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="relative hidden md:flex items-center">
-              <HiOutlineSearch className="absolute left-3 text-gray-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search anything..." 
-                className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all w-64"
-              />
-            </div>
-            
-            <button className="relative text-gray-400 hover:text-blue-600 transition-colors">
-              <HiOutlineBell size={24} />
-              <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-          </div>
         </header>
 
         {/* Dynamic Content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50/50">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
