@@ -5,11 +5,13 @@ import {
   User,
   AlignLeft,
   Briefcase,
-
   Clock,
   CheckCircle2,
   AlertTriangle,
   Plus,
+  MessageSquare,
+  Send,
+  Trash2,
 } from "lucide-react";
 import useAxiosAdmin from "@/uri/useAxiosAdmin"; // TODO: adjust import path/hook name if different
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +45,14 @@ type RemainingDateCompleted = {
   overdueHours: number;
 };
 
+type CommentApi = {
+  _id: string;
+  text: string;
+  commentBy: { _id: string; name: string; email: string } | string;
+  commentByName: string;
+  createdAt: string;
+};
+
 type TaskApi = {
   _id: string;
   title: string;
@@ -56,6 +66,7 @@ type TaskApi = {
   makerId?: { _id: string; name: string };
   remainingDate: RemainingDatePending | RemainingDateCompleted;
   url?: string;
+  comments?: CommentApi[];
 };
 
 type TaskFormData = {
@@ -82,7 +93,7 @@ function isPendingRemaining(
 }
 
 const AdminAddTask: React.FC = () => {
-    const auth = useContext(AuthContext);
+  const auth = useContext(AuthContext);
   const person = auth?.person;
   const axiosAdmin = useAxiosAdmin();
   const axiosPub = useAxiosPublic();
@@ -90,20 +101,22 @@ const AdminAddTask: React.FC = () => {
   const { data: userData, isLoading } = useQuery({
     queryKey: ["user-data", person?.email],
     enabled: Boolean(person?.email),
-    staleTime: Infinity, 
+    staleTime: Infinity,
     queryFn: async () => {
       const res = await axiosPub.get(`/api/v1/user/${person?.email}`);
       return res.data.data;
     },
   });
 
- 
-
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<"pending" | "completed">("pending");
   const [showForm, setShowForm] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+
+  // ---------- Comments UI state ----------
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
 
   // ---------- Queries ----------
   const { data: employees = [], isLoading: isEmployeesLoading } = useQuery<EmployeeApi[]>({
@@ -143,8 +156,6 @@ const AdminAddTask: React.FC = () => {
     },
     enabled: activeTab === "completed",
   });
-
-  
 
   const overdueCount = useMemo(
     () => pendingTasks.filter((t) => isPendingRemaining(t.remainingDate) && t.remainingDate.isOverdue).length,
@@ -213,9 +224,43 @@ const AdminAddTask: React.FC = () => {
     mutationCreateTask.mutate(data);
   };
 
+  // ---------- Comments mutations ----------
+  const mutationAddComment = useMutation({
+    mutationFn: async ({ taskId, text }: { taskId: string; text: string }) => {
+      const res = await axiosAdmin.post(`/admin/tasks/${taskId}/comment`, { text });
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      setCommentDraft((prev) => ({ ...prev, [variables.taskId]: "" }));
+      queryClient.invalidateQueries({ queryKey: ["admin-marketing-tasks-pending"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-marketing-tasks-completed"] });
+    },
+  });
+
+  const mutationDeleteComment = useMutation({
+    mutationFn: async ({ taskId, commentId }: { taskId: string; commentId: string }) => {
+      const res = await axiosAdmin.delete(`/admin/tasks/${taskId}/comment/${commentId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-marketing-tasks-pending"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-marketing-tasks-completed"] });
+    },
+  });
+
+  const handleAddComment = (taskId: string) => {
+    const text = commentDraft[taskId]?.trim();
+    if (!text || mutationAddComment.isPending) return;
+    mutationAddComment.mutate({ taskId, text });
+  };
+
+  const handleDeleteComment = (taskId: string, commentId: string) => {
+    if (mutationDeleteComment.isPending) return;
+    mutationDeleteComment.mutate({ taskId, commentId });
+  };
+
   const tasks = activeTab === "pending" ? pendingTasks : completedTasks;
   const isTasksLoading = activeTab === "pending" ? isPendingLoading : isCompletedLoading;
-
 
   return (
     <>
@@ -227,9 +272,7 @@ const AdminAddTask: React.FC = () => {
         />
       )}
 
-      {
-        isLoading && <div className="flex items-center justify-center h-screen">Loading....</div>
-      }
+      {isLoading && <div className="flex items-center justify-center h-screen">Loading....</div>}
 
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
         {/* Header */}
@@ -256,8 +299,6 @@ const AdminAddTask: React.FC = () => {
             </button>
           </div>
         </div>
-
-      
 
         {/* Create task form (collapsible) */}
         {showForm && (
@@ -433,6 +474,9 @@ const AdminAddTask: React.FC = () => {
             {tasks.map((task) => {
               const remaining = task.remainingDate;
               const overdue = remaining?.isOverdue;
+              const isExpanded = expandedTaskId === task._id;
+              const commentCount = task.comments?.length ?? 0;
+
               return (
                 <div
                   key={task._id}
@@ -489,13 +533,91 @@ const AdminAddTask: React.FC = () => {
                             overdue ? "bg-rose-100 text-rose-700" : "bg-emerald-50 text-emerald-700"
                           }`}
                         >
-                          {overdue
-                            ? `Finished ${remaining.overdueHours}h late`
-                            : "Finished on time"}
+                          {overdue ? `Finished ${remaining.overdueHours}h late` : "Finished on time"}
                         </span>
                       )}
                     </div>
                   </div>
+
+                  {/* Comments toggle */}
+                  <button
+                    onClick={() => setExpandedTaskId(isExpanded ? null : task._id)}
+                    className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[#9A7A22] hover:text-[#7d641b] hover:underline"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {isExpanded ? "Hide comments" : `Comments (${commentCount})`}
+                  </button>
+
+                  {/* Comments panel */}
+                  {isExpanded && (
+                    <div className="mt-2.5 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+                      {commentCount === 0 && (
+                        <p className="text-xs text-slate-400">No comments yet. Be the first to add one.</p>
+                      )}
+
+                      <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                        {(task.comments ?? [])
+                          .slice()
+                          .sort(
+                            (a, b) =>
+                              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                          )
+                          .map((c) => (
+                            <div
+                              key={c._id}
+                              className="group relative rounded-xl bg-slate-50 px-3 py-2"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-semibold text-slate-700">
+                                  {c.commentByName}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400">
+                                    {new Date(c.createdAt).toLocaleString()}
+                                  </span>
+                                  <button
+                                    onClick={() => handleDeleteComment(task._id, c._id)}
+                                    className="text-slate-300 opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
+                                    title="Delete comment"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="mt-0.5 whitespace-pre-wrap text-xs leading-5 text-slate-600">
+                                {c.text}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={commentDraft[task._id] ?? ""}
+                          onChange={(e) =>
+                            setCommentDraft((prev) => ({ ...prev, [task._id]: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddComment(task._id);
+                            }
+                          }}
+                          placeholder="Write a comment..."
+                          className="w-full rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs outline-none transition focus:border-[#C9A646] focus:bg-white focus:ring-2 focus:ring-[#C9A646]/20"
+                        />
+                        <button
+                          onClick={() => handleAddComment(task._id)}
+                          disabled={mutationAddComment.isPending || !commentDraft[task._id]?.trim()}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#C9A646] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#b89434] disabled:cursor-not-allowed disabled:bg-slate-300"
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                          {mutationAddComment.isPending ? "Sending..." : "Send"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
