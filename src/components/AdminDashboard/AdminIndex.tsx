@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
 import {
- 
   BarChart,
   Bar,
   PieChart,
@@ -26,8 +25,10 @@ import {
   Calendar,
   MessageSquare,
   X,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 
+// --- Interfaces ---
 interface Summary {
   totalRevenue: number;
   totalBudget: number;
@@ -93,14 +94,16 @@ interface DashboardResponse {
   leaderboard: EmployeeStat[];
 }
 
-const COLORS = ["#6366F1", "#22C55E", "#F59E0B", "#EF4444", "#06B6D4", "#EC4899", "#8B5CF6", "#0EA5E9"];
+// --- Constants & Helpers ---
+const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#F43F5E", "#0EA5E9", "#8B5CF6", "#EC4899", "#14B8A6"];
 
-const formatNumber = (n?: number) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(n || 0);
-const formatFull = (n?: number) => new Intl.NumberFormat("en-BD").format(n || 0);
+const formatNumber = (n?: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n || 0);
+const formatFull = (n?: number) => new Intl.NumberFormat("en-US").format(n || 0);
 
 const toChartData = (obj: Record<string, number> = {}) =>
   Object.entries(obj).map(([name, value]) => ({ name, value }));
 
+// --- UI Components ---
 const KPICard = ({
   icon: Icon,
   label,
@@ -116,27 +119,28 @@ const KPICard = ({
   iconBg?: string;
   iconColor?: string;
 }) => (
-  <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:shadow-md">
+  <div className="poppins-regular group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all hover:border-slate-300 hover:shadow-md">
     <div className="flex items-center justify-between">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <div className={`rounded-lg p-2 ${iconBg}`}>
+      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
+      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${iconBg} transition-transform group-hover:scale-110`}>
         <Icon className={`h-4 w-4 ${iconColor}`} />
       </div>
     </div>
-    <p className={`mt-3 text-2xl font-extrabold tracking-tight ${accent}`}>{value}</p>
+    <p className={`mt-4 text-3xl font-black tracking-tight ${accent}`}>{value}</p>
   </div>
 );
 
-const ChartCard = ({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) => (
-  <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
-    <div className="mb-5">
-      <h3 className="text-sm font-bold text-slate-800">{title}</h3>
-      {subtitle && <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p>}
+const ChartCard = ({ title, subtitle, children, className = "" }: { title: string; subtitle?: string; children: React.ReactNode, className?: string }) => (
+  <div className={`flex flex-col rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] ${className}`}>
+    <div className="mb-6">
+      <h3 className="text-base font-bold text-slate-900">{title}</h3>
+      {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
     </div>
-    <div className="h-72">{children}</div>
+    <div className="min-h-[260px] flex-1">{children}</div>
   </div>
 );
 
+// --- Main Page Component ---
 const AdminIndex = () => {
   const axiosAdmin = useAxiosAdmin();
   const [startDate, setStartDate] = useState("");
@@ -171,60 +175,57 @@ const AdminIndex = () => {
   const monthlyTrend = data?.monthlyTrend || [];
   const leaderboard = (data?.leaderboard || []).slice(0, 10);
 
-  const deliveryRadialData = summary
-    ? [{ name: "On Time", value: summary.onTimeRate, fill: "#22C55E" }]
-    : [];
-
-  const taskRadialData = summary
-    ? [{ name: "Completed", value: summary.taskCompletionRate, fill: "#6366F1" }]
-    : [];
+  const deliveryRadialData = summary ? [{ name: "On Time", value: summary.onTimeRate, fill: "#10B981" }] : [];
+  const taskRadialData = summary ? [{ name: "Completed", value: summary.taskCompletionRate, fill: "#4F46E5" }] : [];
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-400">Loading dashboard...</p>
+      <div className="poppins-regular flex min-h-screen flex-col items-center justify-center bg-slate-50 gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+        <p className="text-sm font-semibold text-slate-500">Compiling analytics...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-slate-50 to-slate-100/50 p-6 md:p-8">
-      <div className="mx-auto max-w-[1400px]">
-        {/* Header */}
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className=" poppins-regular min-h-screen w-full bg-slate-50 p-4 md:p-8">
+      <div className="mx-auto max-w-[1600px]">
+        
+        {/* --- Page Header & Controls --- */}
+        <div className="mb-8 flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm border border-slate-200/80 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
               Company Overview
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Real-time performance across marketing, sales, and delivery.
+            <p className="mt-1 text-sm font-medium text-slate-500">
+              Real-time performance across marketing, sales, and delivery operations.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm w-fit">
-            <div className="flex flex-col">
-              <label className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">From</label>
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-inner">
+            <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 shadow-sm border border-slate-100">
+              <CalendarIcon className="h-4 w-4 text-slate-400" />
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 max={endDate || undefined}
-                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                className="text-xs font-semibold text-slate-700 focus:outline-none bg-transparent cursor-pointer w-[110px]"
               />
             </div>
-            <span className="text-slate-300">→</span>
-            <div className="flex flex-col">
-              <label className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">To</label>
+            <span className="text-xs font-bold text-slate-300 uppercase">To</span>
+            <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 shadow-sm border border-slate-100">
+              <CalendarIcon className="h-4 w-4 text-slate-400" />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate || undefined}
-                className="text-sm font-medium focus:outline-none w-[130px] cursor-pointer"
+                className="text-xs font-semibold text-slate-700 focus:outline-none bg-transparent cursor-pointer w-[110px]"
               />
             </div>
             {hasDateFilter && (
-              <button onClick={clearDateFilter} className="ml-1 text-slate-400 hover:text-rose-500">
+              <button onClick={clearDateFilter} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors border border-slate-100 shadow-sm">
                 <X size={16} />
               </button>
             )}
@@ -232,20 +233,19 @@ const AdminIndex = () => {
         </div>
 
         {summary && (
-          <>
-            {/* KPI Row */}
-            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
+          <div className="space-y-6">
+            {/* --- Row 1: KPI Cards --- */}
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
               <KPICard
-                icon={isProfit ? TrendingUp : TrendingDown}
+                icon={TrendingUp}
                 label="Total Revenue"
                 value={`$${formatNumber(summary.totalRevenue)}`}
-                accent="text-slate-900"
-                iconBg="bg-emerald-50"
-                iconColor="text-emerald-600"
+                iconBg="bg-indigo-50"
+                iconColor="text-indigo-600"
               />
               <KPICard
                 icon={isProfit ? TrendingUp : TrendingDown}
-                label={isProfit ? "Profit" : "Loss"}
+                label={isProfit ? "Net Profit" : "Net Loss"}
                 value={`$${formatNumber(Math.abs(summary.profitOrLoss))}`}
                 accent={isProfit ? "text-emerald-600" : "text-rose-600"}
                 iconBg={isProfit ? "bg-emerald-50" : "bg-rose-50"}
@@ -262,123 +262,49 @@ const AdminIndex = () => {
                 icon={Users}
                 label="Meetings"
                 value={formatFull(summary.totalMeetings)}
-                iconBg="bg-indigo-50"
-                iconColor="text-indigo-600"
-              />
-              <KPICard
-                icon={CheckSquare}
-                label="Task Completion"
-                value={`${summary.taskCompletionRate}%`}
-                iconBg="bg-violet-50"
-                iconColor="text-violet-600"
-              />
-              <KPICard
-                icon={Calendar}
-                label="On-Time Delivery"
-                value={`${summary.onTimeRate}%`}
                 iconBg="bg-amber-50"
                 iconColor="text-amber-600"
               />
+              <KPICard
+                icon={CheckSquare}
+                label="Task Success"
+                value={`${summary.taskCompletionRate}%`}
+                iconBg="bg-purple-50"
+                iconColor="text-purple-600"
+              />
+              <KPICard
+                icon={Calendar}
+                label="On-Time Rate"
+                value={`${summary.onTimeRate}%`}
+                iconBg="bg-teal-50"
+                iconColor="text-teal-600"
+              />
             </div>
 
-            {/* Main revenue trend */}
-           {/* Delivery performance + Task completion + Campaign channels + Calendar status */}
-<div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
-  <ChartCard title="On-Time Delivery" subtitle={`${summary.missedCount} missed out of ${summary.totalCalendarItems}`}>
-    <ResponsiveContainer width="100%" height="100%">
-      <RadialBarChart
-        innerRadius="70%"
-        outerRadius="100%"
-        data={deliveryRadialData}
-        startAngle={90}
-        endAngle={-270}
-      >
-        <RadialBar background dataKey="value" cornerRadius={12} />
-        <text
-          x="50%"
-          y="50%"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className="fill-slate-800 text-2xl font-extrabold"
-        >
-          {summary.onTimeRate}%
-        </text>
-      </RadialBarChart>
-    </ResponsiveContainer>
-  </ChartCard>
-
-  <ChartCard title="Task Completion" subtitle={`${summary.completedTasks} of ${summary.totalTasks} tasks`}>
-    <ResponsiveContainer width="100%" height="100%">
-      <RadialBarChart
-        innerRadius="70%"
-        outerRadius="100%"
-        data={taskRadialData}
-        startAngle={90}
-        endAngle={-270}
-      >
-        <RadialBar background dataKey="value" cornerRadius={12} />
-        <text
-          x="50%"
-          y="50%"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className="fill-slate-800 text-2xl font-extrabold"
-        >
-          {summary.taskCompletionRate}%
-        </text>
-      </RadialBarChart>
-    </ResponsiveContainer>
-  </ChartCard>
-
-  <ChartCard title="Campaigns by Channel">
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie
-          data={campaignByChannelData}
-          dataKey="value"
-          nameKey="name"
-          cx="50%"
-          cy="50%"
-          outerRadius={85}
-          label
-        >
-          {campaignByChannelData.map((_, idx) => (
-            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
-  </ChartCard>
-
-  {/* ✅ নতুন চার্ট — calendarItemsByStatusData এখন ব্যবহার হচ্ছে */}
-  <ChartCard title="Content Items by Status" subtitle={`${summary.totalCalendarItems} total items`}>
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={calendarItemsByStatusData} layout="vertical">
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-        <XAxis type="number" tick={{ fontSize: 12 }} />
-        <YAxis dataKey="name" type="category" tick={{ fontSize: 9 }} width={90} />
-        <Tooltip />
-        <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-          {calendarItemsByStatusData.map((_, idx) => (
-            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  </ChartCard>
-</div>
-            {/* Funnel + Leads/Meetings trend */}
-            <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <ChartCard title="Sales Funnel" subtitle="Lead to signed deal conversion">
+            {/* --- Row 2: Wide Analytical Charts --- */}
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <ChartCard title="Leads & Meetings Volume" subtitle="Monthly acquisition and scheduling activity">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={funnelData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis dataKey="stage" type="category" tick={{ fontSize: 11 }} width={100} />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[0, 8, 8, 0]}>
+                  <BarChart data={monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="month" tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
+                    <YAxis tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '13px', fontWeight: 500 }} />
+                    <Bar dataKey="leads" fill="#4F46E5" radius={[4, 4, 0, 0]} name="Leads Generated" maxBarSize={40} />
+                    <Bar dataKey="meetings" fill="#0EA5E9" radius={[4, 4, 0, 0]} name="Meetings Booked" maxBarSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="Pipeline Conversion Funnel" subtitle="Lead drop-off across critical stages">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={funnelData} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                    <XAxis type="number" tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="stage" type="category" tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} width={120} />
+                    <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={32}>
                       {funnelData.map((_, idx) => (
                         <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
                       ))}
@@ -386,177 +312,175 @@ const AdminIndex = () => {
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
-
-              <ChartCard title="Leads & Meetings Volume" subtitle="Monthly activity">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="leads" fill="#6366F1" radius={[6, 6, 0, 0]} name="Leads" />
-                    <Bar dataKey="meetings" fill="#06B6D4" radius={[6, 6, 0, 0]} name="Meetings" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
             </div>
 
-            {/* Delivery performance + Task completion + Campaign channels */}
-            <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <ChartCard title="On-Time Delivery" subtitle={`${summary.missedCount} missed out of ${summary.totalCalendarItems}`}>
+            {/* --- Row 3: Radials & Donuts --- */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <ChartCard title="On-Time Delivery" subtitle={`${summary.missedCount} missed of ${summary.totalCalendarItems}`}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart
-                    innerRadius="70%"
-                    outerRadius="100%"
-                    data={deliveryRadialData}
-                    startAngle={90}
-                    endAngle={-270}
-                  >
-                    <RadialBar background dataKey="value" cornerRadius={12} />
-                    <text
-                      x="50%"
-                      y="50%"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      className="fill-slate-800 text-2xl font-extrabold"
-                    >
+                  <RadialBarChart innerRadius="75%" outerRadius="100%" data={deliveryRadialData} startAngle={90} endAngle={-270}>
+                    <RadialBar background={{ fill: '#F1F5F9' }} dataKey="value" cornerRadius={12} />
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-slate-900 text-3xl font-black">
                       {summary.onTimeRate}%
                     </text>
                   </RadialBarChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Task Completion" subtitle={`${summary.completedTasks} of ${summary.totalTasks} tasks`}>
+              <ChartCard title="Task Completion" subtitle={`${summary.completedTasks} completed of ${summary.totalTasks}`}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart
-                    innerRadius="70%"
-                    outerRadius="100%"
-                    data={taskRadialData}
-                    startAngle={90}
-                    endAngle={-270}
-                  >
-                    <RadialBar background dataKey="value" cornerRadius={12} />
-                    <text
-                      x="50%"
-                      y="50%"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      className="fill-slate-800 text-2xl font-extrabold"
-                    >
+                  <RadialBarChart innerRadius="75%" outerRadius="100%" data={taskRadialData} startAngle={90} endAngle={-270}>
+                    <RadialBar background={{ fill: '#F1F5F9' }} dataKey="value" cornerRadius={12} />
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-slate-900 text-3xl font-black">
                       {summary.taskCompletionRate}%
                     </text>
                   </RadialBarChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Campaigns by Channel">
+              <ChartCard title="Campaigns by Channel" subtitle="Active distribution networks">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={campaignByChannelData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={85}
-                      label
-                    >
+                    <Pie data={campaignByChannelData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2}>
                       {campaignByChannelData.map((_, idx) => (
-                        <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                        <Cell key={idx} fill={COLORS[idx % COLORS.length]} stroke="none" />
                       ))}
                     </Pie>
-                    <Tooltip />
-                    <Legend />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="Leads by Service" subtitle="Requested product categories">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={leadsByServiceData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2}>
+                      {leadsByServiceData.map((_, idx) => (
+                        <Cell key={idx} fill={COLORS[(idx + 2) % COLORS.length]} stroke="none" />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </ChartCard>
             </div>
 
-            {/* Leads by status/service + Compliance */}
-            <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* --- Row 4: Status Breakdown Bars --- */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <ChartCard title="Leads by Status">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={leadsByStatusData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                  <BarChart data={leadsByStatusData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="name" tick={{ fill: '#64748B', fontSize: 10 }} interval={0} angle={-25} textAnchor="end" axisLine={false} tickLine={false} dy={10} />
+                    <YAxis tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} maxBarSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Leads by Service Need">
+              <ChartCard title="Content Items" subtitle="By publication status">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={leadsByServiceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} label>
-                      {leadsByServiceData.map((_, idx) => (
-                        <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
+                  <BarChart data={calendarItemsByStatusData} layout="vertical" margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                    <XAxis type="number" tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 11, fontWeight: 500 }} width={90} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="value" fill="#0EA5E9" radius={[0, 4, 4, 0]} maxBarSize={32} />
+                  </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Compliance Submissions" subtitle={`${summary.totalCompliance} total`}>
+              <ChartCard title="Compliance Log" subtitle={`${summary.totalCompliance} total records submitted`}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={complianceByCategoryData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={110} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#EC4899" radius={[0, 6, 6, 0]} />
+                  <BarChart data={complianceByCategoryData} layout="vertical" margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                    <XAxis type="number" tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 11, fontWeight: 500 }} width={110} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="value" fill="#F43F5E" radius={[0, 4, 4, 0]} maxBarSize={32} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
             </div>
 
-            {/* Employee Leaderboard */}
-            <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
-              <div className="mb-5 flex items-center justify-between">
+            {/* --- Row 5: Employee Leaderboard --- */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+              <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">Top Performers</h3>
-                  <p className="mt-0.5 text-xs text-slate-400">Ranked by revenue contribution</p>
+                  <h3 className="text-lg font-bold text-slate-900">Top Performers</h3>
+                  <p className="mt-1 text-sm font-medium text-slate-500">Employee activity ranked by revenue contribution</p>
                 </div>
-                <MessageSquare className="h-4 w-4 text-slate-300" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 border border-slate-100">
+                  <MessageSquare className="h-5 w-5 text-slate-400" />
+                </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[720px]">
+                <table className="w-full min-w-[800px] border-collapse text-left">
                   <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="pb-3 text-[11px] font-bold uppercase text-slate-400">#</th>
-                      <th className="pb-3 text-[11px] font-bold uppercase text-slate-400">Employee</th>
-                      <th className="pb-3 text-[11px] font-bold uppercase text-slate-400">Role</th>
-                      <th className="pb-3 text-[11px] font-bold uppercase text-slate-400">Revenue</th>
-                      <th className="pb-3 text-[11px] font-bold uppercase text-slate-400">Leads</th>
-                      <th className="pb-3 text-[11px] font-bold uppercase text-slate-400">Meetings</th>
-                      <th className="pb-3 text-[11px] font-bold uppercase text-slate-400">Tasks</th>
+                    <tr className="border-b border-slate-200 bg-slate-50/50">
+                      <th className="py-4 pl-4 text-xs font-bold uppercase tracking-wider text-slate-500">Rank</th>
+                      <th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Employee Details</th>
+                      <th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Department</th>
+                      <th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Generated Revenue</th>
+                      <th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Acquisition</th>
+                      <th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Task Completion</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-slate-100">
                     {leaderboard.map((emp, idx) => (
-                      <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-3 text-sm font-bold text-slate-300">{idx + 1}</td>
-                        <td className="py-3">
-                          <p className="text-sm font-semibold text-slate-800">{emp.name}</p>
-                          <p className="text-xs text-slate-400">{emp.email}</p>
+                      <tr key={emp.id} className="group transition-colors hover:bg-slate-50/70">
+                        <td className="py-4 pl-4">
+                          <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${idx < 3 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                            #{idx + 1}
+                          </span>
                         </td>
-                        <td className="py-3">
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-500">
+                        <td className="py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-sm font-bold text-indigo-600 border border-indigo-100">
+                              {emp.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{emp.name}</p>
+                              <p className="text-xs font-medium text-slate-500">{emp.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-600">
                             {emp.role}
                           </span>
                         </td>
-                        <td className="py-3 text-sm font-mono font-semibold text-emerald-600">
-                          ${formatFull(emp.revenue)}
+                        <td className="py-4">
+                          <span className="text-sm font-bold text-emerald-600">
+                            ${formatFull(emp.revenue)}
+                          </span>
                         </td>
-                        <td className="py-3 text-sm">{emp.leadsCreated}</td>
-                        <td className="py-3 text-sm">{emp.meetingsScheduled}</td>
-                        <td className="py-3 text-sm">
-                          {emp.tasksCompleted}/{emp.tasksTotal}
+                        <td className="py-4">
+                          <div className="flex gap-4">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-900">{emp.leadsCreated}</span>
+                              <span className="text-[10px] uppercase text-slate-400 font-semibold">Leads</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-900">{emp.meetingsScheduled}</span>
+                              <span className="text-[10px] uppercase text-slate-400 font-semibold">Meetings</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 overflow-hidden rounded-full bg-slate-100 h-2">
+                              <div 
+                                className="h-full rounded-full bg-indigo-500" 
+                                style={{ width: `${emp.tasksTotal > 0 ? (emp.tasksCompleted / emp.tasksTotal) * 100 : 0}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-slate-700 w-10 text-right">
+                              {emp.tasksCompleted}/{emp.tasksTotal}
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -564,11 +488,15 @@ const AdminIndex = () => {
                 </table>
 
                 {leaderboard.length === 0 && (
-                  <p className="py-10 text-center text-sm text-slate-400">No employee activity found for this range.</p>
+                  <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                    <Users className="mb-2 h-8 w-8 opacity-20" />
+                    <p className="text-sm font-medium">No employee activity found for this time range.</p>
+                  </div>
                 )}
               </div>
             </div>
-          </>
+
+          </div>
         )}
       </div>
     </div>

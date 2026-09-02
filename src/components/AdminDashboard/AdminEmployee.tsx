@@ -7,7 +7,8 @@ import {
   Phone, 
   Mail, 
   AlertCircle,
-  Loader2
+  Users,
+  ChevronDown
 } from "lucide-react";
 
 interface Employee {
@@ -39,7 +40,7 @@ const formatRoleLabel = (role: string): string =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 
-const baseRoleOptions = ["marketing", "sales", "designer", "web"];
+const baseRoleOptions = ["marketing", "sales", "designer", "web", "admin", "user"];
 
 const AdminEmployee = () => {
   const axiosAdmin = useAxiosAdmin();
@@ -94,66 +95,95 @@ const AdminEmployee = () => {
     mutationRole.mutate({ id, newRole });
   };
 
-  // Professional Loading State
+  // --- Professional Skeleton Loading State ---
   if (isLoading) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center gap-3 mb-6">
-          <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-          <h2 className="text-xl font-bold text-gray-800">Loading Employees...</h2>
+      <div className="flex flex-col rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-200 p-6">
+          <div className="h-6 w-48 animate-pulse bg-slate-200"></div>
+          <div className="h-8 w-24 animate-pulse bg-slate-100"></div>
         </div>
-        <div className="animate-pulse space-y-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 bg-gray-50 rounded-xl w-full"></div>
-          ))}
+        <div className="w-full overflow-x-auto">
+          <table className="w-full min-w-[900px]">
+            <thead className="bg-slate-50">
+              <tr>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <th key={i} className="px-6 py-4"><div className="h-4 w-20 animate-pulse bg-slate-200"></div></th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <tr key={i}>
+                  <td className="px-6 py-4 flex gap-4">
+                    <div className="h-10 w-10 animate-pulse bg-slate-200 shrink-0"></div>
+                    <div className="space-y-2 flex-1 mt-1">
+                      <div className="h-4 w-32 animate-pulse bg-slate-200"></div>
+                      <div className="h-3 w-40 animate-pulse bg-slate-100"></div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4"><div className="h-4 w-24 animate-pulse bg-slate-100"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 w-28 animate-pulse bg-slate-100"></div></td>
+                  <td className="px-6 py-4"><div className="h-4 w-36 animate-pulse bg-slate-100"></div></td>
+                  <td className="px-6 py-4"><div className="h-9 w-32 animate-pulse bg-slate-100"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     );
   }
 
-  // Professional Error State
+  // --- Error State ---
   if (isError) {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-red-100 flex flex-col items-center justify-center text-center">
-        <div className="bg-red-50 p-3 rounded-full mb-4">
-          <AlertCircle className="w-8 h-8 text-red-500" />
+      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-md border border-rose-200 bg-white p-8 text-center shadow-sm">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center bg-rose-50">
+          <AlertCircle className="h-7 w-7 text-rose-500" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">Failed to load data</h3>
-        <p className="text-gray-500 mt-1">There was a problem fetching the employee list. Please try again.</p>
+        <h3 className="text-lg font-bold text-slate-900">Failed to load directory</h3>
+        <p className="mt-1 max-w-sm text-sm font-medium text-slate-500">There was a problem fetching the employee list. Please check your connection and try again.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="flex flex-col rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
+      
       {/* Header Section */}
-      <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 bg-white p-5 gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Employee Management</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage your team members and their roles</p>
+          <h2 className="text-lg font-bold text-slate-900">Employee Management</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">View and manage team member roles and permissions.</p>
         </div>
-        <div className="bg-blue-50 text-blue-700 text-sm font-semibold px-3 py-1.5 rounded-lg">
-          Total: {employees.length}
+        <div className="flex items-center gap-2 border border-indigo-200 bg-indigo-50 px-4 py-2 rounded-sm">
+          <Users className="h-4 w-4 text-indigo-700" />
+          <span className="text-sm font-bold text-indigo-800">Total: {employees.length}</span>
         </div>
       </div>
 
       {/* Table Section */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full min-w-[1000px] text-left border-collapse">
           <thead>
-            <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
-              <th className="px-6 py-4 font-semibold">Employee</th>
-              <th className="px-6 py-4 font-semibold">Company</th>
-              <th className="px-6 py-4 font-semibold">Contact</th>
-              <th className="px-6 py-4 font-semibold">Address</th>
-              <th className="px-6 py-4 font-semibold">Role</th>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">Employee</th>
+              <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">Company</th>
+              <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">Contact</th>
+              <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">Address</th>
+              <th className="px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">System Role</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          
+          <tbody className="divide-y divide-slate-200">
             {employees.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                  No employees found.
+                <td colSpan={5} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center justify-center text-slate-400">
+                    <Users className="mb-2 h-8 w-8 opacity-20" />
+                    <p className="text-sm font-medium">No employees found.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -163,39 +193,28 @@ const AdminEmployee = () => {
                 return (
                   <tr
                     key={emp._id}
-                    className={`group transition-all hover:bg-gray-50 ${
-                      isUserRole ? "bg-red-50/30 hover:bg-red-50/60" : ""
+                    className={`group transition-colors ${
+                      isUserRole ? "bg-rose-50/20 hover:bg-rose-50/50" : "hover:bg-slate-50"
                     }`}
                   >
-                    {/* Employee Profile */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
+                    {/* Employee Profile (Here we use border-l-4 for the red indicator instead of an extra <td>) */}
+                    <td className={`px-6 py-4 whitespace-nowrap ${isUserRole ? 'border-l-4 border-rose-500' : 'border-l-4 border-transparent'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
                           <img
-                            src={
-                              emp?.img
-                                ? emp.img
-                                : "https://ui-avatars.com/api/?name=" + emp.name + "&background=random"
-                            }
+                            src={emp?.img ? emp.img : `https://ui-avatars.com/api/?name=${emp.name}&background=F1F5F9&color=475569`}
                             alt={emp.name}
-                            className={`w-11 h-11 rounded-full object-cover border-2 ${
-                              isUserRole ? "border-red-200" : "border-gray-100"
+                            className={`w-10 h-10 object-cover border rounded-sm ${
+                              isUserRole ? "border-rose-300" : "border-slate-200"
                             }`}
                           />
-                          {isUserRole && (
-                            <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full" title="Action Required"></span>
-                          )}
                         </div>
-                        <div>
-                          <p
-                            className={`text-sm font-semibold ${
-                              isUserRole ? "text-red-700" : "text-gray-900"
-                            }`}
-                          >
+                        <div className="flex flex-col">
+                          <p className={`text-sm font-bold ${isUserRole ? "text-rose-700" : "text-slate-800"}`}>
                             {emp.name}
                           </p>
-                          <div className="flex items-center gap-1 mt-0.5 text-xs text-gray-500">
-                            <Mail className="w-3 h-3" />
+                          <div className="flex items-center gap-1.5 mt-1 text-xs font-medium text-slate-500">
+                            <Mail className="w-3.5 h-3.5" />
                             <span>{emp.email}</span>
                           </div>
                         </div>
@@ -204,41 +223,41 @@ const AdminEmployee = () => {
 
                     {/* Company */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Building2 className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium">{emp.company || "—"}</span>
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <Building2 className="w-4 h-4 text-slate-400" />
+                        <span>{emp.company || "—"}</span>
                       </div>
                     </td>
 
                     {/* Phone */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="w-4 h-4 text-gray-400" />
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <Phone className="w-4 h-4 text-slate-400" />
                         <span>{emp.phone || "—"}</span>
                       </div>
                     </td>
 
                     {/* Address */}
                     <td className="px-6 py-4">
-                      <div className="flex items-start gap-2 text-sm text-gray-600 max-w-50">
-                        <MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-2 text-sm font-medium text-slate-700 max-w-[200px]">
+                        <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                         <span className="truncate" title={emp.address || ""}>
                           {emp.address || "—"}
                         </span>
                       </div>
                     </td>
 
-                    {/* Role Action */}
+                    {/* Role Dropdown */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="relative flex items-center">
+                      <div className="relative flex items-center max-w-[150px]">
                         <select
                           value={emp.role.trim().toLowerCase()}
                           onChange={(e) => handleRoleChange(emp._id, e.target.value)}
                           disabled={mutationRole.isPending}
-                          className={`appearance-none text-sm font-medium border rounded-lg pl-3 pr-8 py-2 outline-none transition-all cursor-pointer shadow-sm capitalize w-32 ${
+                          className={`w-full appearance-none text-xs font-bold tracking-wide rounded-sm pl-3 pr-8 py-2 outline-none transition-all cursor-pointer capitalize ${
                             isUserRole
-                              ? "border-red-200 bg-red-50 text-red-700 focus:border-red-400 focus:ring-2 focus:ring-red-100 hover:bg-red-100"
-                              : "border-gray-200 bg-white text-gray-700 focus:border-[#F7941D] focus:ring-2 focus:ring-[#F7941D]/20 hover:bg-gray-50"
+                              ? "border border-rose-300 bg-rose-50 text-rose-700 focus:border-rose-500 hover:bg-rose-100"
+                              : "border border-slate-300 bg-white text-slate-700 focus:border-indigo-500 hover:bg-slate-50"
                           } ${mutationRole.isPending ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           {roleOptions.map((role) => (
@@ -247,14 +266,12 @@ const AdminEmployee = () => {
                             </option>
                           ))}
                         </select>
-                        {/* Custom Dropdown Arrow */}
-                        <div className="absolute right-3 pointer-events-none text-gray-400">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                          </svg>
+                        <div className={`absolute right-2.5 pointer-events-none ${isUserRole ? "text-rose-500" : "text-slate-500"}`}>
+                          <ChevronDown className="w-4 h-4" />
                         </div>
                       </div>
                     </td>
+                    
                   </tr>
                 );
               })

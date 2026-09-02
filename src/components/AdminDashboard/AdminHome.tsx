@@ -46,7 +46,7 @@ const AdminHome = () => {
 
   const [isOpen, setIsOpen] = useState(true);
 
-   const { data: notifCount = 0 } = useQuery<number>({
+  const { data: notifCount = 0 } = useQuery<number>({
     queryKey: ["notification-count", NOTIFICATION_SCOPE],
     queryFn: async () => {
       const res = await axiosAdmin.get(`/notifications/count?scope=${NOTIFICATION_SCOPE}`);
@@ -64,51 +64,62 @@ const AdminHome = () => {
 
   const handleNavClick = (scope?: string) => {
     if (!scope) return;
-    queryClient.setQueryData(["notification-count", scope], 0); // instant UI feedback
+    queryClient.setQueryData(["notification-count", scope], 0);
     mutationMarkSeen.mutate(scope);
   };
 
+  // Format today's date for the header
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
-    <div className="poppins-regular flex h-screen bg-gray-50 font-sans">
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Genesys Admin Panel</title>
+        <title>Genesys | Admin Portal</title>
       </Helmet>
 
+      {/* Sidebar */}
       <nav
         className={`${
-          isOpen ? "w-[280px]" : "w-20"
-        } bg-white border-r border-gray-200 flex flex-col justify-between transition-all duration-300 ease-in-out relative z-20 shadow-lg`}
+          isOpen ? "w-[280px]" : "w-[84px]"
+        } flex flex-col justify-between bg-white border-r border-slate-200 transition-all duration-300 ease-in-out relative z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
       >
+        {/* Toggle Button */}
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          className="absolute -right-4 top-8 z-30 w-8 h-8 flex items-center justify-center bg-white border-2 border-gray-200 text-gray-500 hover:text-[#D4AF37] hover:border-[#D4AF37] rounded-full transition-all shadow-md cursor-pointer"
+          className="absolute -right-3.5 top-8 z-40 flex h-7 w-7 items-center justify-center rounded-full bg-white border border-slate-200 text-slate-400 shadow-sm transition-all hover:border-[#D4AF37] hover:text-[#D4AF37] focus:outline-none"
           aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
-          {isOpen ? <HiChevronDoubleLeft size={16} /> : <HiChevronDoubleRight size={16} />}
+          {isOpen ? <HiChevronDoubleLeft size={14} /> : <HiChevronDoubleRight size={14} />}
         </button>
 
-        <div className="h-20 flex items-center border-b border-gray-100">
-          <div className={`w-full flex items-center ${isOpen ? "px-6" : "justify-center"}`}>
+        {/* Brand Header */}
+        <div className="flex h-20 shrink-0 items-center border-b border-slate-100 px-6">
+          <div className={`flex w-full items-center ${isOpen ? "justify-start" : "justify-center"}`}>
             {isOpen ? (
               <div className="flex flex-col">
-                <h2 className="text-gray-800 text-2xl font-black tracking-tight whitespace-nowrap overflow-hidden">
+                <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
                   Genesys
                 </h2>
-                <span className="text-xs uppercase tracking-widest text-[#D4AF37] font-bold mt-0.5">
+                <span className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
                   Admin Panel
                 </span>
               </div>
             ) : (
-              <span className="text-white text-xl font-black bg-[#D4AF37] w-10 h-10 flex items-center justify-center rounded-xl shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#B8972E] text-lg font-black text-white shadow-md">
                 G
-              </span>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6 custom-scrollbar">
-          <ul className="space-y-2 px-3">
+        {/* Navigation Links */}
+        <div className="flex-1 overflow-y-auto py-5 px-3 custom-scrollbar">
+          <ul className="space-y-1.5">
             {MENU_ITEMS.map(({ name, path, icon: Icon, notificationScope }) => {
               const badgeCount = notificationScope === NOTIFICATION_SCOPE ? notifCount : 0;
 
@@ -120,34 +131,45 @@ const AdminHome = () => {
                     title={!isOpen ? name : undefined}
                     onClick={() => handleNavClick(notificationScope)}
                     className={({ isActive }) =>
-                      `relative flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 text-base font-medium ${
-                        !isOpen ? "justify-center px-0 py-3" : ""
+                      `group relative flex items-center rounded-xl px-3 py-2.5 transition-all duration-200 ${
+                        !isOpen ? "justify-center" : "justify-start gap-3"
                       } ${
                         isActive
-                          ? "text-[#D4AF37] bg-amber-50 shadow-sm border-l-4 border-[#D4AF37]"
-                          : "text-gray-600 hover:text-[#D4AF37] hover:bg-amber-50/50"
+                          ? "bg-[#D4AF37]/10 text-[#B8972E] font-semibold"
+                          : "text-slate-600 font-medium hover:bg-slate-50 hover:text-slate-900"
                       }`
                     }
                   >
-                    <span className="relative shrink-0">
-                      <Icon size={22} />
-                      {badgeCount > 0 && (
-                        <span
-                          className={`absolute flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none ${
-                            isOpen ? "-top-1.5 -right-1.5 h-4 min-w-4 px-1" : "-top-1 -right-1 h-4 min-w-4 px-1"
-                          }`}
-                        >
-                          {badgeCount > 99 ? "99+" : badgeCount}
-                        </span>
-                      )}
-                    </span>
-                    {isOpen && (
-                      <span className="whitespace-nowrap overflow-hidden flex-1">{name}</span>
-                    )}
-                    {isOpen && badgeCount > 0 && (
-                      <span className="ml-auto rounded-full bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 leading-none">
-                        {badgeCount > 99 ? "99+" : badgeCount}
-                      </span>
+                    {({ isActive }) => (
+                      <>
+                        {/* Active Indicator Line */}
+                        {isActive && isOpen && (
+                          <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[#D4AF37]" />
+                        )}
+
+                        <div className="relative flex shrink-0 items-center justify-center">
+                          <Icon size={20} className={isActive ? "text-[#B8972E]" : "text-slate-400 group-hover:text-slate-600"} />
+                          
+                          {/* Notification Badge on Icon (Collapsed state) */}
+                          {!isOpen && badgeCount > 0 && (
+                            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                              {badgeCount > 99 ? "99+" : badgeCount}
+                            </span>
+                          )}
+                        </div>
+
+                        {isOpen && (
+                          <>
+                            <span className="flex-1 truncate text-sm">{name}</span>
+                            {/* Notification Badge Inline (Expanded state) */}
+                            {badgeCount > 0 && (
+                              <span className="ml-2 inline-flex h-5 items-center justify-center rounded-full bg-rose-100 px-2 text-[10px] font-bold text-rose-600">
+                                {badgeCount > 99 ? "99+" : badgeCount}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 </li>
@@ -156,42 +178,56 @@ const AdminHome = () => {
           </ul>
         </div>
 
-        <div className="p-4 border-t border-gray-200 bg-gray-50/80">
+        {/* User Profile & Logout */}
+        <div className="shrink-0 border-t border-slate-100 p-4">
           {isOpen && (
-            <div className="mb-4 px-2 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#D4AF37] border-2 border-white flex items-center justify-center text-white font-bold shrink-0 text-lg shadow-sm">
-                A
+            <div className="mb-4 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-sm font-bold text-white shadow-inner">
+                {person?.email ? person.email.charAt(0).toUpperCase() : "A"}
               </div>
-              <div className="overflow-hidden">
-                <p className="text-base font-bold text-gray-800 truncate">Admin User</p>
-                <p className="text-sm text-gray-500 truncate">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <p className="truncate text-sm font-bold text-slate-900">
+                  {person?.displayName || person?.email?.split("@")[0] || "Administrator"}
+                </p>
+                <p className="truncate text-xs font-medium text-slate-500">
                   {person?.email || "admin@genesys.com"}
                 </p>
               </div>
             </div>
           )}
+          
           <button
             onClick={logOut}
             title={!isOpen ? "Logout" : undefined}
-            className={`w-full flex items-center gap-3 text-base font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-3 rounded-lg transition-colors ${
-              !isOpen ? "justify-center px-0" : ""
+            className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-rose-50 hover:text-rose-600 ${
+              !isOpen ? "justify-center" : "gap-3"
             }`}
           >
-            <HiOutlineLogout size={22} className="shrink-0" />
-            {isOpen && <span>Logout</span>}
+            <HiOutlineLogout size={20} className="shrink-0 text-slate-400 group-hover:text-rose-500" />
+            {isOpen && <span>Sign Out</span>}
           </button>
         </div>
       </nav>
 
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 sticky top-0">
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-hidden relative">
+        {/* Top Header - Glassmorphism */}
+        <header className="sticky top-0 z-20 flex h-20 shrink-0 items-center justify-between border-b border-slate-200/60 bg-white/80 px-8 backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <h3 className="text-lg font-bold text-gray-800">Dashboard Overview</h3>
+            <h1 className="text-xl font-bold text-slate-800">Dashboard Overview</h1>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-sm font-medium text-slate-600 md:flex">
+              <HiOutlineCalendar size={16} className="text-slate-400" />
+              {today}
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50">
-          <div className="max-w-7xl mx-auto">
+        {/* Scrollable Page Content */}
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-6 md:p-8">
+          <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
         </main>
