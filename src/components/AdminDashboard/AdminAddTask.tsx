@@ -385,7 +385,7 @@ const AdminAddTask: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Due time</label>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Due time *</label>
                   <input
                     type="time"
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#C9A646] focus:bg-white focus:ring-2 focus:ring-[#C9A646]/20"

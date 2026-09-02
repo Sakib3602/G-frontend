@@ -2,7 +2,6 @@ import { useContext, useState } from "react";
 import {
   Megaphone,
   BarChart3,
-  // Globe,
   Layers,
   LogOut,
   Menu,
@@ -14,15 +13,19 @@ import {
   CheckCircle,
   ListFilter,
   Shield,
-  Loader
+  Loader,
+  Bell,
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Link, Outlet, useLocation } from "react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
-import EditProfileButton from "../Common/Editprofilebutton"; // EditProfileButton ইম্পোর্ট করা হয়েছে
-import useAxiosMarketing from "@/uri/useAxiosMarketing"; // আপনার মার্কেটিং এর axios হুক (প্রয়োজনে নাম পরিবর্তন করে নিবেন)
+import EditProfileButton from "../Common/Editprofilebutton";
+import useAxiosMarketing from "@/uri/useAxiosMarketing";
+
+const NOTIFICATION_SCOPE = "marketing-tasks";
 
 const MarketingHome = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -30,21 +33,41 @@ const MarketingHome = () => {
 
   const { userData } = useUserDataMarketing();
   const auth = useContext(AuthContext);
-  
-  // Marketing এর জন্য Axios ইন্সট্যান্স (আপনার প্রজেক্টের সাথে মিলিয়ে নিবেন)
-  const axiosMarketing = useAxiosMarketing(); 
+  const axiosMarketing = useAxiosMarketing();
+  const queryClient = useQueryClient();
 
   if (!auth) throw new Error("AuthContext is not available");
 
   const { logOut } = auth;
 
-  // ইউজারের নাম ডায়নামিকভাবে নেওয়া হচ্ছে
+   const { data: notifCount = 0 } = useQuery<number>({
+    queryKey: ["notification-count", NOTIFICATION_SCOPE],
+    queryFn: async () => {
+      const res = await axiosMarketing.get(`/notifications/count?scope=${NOTIFICATION_SCOPE}`);
+      return res.data?.count ?? 0;
+    },
+    refetchInterval: 20000,
+  });
+
+  const mutationMarkSeen = useMutation({
+    mutationFn: async (scope: string) => {
+      const res = await axiosMarketing.post(`/notifications/mark-seen`, { scope });
+      return res.data;
+    },
+  });
+
+  const handleBellClick = () => {
+    if (notifCount > 0) {
+      queryClient.setQueryData(["notification-count", NOTIFICATION_SCOPE], 0);
+      mutationMarkSeen.mutate(NOTIFICATION_SCOPE);
+    }
+  };
+
   const userName = userData?.name || "Unknown User";
 
   const user = {
     name: userName,
     role: userData?.role ? `${userData.role} Manager` : "Marketing Manager",
-    // নামের প্রথম ও দ্বিতীয় শব্দের প্রথম অক্ষর দিয়ে অ্যাভাটার জেনারেট করা হচ্ছে
     avatar:
       userData?.avatar ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=C9A646&color=fff`,
@@ -62,7 +85,6 @@ const MarketingHome = () => {
       path: "/dashboard/marketing/my-assigned-leads",
       icon: Megaphone,
     },
-    // { name: 'Reminders', path: '/dashboard/marketing/remainders-to-signatures', icon: Globe },
     {
       name: "Create Campaign",
       path: "/dashboard/marketing/create-campaign",
@@ -117,12 +139,10 @@ const MarketingHome = () => {
         <meta charSet="utf-8" />
         <title>Genesys - Marketing Dashboard</title>
       </Helmet>
-      {/* Sidebar */}
       <aside
         className={`${isSidebarOpen ? "w-64" : "w-20"}
         bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-20`}
       >
-        {/* Logo */}
         <div className="h-16 flex items-center justify-center border-b border-gray-100">
           <span
             className={`font-semibold text-lg flex items-center gap-2 ${!isSidebarOpen && "hidden"}`}
@@ -137,7 +157,6 @@ const MarketingHome = () => {
           )}
         </div>
 
-        {/* Navigation */}
         <div className="flex-1 py-6 overflow-y-auto">
           <nav className="space-y-2">
             {navItems.map((item) => {
@@ -170,7 +189,6 @@ const MarketingHome = () => {
           </nav>
         </div>
 
-        {/* Logout */}
         <div className="p-4 border-t border-gray-100">
           <button
             onClick={async () => await logOut()}
@@ -184,9 +202,7 @@ const MarketingHome = () => {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Navbar */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
           <div className="flex items-center gap-4">
             <button
@@ -201,6 +217,20 @@ const MarketingHome = () => {
           </div>
 
           <div className="flex items-center gap-5">
+            {/* Notification bell */}
+            <button
+              onClick={handleBellClick}
+              className="relative p-2 rounded-md text-slate-500 hover:bg-gray-100 transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {notifCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none">
+                  {notifCount > 99 ? "99+" : notifCount}
+                </span>
+              )}
+            </button>
+
             <div className="h-6 w-px bg-gray-200"></div>
 
             <div className="flex items-center gap-3">
@@ -215,8 +245,7 @@ const MarketingHome = () => {
                 alt="profile"
                 className="w-8 h-8 rounded-full border ring-2 ring-gray-50 shadow-sm"
               />
-              
-              {/* Edit Profile Button এখানে যুক্ত করা হয়েছে */}
+
               <EditProfileButton
                 axiosInstance={axiosMarketing}
                 profileEndpoint="/api/v1/profile/me"
@@ -227,10 +256,8 @@ const MarketingHome = () => {
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
           <div className="min-h-full w-full bg-white relative">
-            {/* Noise Texture (Darker Dots) Background */}
             <div
               className="absolute inset-0 z-0"
               style={{
@@ -240,7 +267,6 @@ const MarketingHome = () => {
                 backgroundSize: "20px 20px",
               }}
             />
-            {/* Your Content/Components */}
             <div className="relative z-10 p-6 lg:p-4">
               <Outlet />
             </div>

@@ -15,23 +15,27 @@ import {
   ClipboardList,
   Mail,
   Shield,
+  Bell,
 } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosSales from "@/uri/useAxiosSales";
 import { Helmet } from "react-helmet";
 import EditProfileButton from "../Common/Editprofilebutton";
+
+const NOTIFICATION_SCOPE = "sales-tasks";
 
 const Sales_Home = () => {
   const axiosSales = useAxiosSales();
   const auth = useContext(AuthContext);
   const person = auth?.person;
-  
+  const queryClient = useQueryClient();
+
   if (!auth) {
     throw new Error("AuthContext is not available");
   }
-  
+
   const { logOut } = auth;
   const { data: userData } = useQuery({
     queryKey: ["user-data", person?.email],
@@ -41,18 +45,39 @@ const Sales_Home = () => {
       return res.data.data;
     },
   });
-  
+
+  // ---------- Notification bell ----------
+  const { data: notifCount = 0 } = useQuery<number>({
+    queryKey: ["notification-count", NOTIFICATION_SCOPE],
+    queryFn: async () => {
+      const res = await axiosSales.get(`/api/v1/notifications/count?scope=${NOTIFICATION_SCOPE}`);
+      return res.data?.count ?? 0;
+    },
+    refetchInterval: 20000,
+  });
+
+  const mutationMarkSeen = useMutation({
+    mutationFn: async (scope: string) => {
+      const res = await axiosSales.post(`/api/v1/notifications/mark-seen`, { scope });
+      return res.data;
+    },
+  });
+
+  const handleBellClick = () => {
+    if (notifCount > 0) {
+      queryClient.setQueryData(["notification-count", NOTIFICATION_SCOPE], 0);
+      mutationMarkSeen.mutate(NOTIFICATION_SCOPE);
+    }
+  };
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // ইউজারের নাম ডায়নামিকভাবে নেওয়া হচ্ছে
   const userName = userData?.name || "Unknown User";
 
-  // Mock user data 
   const user = {
     name: userName,
     email: userData?.email || "",
-    // নামের প্রথম ও দ্বিতীয় শব্দের প্রথম অক্ষর দিয়ে অ্যাভাটার জেনারেট করা হচ্ছে
     avatar:
       userData?.avatar ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=7FA23B&color=fff`,
@@ -101,13 +126,11 @@ const Sales_Home = () => {
         <title>Genesys - Sales Dashboard</title>
       </Helmet>
 
-      {/* Modern SaaS Sidebar */}
       <aside
         className={`${
           isSidebarOpen ? "w-64" : "w-20"
         } bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col z-20`}
       >
-        {/* Brand Area */}
         <Link to={"/"}>
           <div className="h-16 flex items-center justify-center border-b border-gray-100">
             <span
@@ -123,7 +146,6 @@ const Sales_Home = () => {
           </div>
         </Link>
 
-        {/* Navigation Area */}
         <div className="flex-1 py-6 flex flex-col overflow-y-auto px-3">
           {isSidebarOpen && (
             <div className="px-3 mb-2">
@@ -169,7 +191,6 @@ const Sales_Home = () => {
           </nav>
         </div>
 
-        {/* Footer Area */}
         <div className="p-4 border-t border-gray-100">
           <button
             onClick={async () => {
@@ -188,9 +209,7 @@ const Sales_Home = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Top Navbar */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10 shadow-sm">
           <div className="flex items-center">
             <button
@@ -202,6 +221,20 @@ const Sales_Home = () => {
           </div>
 
           <div className="flex items-center space-x-6">
+            {/* Notification bell */}
+            <button
+              onClick={handleBellClick}
+              className="relative p-2 rounded-md text-gray-500 hover:bg-gray-100 transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {notifCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none">
+                  {notifCount > 99 ? "99+" : notifCount}
+                </span>
+              )}
+            </button>
+
             <div className="flex items-center space-x-3 border-l pl-6 border-gray-200">
               <div className="text-right hidden md:block">
                 <p className="text-sm font-semibold text-gray-900 leading-tight">
@@ -226,7 +259,6 @@ const Sales_Home = () => {
           </div>
         </header>
 
-        {/* Dynamic Page Content */}
         <main className="flex-1 overflow-y-auto bg-[#F8FAFC] p-6 lg:p-4">
           <Outlet />
         </main>
