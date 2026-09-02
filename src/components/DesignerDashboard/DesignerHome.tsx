@@ -11,30 +11,59 @@ import {
   BarChart3,
   Shield,
   AudioLines,
-  ListChecks ,
-  Database
+  ListChecks,
+  Database,
+  Bell,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useUserDataDesigner } from "./HOOK/user_data_designer";
+import useAxiosDesigner from "@/uri/useAxiosDesigner";
+
+const NOTIFICATION_SCOPE = "designer-tasks";
 
 const DesignerHome = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [, setIsBellOpen] = useState(false);
 
   const auth = useContext(AuthContext);
   if (!auth) throw new Error("AuthContext is not available");
 
   const { logOut, person } = auth;
-
   const { userData } = useUserDataDesigner();
+  const axiosDesigner = useAxiosDesigner();
+  const queryClient = useQueryClient();
 
- 
+  // ---------- Notification bell ----------
+  const { data: notifCount = 0 } = useQuery<number>({
+    queryKey: ["notification-count", NOTIFICATION_SCOPE],
+    queryFn: async () => {
+      const res = await axiosDesigner.get(`/api/v1/notifications/count?scope=${NOTIFICATION_SCOPE}`);
+      return res.data?.count ?? 0;
+    },
+    refetchInterval: 20000,
+  });
+
+  const mutationMarkSeen = useMutation({
+    mutationFn: async (scope: string) => {
+      const res = await axiosDesigner.post(`/api/v1/notifications/mark-seen`, { scope });
+      return res.data;
+    },
+  });
+
+  const handleBellClick = () => {
+    setIsBellOpen((prev) => !prev);
+    if (notifCount > 0) {
+      queryClient.setQueryData(["notification-count", NOTIFICATION_SCOPE], 0);
+      mutationMarkSeen.mutate(NOTIFICATION_SCOPE);
+    }
+  };
+
   const profile = useMemo(() => {
-    const displayName =
-      userData?.name || person?.displayName || "Creative User";
-    const title =
-      userData?.role === "web" ? "Web Specialist" : "Graphic Designer";
+    const displayName = userData?.name || person?.displayName || "Creative User";
+    const title = userData?.role === "web" ? "Web Specialist" : "Graphic Designer";
     const email = userData?.email || person?.email || "designer@studio.io";
     const initials =
       displayName
@@ -44,62 +73,52 @@ const DesignerHome = () => {
         .map((part: string) => part[0]?.toUpperCase())
         .join("") || "DU";
 
-    return {
-      displayName,
-      title,
-      email,
-      initials,
-    };
+    return { displayName, title, email, initials };
   }, [person?.displayName, person?.email, userData]);
 
-const navItems = [
-  { name: "DashBoard", path: "/dashboard/designer", icon: BarChart3 },
-  { name: "My Tasks", path: "/dashboard/designer/my-tasks", icon: Megaphone },
-  {
-    name: "Running Works",
-    path: "/dashboard/designer/in-progress-tasks",
-    icon: ChartNetwork,
-  },
-  {
-  name: "Assigned Leads",
-  path: "/dashboard/designer/assigned-leads",
-  icon: Database,
-},
-  {
-    // ← notun nav item, Web ar Designer duibar jonno-i same link
-    name: "In Progress Leads",
-    path: "/dashboard/designer/in-progress",
-    icon: ListChecks,
-  },
-  {
-    name: "Overdue Tasks",
-    path: "/dashboard/designer/overdue-tasks",
-    icon: LocateOff,
-  },
-  {
-    name: "Content Tasks",
-    path: "/dashboard/designer/content-tasks",
-    icon: AudioLines,
-  },
-  {
-    name: "Compliance",
-    path: "/dashboard/designer/compliance",
-    icon: Shield,
-  },
-];
+  const navItems = [
+    { name: "DashBoard", path: "/dashboard/designer", icon: BarChart3 },
+    { name: "My Tasks", path: "/dashboard/designer/my-tasks", icon: Megaphone },
+    {
+      name: "Running Works",
+      path: "/dashboard/designer/in-progress-tasks",
+      icon: ChartNetwork,
+    },
+    {
+      name: "Assigned Leads",
+      path: "/dashboard/designer/assigned-leads",
+      icon: Database,
+    },
+    {
+      name: "In Progress Leads",
+      path: "/dashboard/designer/in-progress",
+      icon: ListChecks,
+    },
+    {
+      name: "Overdue Tasks",
+      path: "/dashboard/designer/overdue-tasks",
+      icon: LocateOff,
+    },
+    {
+      name: "Content Tasks",
+      path: "/dashboard/designer/content-tasks",
+      icon: AudioLines,
+    },
+    {
+      name: "Compliance",
+      path: "/dashboard/designer/compliance",
+      icon: Shield,
+    },
+  ];
 
   return (
     <div className="poppins-regular flex h-screen bg-[#F7F4EE] text-stone-800">
-      {/* Sidebar */}
       <aside
         className={`${isSidebarOpen ? "w-72" : "w-24"}
         border-r border-[#DDD2C3] bg-linear-to-b from-[#FBF8F3] via-[#F3ECE2] to-[#EDE3D5] transition-all duration-300 flex flex-col backdrop-blur-xl`}
       >
-        {/* Logo */}
         <div className="h-20 flex items-center justify-center border-b border-[#D9CCBC] px-4">
-          <span
-            className={`font-semibold text-lg flex items-center gap-3 ${!isSidebarOpen && "hidden"}`}
-          >
+          <span className={`font-semibold text-lg flex items-center gap-3 ${!isSidebarOpen && "hidden"}`}>
             <span>
               GENE<span className="text-amber-700">SYS</span>{" "}
               {userData?.role === "web" ? "WS" : "GD"}
@@ -112,21 +131,16 @@ const navItems = [
           )}
         </div>
 
-        {/* Navigation */}
         <div className="flex-1 py-6 overflow-y-auto">
           {isSidebarOpen && (
             <div className="mx-4 mb-6 rounded-2xl border border-amber-300/60 bg-linear-to-br from-amber-100 via-orange-100 to-rose-100 p-4">
               <div className="mb-2 flex items-center gap-2 text-amber-800">
                 <Sparkles className="h-4 w-4" />
                 <p className="text-xs font-semibold uppercase tracking-wider">
-                  {userData?.role === "web"
-                    ? "Web Specialist"
-                    : "Graphic Designer"}
+                  {userData?.role === "web" ? "Web Specialist" : "Graphic Designer"}
                 </p>
               </div>
-              <p className="text-sm text-stone-700">
-                Welcome back, {profile.displayName}!
-              </p>
+              <p className="text-sm text-stone-700">Welcome back, {profile.displayName}!</p>
             </div>
           )}
           <nav className="space-y-2">
@@ -151,19 +165,13 @@ const navItems = [
                     <>
                       <Icon
                         className={`shrink-0 ${isSidebarOpen ? "w-5 h-5 mr-3" : "w-6 h-6"} ${
-                          isActive
-                            ? "text-amber-700"
-                            : "text-stone-500 group-hover:text-stone-700"
+                          isActive ? "text-amber-700" : "text-stone-500 group-hover:text-stone-700"
                         }`}
                       />
                       {isSidebarOpen && (
                         <>
-                          <span className="text-sm font-medium">
-                            {item.name}
-                          </span>
-                          {isActive && (
-                            <ChevronRight className="ml-auto h-4 w-4 text-amber-700" />
-                          )}
+                          <span className="text-sm font-medium">{item.name}</span>
+                          {isActive && <ChevronRight className="ml-auto h-4 w-4 text-amber-700" />}
                         </>
                       )}
                     </>
@@ -174,7 +182,6 @@ const navItems = [
           </nav>
         </div>
 
-        {/* Logout */}
         <div className="p-4 border-t border-[#D9CCBC]">
           <button
             onClick={async () => await logOut()}
@@ -188,9 +195,7 @@ const navItems = [
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Navbar */}
         <header className="h-20 border-b border-[#D9CCBC] bg-[#FCFAF6]/95 backdrop-blur-sm flex items-center justify-between px-6 shadow-lg shadow-amber-900/5">
           <div className="flex items-center gap-4">
             <button
@@ -201,10 +206,7 @@ const navItems = [
             </button>
             <div>
               <h2 className="text-lg font-semibold text-stone-900 hidden sm:block">
-                {userData?.role === "web"
-                  ? "Web Specialist"
-                  : "Graphic Designer"}{" "}
-                Command Center
+                {userData?.role === "web" ? "Web Specialist" : "Graphic Designer"} Command Center
               </h2>
               <p className="hidden sm:block text-xs text-stone-500">
                 Curate, launch, and optimize your visual campaigns
@@ -213,20 +215,30 @@ const navItems = [
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="h-7 w-px bg-[#DCCFBE]"></div>
+            {/* Notification bell */}
+            <button
+              onClick={handleBellClick}
+              className="relative p-2.5 rounded-xl text-stone-600 hover:bg-black/5 transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {notifCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none">
+                  {notifCount > 99 ? "99+" : notifCount}
+                </span>
+              )}
+            </button>
 
+            <div className="h-7 w-px bg-[#DCCFBE]"></div>
             <div className="flex items-center gap-3 cursor-pointer rounded-xl px-2 py-1.5 hover:bg-white/70 transition-colors">
               <div className="text-right hidden md:block">
-                <p className="text-sm font-medium text-stone-900">
-                  {profile.displayName}
-                </p>
+                <p className="text-sm font-medium text-stone-900">{profile.displayName}</p>
                 <p className="text-xs text-stone-500">{profile.title}</p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto bg-[#F3ECE2]">
           <div className="min-h-screen w-full relative">
             <div

@@ -1,8 +1,9 @@
 import useAxiosDesigner from "@/uri/useAxiosDesigner";
 import { useUserDataDesigner } from "./HOOK/user_data_designer";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Alert from "../MarketingDashboard/Alert/Alert";
+import { MessageSquare, Send,  } from "lucide-react";
 
 type RemainingDate = {
     days?: number;
@@ -14,6 +15,13 @@ type RemainingDate = {
 
 type Campaign = { _id: string; campaignName?: string };
 type Maker = { _id: string; name?: string };
+
+type CommentApi = {
+    _id: string;
+    text: string;
+    commentByName: string;
+    createdAt: string;
+};
 
 type Task = {
     _id: string;
@@ -27,11 +35,13 @@ type Task = {
     description?: string;
     dueDate?: string;
     dueTime?: string;
+    comments?: CommentApi[];
 };
 
 const DesignerRunningWorks = () => {
     const axiosDesigner = useAxiosDesigner();
     const { userData } = useUserDataDesigner();
+    const queryClient = useQueryClient();
 
     const { data: myTasks = [], isLoading , refetch} = useQuery<Task[]>({
         queryKey: ["designer-running-tasks", userData?._id],
@@ -49,6 +59,10 @@ const DesignerRunningWorks = () => {
     const [linkTask, setLinkTask] = useState<Task | null>(null);
     const [isLinkOpen, setIsLinkOpen] = useState(false);
     const [linkValue, setLinkValue] = useState("");
+
+    // ---------- Comments UI state ----------
+    const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+    const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
 
     // Keep a local progress map to allow UI-only increments
     const initialProgress = useMemo(() => {
@@ -71,7 +85,6 @@ const DesignerRunningWorks = () => {
             const current = prev[taskId] ?? 0;
             const next = Math.min(100, current + 10);
             const nextMap = { ...prev, [taskId]: next };
-            // console.log("Incremented progress", { taskId, from: current, to: next });
             mutationUpdateProgress.mutate({ taskId, progress: next });
             return nextMap;
         });
@@ -114,6 +127,27 @@ const DesignerRunningWorks = () => {
         }
     })
 
+    // ---------- Comments mutations ----------
+    const mutationAddComment = useMutation({
+        mutationFn: async ({ taskId, text }: { taskId: string; text: string }) => {
+            const res = await axiosDesigner.post(`/api/v1/designer/tasks/${taskId}/comment`, { text });
+            return res.data;
+        },
+        onSuccess: (_data, variables) => {
+            setCommentDraft((prev) => ({ ...prev, [variables.taskId]: "" }));
+            queryClient.invalidateQueries({ queryKey: ["designer-running-tasks", userData?._id] });
+        },
+    });
+
+
+
+    const handleAddComment = (taskId: string) => {
+        const text = commentDraft[taskId]?.trim();
+        if (!text || mutationAddComment.isPending) return;
+        mutationAddComment.mutate({ taskId, text });
+    };
+
+   
     const makerName = (t: Task) => t.makerId?.name || "Unknown maker";
 
     return (
@@ -140,6 +174,8 @@ const DesignerRunningWorks = () => {
                         const overdue = task.remainingDate?.isOverdue ?? false;
                         const progress = localProgress[task._id] ?? (typeof task.percentageCompleted === "number" ? task.percentageCompleted : 0);
                         const remainingLabel = task.remainingDate?.dueTimeWithDayAndHour ?? (typeof task.remainingDate?.days === 'number' ? `${task.remainingDate?.days} day${task.remainingDate?.days === 1 ? '' : 's'}` : 'N/A');
+                        const isExpanded = expandedTaskId === task._id;
+                        const commentCount = task.comments?.length ?? 0;
 
                         return (
                             <div key={task._id} className={`rounded-2xl border p-4 shadow-sm transition ${overdue ? 'bg-red-50 border-red-300' : 'bg-white border-slate-200 hover:shadow-md'}`}>
@@ -175,7 +211,65 @@ const DesignerRunningWorks = () => {
                                     </div>
                                 </div>
 
-                                {/* description is shown only in modal now */}
+                                {/* Comments toggle */}
+                                <button
+                                    onClick={() => setExpandedTaskId(isExpanded ? null : task._id)}
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F16C65] hover:underline"
+                                >
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                    {isExpanded ? "Hide comments" : `Comments (${commentCount})`}
+                                </button>
+
+                                {/* Comments panel */}
+                                {isExpanded && (
+                                    <div className="mt-2.5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                        {commentCount === 0 && (
+                                            <p className="text-xs text-slate-400">No comments yet.</p>
+                                        )}
+
+                                        <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                                            {(task.comments ?? [])
+                                                .slice()
+                                                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                                                .map((c) => (
+                                                    <div key={c._id} className="group relative rounded-xl bg-white px-3 py-2 border border-slate-100">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-xs font-semibold text-slate-700">{c.commentByName}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] text-slate-400">{new Date(c.createdAt).toLocaleString()}</span>
+                                                                
+                                                            </div>
+                                                        </div>
+                                                        <p className="mt-0.5 whitespace-pre-wrap text-xs leading-5 text-slate-600">{c.text}</p>
+                                                    </div>
+                                                ))}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 pt-1">
+                                            <input
+                                                type="text"
+                                                value={commentDraft[task._id] ?? ""}
+                                                onChange={(e) => setCommentDraft((prev) => ({ ...prev, [task._id]: e.target.value }))}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        e.preventDefault();
+                                                        handleAddComment(task._id);
+                                                    }
+                                                }}
+                                                placeholder="Write a comment..."
+                                                className="w-full rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs outline-none transition focus:border-[#F16C65] focus:ring-2 focus:ring-[#F16C65]/20"
+                                            />
+                                            <button
+                                                onClick={() => handleAddComment(task._id)}
+                                                disabled={mutationAddComment.isPending || !commentDraft[task._id]?.trim()}
+                                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#F16C65] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#e4564f] disabled:cursor-not-allowed disabled:bg-slate-300"
+                                            >
+                                                <Send className="h-3.5 w-3.5" />
+                                                {mutationAddComment.isPending ? "Sending..." : "Send"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
