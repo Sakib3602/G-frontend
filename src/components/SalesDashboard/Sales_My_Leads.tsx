@@ -277,7 +277,6 @@ export default function Sales_My_Leads() {
       !meetingForm.title.trim() ||
       !meetingForm.clientName.trim() ||
       !meetingForm.clientPhone.trim() ||
-      !meetingForm.clientEmail.trim() ||
       !meetingForm.meetingDate ||
       !meetingForm.meetingTime
     ) {
@@ -1409,7 +1408,7 @@ export default function Sales_My_Leads() {
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-                        Notification Email
+                        Notification Email (Optional)
                       </label>
                       <input
                         type="text"
@@ -1512,18 +1511,7 @@ export default function Sales_My_Leads() {
                         className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
                       />
                     </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-                        Internal Notes
-                      </label>
-                      <textarea
-                        name="notes"
-                        rows={2}
-                        value={meetingForm.notes || ""}
-                        onChange={handleMeetingFormChange}
-                        className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
-                      />
-                    </div>
+                    
                   </div>
                 </div>
               </div>

@@ -315,7 +315,7 @@ export default function Sales_Meetings() {
     },
   });
 
-  // --- KPIs & Filtering ---
+
   const totalMeetings = meetings.length;
   const upcomingMeetings = meetings.filter((m) => m.status === "scheduled").length;
   const completedMeetings = meetings.filter((m) => m.status === "completed").length;
@@ -606,10 +606,7 @@ export default function Sales_Meetings() {
                  <textarea name="agenda" rows={3} value={formData.agenda || ""} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-xl text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-2 focus:ring-[#99B562]/20 resize-none transition-all" />
                </div>
 
-               <div className="sm:col-span-2">
-                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Internal Notes</label>
-                 <textarea name="notes" rows={2} value={formData.notes || ""} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-xl text-base text-slate-900 focus:outline-none focus:border-[#99B562] focus:ring-2 focus:ring-[#99B562]/20 resize-none transition-all" />
-               </div>
+               
 
                <div className="sm:col-span-2 pt-6 mt-2 border-t border-slate-200 flex justify-end gap-4">
                  <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-3 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors border border-transparent hover:border-slate-300 rounded-xl">Discard</button>
