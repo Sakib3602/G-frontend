@@ -96,6 +96,12 @@ export default function Sales_Meetings() {
   const [formError, setFormError] = useState<string | null>(null);
   const [editFormError, setEditFormError] = useState<string | null>(null);
 
+  // --- Complete Meeting (Summary) Modal State ---
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [completingMeeting, setCompletingMeeting] = useState<MeetingData | null>(null);
+  const [completionSummary, setCompletionSummary] = useState("");
+  const [completeFormError, setCompleteFormError] = useState<string | null>(null);
+
   const axiosSales = useAxiosSales();
   const { userData } = useUserData();
 
@@ -171,21 +177,45 @@ export default function Sales_Meetings() {
   });
 
   // --- Actions Logic ---
+
+  // "Complete" now opens a modal asking for a meeting summary instead of
+  // immediately marking the meeting as completed. The summary is required
+  // and gets persisted into the meeting's `notes` field.
   const handleCompleteMeeting = (meeting: MeetingData) => {
-    Swal.fire({
-      title: "Confirm Completion",
-      text: "Mark this meeting as successfully completed?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#99B562",
-      cancelButtonColor: "#94a3b8",
-      confirmButtonText: "Yes, Complete",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        mutationUpStatusCNG.mutate({ id: meeting._id as string, status: "completed" });
-        Swal.fire({ title: "Completed!", text: "Status updated.", icon: "success" });
-      }
+    setCompletingMeeting(meeting);
+    setCompletionSummary(meeting.notes || "");
+    setCompleteFormError(null);
+    setIsCompleteModalOpen(true);
+  };
+
+  const closeCompleteModal = () => {
+    setIsCompleteModalOpen(false);
+    setCompletingMeeting(null);
+    setCompletionSummary("");
+    setCompleteFormError(null);
+  };
+
+  const handleCompleteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!completionSummary.trim()) {
+      setCompleteFormError("মিটিং সামারি লেখা আবশ্যক। সামারি ছাড়া মিটিং কমপ্লিট করা যাবে না।");
+      return;
+    }
+
+    if (!completingMeeting?._id) {
+      setCompleteFormError("Meeting reference missing. Please try again.");
+      return;
+    }
+
+    mutationUpStatusCNG.mutate({
+      id: completingMeeting._id,
+      status: "completed",
+      notes: completionSummary.trim(),
     });
+
+    closeCompleteModal();
+    Swal.fire({ title: "Completed!", text: "Summary saved and status updated.", icon: "success" });
   };
 
   const handleCancelMeeting = (meeting: MeetingData) => {
@@ -295,9 +325,22 @@ export default function Sales_Meetings() {
     },
   });
 
+  // Accepts an optional `notes` payload alongside `status` so the Complete
+  // modal can persist the meeting summary in the same request.
   const mutationUpStatusCNG = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await axiosSales.patch(`/api/v1/sales/meetings/update-meeting-status/${id}`, { status });
+    mutationFn: async ({
+      id,
+      status,
+      notes,
+    }: {
+      id: string;
+      status: string;
+      notes?: string;
+    }) => {
+      const res = await axiosSales.patch(`/api/v1/sales/meetings/update-meeting-status/${id}`, {
+        status,
+        ...(notes !== undefined ? { notes } : {}),
+      });
       return res.data;
     },
     onSuccess: () => {
@@ -315,7 +358,7 @@ export default function Sales_Meetings() {
     },
   });
 
-
+  // --- KPIs & Filtering ---
   const totalMeetings = meetings.length;
   const upcomingMeetings = meetings.filter((m) => m.status === "scheduled").length;
   const completedMeetings = meetings.filter((m) => m.status === "completed").length;
@@ -482,6 +525,12 @@ export default function Sales_Meetings() {
                       {meeting.agenda && (
                         <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed mb-4">
                           <span className="font-bold text-slate-800">Agenda:</span> {meeting.agenda}
+                        </p>
+                      )}
+
+                      {meeting.status === "completed" && meeting.notes && (
+                        <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed mb-4 bg-slate-50 border border-slate-100 rounded-lg p-3">
+                          <span className="font-bold text-slate-800">Summary:</span> {meeting.notes}
                         </p>
                       )}
 
@@ -719,6 +768,69 @@ export default function Sales_Meetings() {
                  <button type="button" onClick={closeEditModal} className="px-5 py-3 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors border border-transparent hover:border-slate-300 rounded-xl">Discard Changes</button>
                  <button type="submit" className="px-6 py-3 rounded-xl text-base font-bold text-white bg-[#99B562] hover:bg-[#85a052] transition-all shadow-md shadow-[#99B562]/25 hover:shadow-lg hover:shadow-[#99B562]/30 active:scale-[0.98]">Update Block</button>
                </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- COMPLETE MEETING (SUMMARY) MODAL --- */}
+      {isCompleteModalOpen && completingMeeting && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="absolute inset-0" onClick={closeCompleteModal}></div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-start bg-gradient-to-r from-[#99B562]/5 to-transparent">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Complete Meeting</h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  "{completingMeeting.title}" — {completingMeeting.clientName}
+                </p>
+              </div>
+              <button onClick={closeCompleteModal} className="text-slate-400 hover:text-slate-900 p-2 rounded-lg transition-colors bg-white border border-slate-200 hover:bg-slate-100">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCompleteSubmit} className="flex-1 overflow-y-auto p-8 space-y-4">
+              {completeFormError && (
+                <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 rounded-xl">
+                  {completeFormError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Meeting Summary <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={5}
+                  value={completionSummary}
+                  onChange={(e) => {
+                    setCompletionSummary(e.target.value);
+                    if (completeFormError) setCompleteFormError(null);
+                  }}
+                  placeholder="What was discussed in the meeting, the outcome, and the next steps..."
+                  className={`w-full px-4 py-3 border rounded-xl text-base text-slate-900 focus:outline-none focus:ring-2 resize-none transition-all ${
+                    completeFormError
+                      ? "border-red-300 focus:border-red-400 focus:ring-red-200"
+                      : "border-slate-300 focus:border-[#99B562] focus:ring-[#99B562]/20"
+                  }`}
+                />
+                <p className="text-xs text-slate-400 mt-1.5">If you don't provide a summary, the meeting will be marked as completed without saving any notes.</p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 flex justify-end gap-4">
+                <button type="button" onClick={closeCompleteModal} className="px-5 py-3 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors border border-transparent hover:border-slate-300 rounded-xl">
+                  Discard
+                </button>
+                <button
+                  type="submit"
+                  disabled={!completionSummary.trim()}
+                  className="px-6 py-3 rounded-xl text-base font-bold text-white bg-[#99B562] hover:bg-[#85a052] transition-all shadow-md shadow-[#99B562]/25 hover:shadow-lg hover:shadow-[#99B562]/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#99B562] disabled:shadow-none"
+                >
+                  Mark Completed & Save Summary
+                </button>
+              </div>
             </form>
           </div>
         </div>

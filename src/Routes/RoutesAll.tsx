@@ -119,7 +119,7 @@ const RoutesAll = () => {
         <Route path="/dashboard/sales/emails" element={<Sales_Emails />} />
         <Route path="/dashboard/sales/tasks" element={<SalesTaskAD />} />
         <Route
-          path="/dashboard/sales/compliance"
+          path="/dashboard/sales/complaints"
           element={<SubmitCompliance />}
         />
       </Route>

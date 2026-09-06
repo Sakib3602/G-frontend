@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router";
 import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
-import { FiArrowLeft, FiX, FiChevronDown, FiArrowUp, FiArrowDown } from "react-icons/fi";
+import { FiArrowLeft, FiX, FiChevronDown, FiArrowUp, FiArrowDown, FiEye } from "react-icons/fi";
 
 interface Meeting {
   _id: string;
@@ -10,6 +10,7 @@ interface Meeting {
   leadId: string;
   clientName: string;
   clientEmail: string;
+  clientPhone?: string;
   meetingDate: string;
   meetingTime: string;
   meetingType: string;
@@ -86,6 +87,90 @@ const SortHeader = ({
   </th>
 );
 
+// --- Meeting Summary Popup ---
+const MeetingSummaryModal = ({ meeting, onClose }: { meeting: Meeting; onClose: () => void }) => (
+  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div className="absolute inset-0" onClick={onClose}></div>
+
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-lg relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-start bg-gray-50/80">
+        <div>
+          <p className="text-[11px] font-bold uppercase text-gray-400 tracking-wider mb-1">Meeting Summary</p>
+          <h2 className="text-xl font-bold text-[#1E293B]">{meeting.title}</h2>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-900 p-2 rounded-lg transition-colors bg-white border border-gray-200 hover:bg-gray-100"
+        >
+          <FiX size={18} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-8 space-y-5">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Client</p>
+            <p className="text-sm font-semibold text-[#1E293B]">{meeting.clientName}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Phone</p>
+            <p className="text-sm font-medium text-[#1E293B] font-mono">{meeting.clientPhone || "-"}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Date</p>
+            <p className="text-sm font-medium text-[#1E293B]">{formatDate(meeting.meetingDate)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Time</p>
+            <p className="text-sm font-medium text-[#1E293B] font-mono">{meeting.meetingTime}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Type</p>
+            <span className={`inline-block px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${typeColor(meeting.meetingType)}`}>
+              {meeting.meetingType}
+            </span>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Status</p>
+            <span className={`inline-block px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${statusColor(meeting.status)}`}>
+              {meeting.status}
+            </span>
+          </div>
+        </div>
+
+        {meeting.agenda && (
+          <div>
+            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Agenda</p>
+            <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 border border-gray-100 rounded-xl p-3">
+              {meeting.agenda}
+            </p>
+          </div>
+        )}
+
+        <div>
+          <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Summary / Notes</p>
+          {meeting.notes ? (
+            <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 border border-gray-100 rounded-xl p-3 whitespace-pre-wrap">
+              {meeting.notes}
+            </p>
+          ) : (
+            <p className="text-sm text-gray-400 italic">No summary added yet.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="px-8 py-5 border-t border-gray-100 flex justify-end">
+        <button
+          onClick={onClose}
+          className="px-5 py-2.5 text-sm font-bold text-[#1E293B] bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const AdminViewMeetings = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -96,6 +181,9 @@ const AdminViewMeetings = () => {
   const [endDate, setEndDate] = useState("");
   const [sortBy, setSortBy] = useState("meetingDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // --- Summary popup state ---
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<MeetingsPage>({
     queryKey: ["meetings-by-salesman", id, status, startDate, endDate, sortBy, sortOrder],
@@ -222,18 +310,19 @@ const AdminViewMeetings = () => {
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">#</th>
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Title</th>
                 <SortHeader field="clientName" label="Client" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
-                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Email</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Phone</th>
                 <SortHeader field="meetingDate" label="Date" sortBy={sortBy} sortOrder={sortOrder} onSort={toggleSort} />
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Time</th>
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Type</th>
                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Status</th>
+                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider text-right">Summary</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading &&
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 8 }).map((__, j) => (
+                    {Array.from({ length: 9 }).map((__, j) => (
                       <td key={j} className="p-4">
                         <div className="h-4 bg-gray-100 rounded w-3/4" />
                       </td>
@@ -243,7 +332,7 @@ const AdminViewMeetings = () => {
 
               {!isLoading && meetings.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-sm text-gray-400">
+                  <td colSpan={9} className="p-10 text-center text-sm text-gray-400">
                     No meetings found for this filter.
                   </td>
                 </tr>
@@ -255,7 +344,7 @@ const AdminViewMeetings = () => {
                     <td className="p-4 text-sm font-medium text-gray-400">{idx + 1}</td>
                     <td className="p-4 text-sm font-semibold">{m.title}</td>
                     <td className="p-4 text-sm">{m.clientName}</td>
-                    <td className="p-4 text-sm text-gray-500">{m.clientEmail}</td>
+                    <td className="p-4 text-sm text-gray-500 font-mono">{m.clientPhone || "-"}</td>
                     <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(m.meetingDate)}</td>
                     <td className="p-4 text-sm font-mono">{m.meetingTime}</td>
                     <td className="p-4">
@@ -267,6 +356,16 @@ const AdminViewMeetings = () => {
                       <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${statusColor(m.status)}`}>
                         {m.status}
                       </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() => setSelectedMeeting(m)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+                        title="View summary"
+                      >
+                        <FiEye size={13} />
+                        View
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -286,6 +385,10 @@ const AdminViewMeetings = () => {
           </div>
         )}
       </div>
+
+      {selectedMeeting && (
+        <MeetingSummaryModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} />
+      )}
     </div>
   );
 };

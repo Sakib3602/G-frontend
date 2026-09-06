@@ -9,6 +9,9 @@ export interface INoteEntry {
   text: string;
   createdAt?: string;
   createdBy?: string;
+  channel?: "call" | "whatsapp";
+  callType?: "picked" | "missed";
+  callMinutes?: number;
 }
 
 export interface LeadData {
@@ -30,9 +33,10 @@ export interface LeadData {
   ServiceNeed?: string;
   reminderAt: string;
   reminderNote?: string;
+  missedCallCount?: number;
 }
 
-// ✅ নতুন — Professional stat card component
+// ✅ Professional stat card component
 const StatCard = ({
   label,
   value,
@@ -85,6 +89,10 @@ export default function Sales_Remainder() {
 
   const [newNoteText, setNewNoteText] = useState("");
   const [showNoteHistory, setShowNoteHistory] = useState(true);
+
+  // ✅ নতুন — Call / WhatsApp channel + minutes
+  const [noteChannel, setNoteChannel] = useState<"call" | "whatsapp">("call");
+  const [callMinutes, setCallMinutes] = useState("");
 
   const axiosSales = useAxiosSales();
   const { userData } = useUserData();
@@ -195,6 +203,9 @@ export default function Sales_Remainder() {
     setEditForm(lead);
     setNewNoteText("");
     setShowNoteHistory(true);
+    // ✅ note channel reset
+    setNoteChannel("call");
+    setCallMinutes("");
   };
 
   const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -223,11 +234,25 @@ export default function Sales_Remainder() {
     mutationUpdateDetails.mutate({ leadId, payload: editForm });
   };
 
+  // ✅ আপডেট — channel + callMinutes সহ payload
   const mutationAddNote = useMutation({
-    mutationFn: async ({ leadId, text }: { leadId: string; text: string }) => {
+    mutationFn: async ({
+      leadId,
+      text,
+      channel,
+      callMinutes,
+    }: {
+      leadId: string;
+      text: string;
+      channel: "call" | "whatsapp";
+      callMinutes?: string;
+    }) => {
       const res = await axiosSales.post(`/api/v1/sales/add-note/${leadId}`, {
         text,
         createdBy: userData?.name || "Sales",
+        channel,
+        callMinutes: channel === "call" ? callMinutes : undefined,
+        salesmanId: userData?._id,
       });
       return res.data;
     },
@@ -237,14 +262,40 @@ export default function Sales_Remainder() {
         setSelectedLeadDetails(data.lead);
       }
       setNewNoteText("");
+      setCallMinutes("");
     },
   });
 
+  // ✅ নতুন — Didn't Pick (+) mutation
+  const mutationMissedCall = useMutation({
+    mutationFn: async (leadId: string) => {
+      const res = await axiosSales.put(
+        `/api/v1/sales/log-missed-call/${leadId}`,
+        {
+          salesmanId: userData?._id,
+          salesmanName: userData?.name,
+        },
+      );
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["rem"] });
+      if (data?.lead) setSelectedLeadDetails(data.lead);
+    },
+  });
+
+  // ✅ আপডেট — channel অনুযায়ী validation
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLeadDetails || !newNoteText.trim()) return;
+    if (noteChannel === "call" && !callMinutes) return;
     const leadId = getLeadId(selectedLeadDetails);
-    mutationAddNote.mutate({ leadId, text: newNoteText.trim() });
+    mutationAddNote.mutate({
+      leadId,
+      text: newNoteText.trim(),
+      channel: noteChannel,
+      callMinutes,
+    });
   };
 
   if (isLoading) {
@@ -419,6 +470,13 @@ export default function Sales_Remainder() {
                           <td className="px-5 py-3">
                             <p className="font-semibold text-slate-800 hover:text-[#99B562] transition-colors">{lead.leadName}</p>
                             <p className="text-xs text-slate-400">{lead.title || "—"} {lead.companyName && `• ${lead.companyName}`}</p>
+                            {lead.missedCallCount ? (
+                              <div className="mt-1">
+                                <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                                  📞 {lead.missedCallCount} missed
+                                </span>
+                              </div>
+                            ) : null}
                           </td>
                           <td className="px-5 py-3 text-xs text-slate-500 font-mono">
                             <p>{lead.email || "—"}</p>
@@ -708,6 +766,7 @@ export default function Sales_Remainder() {
                 )}
               </div>
 
+              {/* Follow-up Note History সেকশন (Call/WhatsApp + Didn't Pick) */}
               <div className="space-y-3 pt-2 border-t border-slate-200">
                 <button
                   type="button"
@@ -733,7 +792,7 @@ export default function Sales_Remainder() {
                         .map((entry, idx) => (
                           <div key={entry._id || idx} className="bg-white border border-slate-200 rounded-lg p-3">
                             <p className="text-sm text-slate-800">{entry.text}</p>
-                            <div className="flex items-center gap-2 mt-1.5">
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                               <span className="text-[10px] text-slate-400 font-mono">
                                 {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ""}
                               </span>
@@ -742,6 +801,19 @@ export default function Sales_Remainder() {
                                   {entry.createdBy}
                                 </span>
                               )}
+                              {entry.channel === "whatsapp" ? (
+                                <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded font-semibold">
+                                  💬 WhatsApp
+                                </span>
+                              ) : entry.callType === "missed" ? (
+                                <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
+                                  📞 Missed Call
+                                </span>
+                              ) : entry.callMinutes ? (
+                                <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold">
+                                  📞 {entry.callMinutes} min
+                                </span>
+                              ) : null}
                             </div>
                           </div>
                         ))
@@ -749,21 +821,76 @@ export default function Sales_Remainder() {
                   </div>
                 )}
 
-                <form onSubmit={handleAddNote} className="flex items-end gap-2 pt-1">
-                  <textarea
-                    value={newNoteText}
-                    onChange={(e) => setNewNoteText(e.target.value)}
-                    rows={2}
-                    placeholder="Write what was discussed today..."
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    disabled={mutationAddNote.isPending || !newNoteText.trim()}
-                    className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] disabled:opacity-40 whitespace-nowrap transition-colors"
-                  >
-                    {mutationAddNote.isPending ? "Adding..." : "+ Add Note"}
-                  </button>
+                <form onSubmit={handleAddNote} className="space-y-2 pt-1">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNoteChannel("call")}
+                      className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
+                        noteChannel === "call"
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                      }`}
+                    >
+                      📞 Call
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNoteChannel("whatsapp")}
+                      className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
+                        noteChannel === "whatsapp"
+                          ? "bg-green-600 text-white border-green-600"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                      }`}
+                    >
+                      💬 WhatsApp
+                    </button>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <textarea
+                      value={newNoteText}
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                      rows={2}
+                      placeholder="Write what was discussed today..."
+                      className="flex-1 px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
+                    />
+                    {noteChannel === "call" && (
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={callMinutes}
+                        onChange={(e) => setCallMinutes(e.target.value)}
+                        placeholder="Min *"
+                        className="w-20 px-2 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-[#99B562]"
+                      />
+                    )}
+                    <button
+                      type="submit"
+                      disabled={
+                        mutationAddNote.isPending ||
+                        !newNoteText.trim() ||
+                        (noteChannel === "call" && !callMinutes)
+                      }
+                      className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] disabled:opacity-40 whitespace-nowrap transition-colors"
+                    >
+                      {mutationAddNote.isPending ? "Adding..." : "+ Add Note"}
+                    </button>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        selectedLeadDetails && mutationMissedCall.mutate(getLeadId(selectedLeadDetails))
+                      }
+                      disabled={mutationMissedCall.isPending}
+                      className="px-3 py-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold transition-all disabled:opacity-50"
+                    >
+                      {mutationMissedCall.isPending ? "Logging..." : "Didn't Pick (+)"}
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>

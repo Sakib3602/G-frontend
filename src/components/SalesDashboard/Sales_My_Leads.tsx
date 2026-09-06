@@ -16,6 +16,9 @@ export interface INoteEntry {
   text: string;
   createdAt?: string;
   createdBy?: string;
+  channel?: "call" | "whatsapp";
+  callType?: "picked" | "missed";
+  callMinutes?: number;
 }
 export interface LeadData {
   id: string;
@@ -36,7 +39,8 @@ export interface LeadData {
   ServiceNeed?: string;
   reminderAt?: string | null;
   reminderNote?: string;
-  updatedAt?: string; // ✅ নতুন
+  updatedAt?: string;
+  missedCallCount?: number;
 }
 export interface IMeeting {
   title: string;
@@ -54,7 +58,6 @@ export interface IMeeting {
   clientPhone: string;
 }
 
-// ✅ নতুন — Sales team member (Transfer dropdown এর জন্য)
 export interface ISalesTeamMember {
   _id: string;
   name: string;
@@ -116,7 +119,7 @@ export default function Sales_My_Leads() {
   const [showNoti, setShowNoti] = useState(false);
   const [showNotiStatusUpdate, setShowNotiStatusUpdate] = useState(false);
   const [showNotiReminder, setShowNotiReminder] = useState(false);
-  const [showNotiTransfer, setShowNotiTransfer] = useState(false); // ✅ নতুন
+  const [showNotiTransfer, setShowNotiTransfer] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -129,6 +132,10 @@ export default function Sales_My_Leads() {
   const [noteLead, setNoteLead] = useState<LeadData | null>(null);
   const [newNoteText, setNewNoteText] = useState("");
 
+  // ✅ নতুন — Call / WhatsApp channel + minutes
+  const [noteChannel, setNoteChannel] = useState<"call" | "whatsapp">("call");
+  const [callMinutes, setCallMinutes] = useState("");
+
   const [selectedLeadDetails, setSelectedLeadDetails] =
     useState<LeadData | null>(null);
   const [isEditingDetails, setIsEditingDetails] = useState(false);
@@ -140,15 +147,15 @@ export default function Sales_My_Leads() {
   const [reminderTime, setReminderTime] = useState("");
   const [reminderNoteText, setReminderNoteText] = useState("");
 
-  // ✅ নতুন — Transfer Lead Modal State
+  // ✅ Transfer Lead Modal State
   const [transferLead, setTransferLead] = useState<LeadData | null>(null);
   const [salesTeam, setSalesTeam] = useState<ISalesTeamMember[]>([]);
   const [isTeamLoading, setIsTeamLoading] = useState(false);
   const [selectedTransferTo, setSelectedTransferTo] = useState("");
   const [transferNote, setTransferNote] = useState("");
-  const [myPendingTransferLeadIds, setMyPendingTransferLeadIds] = useState<
-    Set<string>
-  >(new Set());
+  const [myPendingTransferLeadIds, setMyPendingTransferLeadIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const formatLastWork = (dateStr?: string) => {
     if (!dateStr) return "—";
@@ -232,8 +239,6 @@ export default function Sales_My_Leads() {
   const currentIsLoading = isSearchMode ? isSearchLoading : isLoading;
   const currentIsError = isSearchMode ? isSearchError : isError;
 
-  // ✅ নতুন — এই sales rep এর pending transfer request গুলো fetch করি,
-  // যাতে "Transfer" বাটনটা "Transfer Pending" দেখায়
   useEffect(() => {
     if (!userData?._id) return;
     axiosSales
@@ -245,7 +250,7 @@ export default function Sales_My_Leads() {
         setMyPendingTransferLeadIds(ids);
       })
       .catch(() => {
-        // silent fail — badge শুধু cosmetic, ব্লক করার দরকার নেই
+        // silent fail
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userData?._id]);
@@ -350,16 +355,33 @@ export default function Sales_My_Leads() {
     setMeetingForm(createMeetingForm(lead));
   };
 
+  // ✅ আপডেট — channel/minutes রিসেট
   const openNotePopup = (lead: LeadData) => {
     setNoteLead(lead);
     setNewNoteText("");
+    setNoteChannel("call");
+    setCallMinutes("");
   };
 
+  // ✅ আপডেট — channel + callMinutes সহ payload
   const mutationAddNote = useMutation({
-    mutationFn: async ({ leadId, text }: { leadId: string; text: string }) => {
+    mutationFn: async ({
+      leadId,
+      text,
+      channel,
+      callMinutes,
+    }: {
+      leadId: string;
+      text: string;
+      channel: "call" | "whatsapp";
+      callMinutes?: string;
+    }) => {
       const res = await axiosSales.post(`/api/v1/sales/add-note/${leadId}`, {
         text,
         createdBy: userData?.name || "Sales",
+        channel,
+        callMinutes: channel === "call" ? callMinutes : undefined,
+        salesmanId: userData?._id,
       });
       return res.data;
     },
@@ -368,14 +390,41 @@ export default function Sales_My_Leads() {
       queryClient.invalidateQueries({ queryKey: ["search-my-leads"] });
       if (data?.lead) setNoteLead(data.lead);
       setNewNoteText("");
+      setCallMinutes("");
     },
   });
 
+  // ✅ নতুন — Didn't Pick (+) mutation
+  const mutationMissedCall = useMutation({
+    mutationFn: async (leadId: string) => {
+      const res = await axiosSales.put(
+        `/api/v1/sales/log-missed-call/${leadId}`,
+        {
+          salesmanId: userData?._id,
+          salesmanName: userData?.name,
+        },
+      );
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["my-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["search-my-leads"] });
+      if (data?.lead) setNoteLead(data.lead);
+    },
+  });
+
+  // ✅ আপডেট — channel অনুযায়ী validation
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteLead || !newNoteText.trim()) return;
+    if (noteChannel === "call" && !callMinutes) return;
     const leadId = noteLead._id || noteLead.id;
-    mutationAddNote.mutate({ leadId, text: newNoteText.trim() });
+    mutationAddNote.mutate({
+      leadId,
+      text: newNoteText.trim(),
+      channel: noteChannel,
+      callMinutes,
+    });
   };
 
   const MutationForCkMeeting = useMutation({
@@ -520,7 +569,7 @@ export default function Sales_My_Leads() {
     });
   };
 
-  // ✅ নতুন — Transfer Lead Logic
+  // ✅ Transfer Lead Logic
   const openTransferPopup = (lead: LeadData) => {
     setTransferLead(lead);
     setSelectedTransferTo("");
@@ -862,7 +911,13 @@ export default function Sales_My_Leads() {
                           </span>
                         </div>
                       )}
-                      {/* ✅ নতুন — Transfer pending থাকলে ছোট ব্যাজ */}
+                      {lead.missedCallCount ? (
+                        <div className="mt-1">
+                          <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                            📞 {lead.missedCallCount} missed
+                          </span>
+                        </div>
+                      ) : null}
                       {myPendingTransferLeadIds.has(lead._id) && (
                         <div className="mt-1">
                           <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
@@ -895,7 +950,6 @@ export default function Sales_My_Leads() {
                         >
                           Follow-up
                         </button>
-                        {/* ✅ নতুন — ৪র্থ বাটন: Transfer */}
                         <button
                           onClick={() => openTransferPopup(lead)}
                           className="whitespace-nowrap px-3 py-1.5 rounded border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold transition-all shadow-xs"
@@ -1511,7 +1565,6 @@ export default function Sales_My_Leads() {
                         className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
                       />
                     </div>
-                    
                   </div>
                 </div>
               </div>
@@ -1541,7 +1594,7 @@ export default function Sales_My_Leads() {
         </div>
       )}
 
-      {/* --- NOTE MODAL --- */}
+      {/* --- NOTE MODAL (Call/WhatsApp + Didn't Pick) --- */}
       {noteLead && (
         <div className="fixed inset-0 z-80 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div
@@ -1549,6 +1602,7 @@ export default function Sales_My_Leads() {
             onClick={() => {
               setNoteLead(null);
               setNewNoteText("");
+              setCallMinutes("");
             }}
           ></div>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl relative z-10 overflow-hidden border border-slate-200 max-h-[85vh] flex flex-col">
@@ -1569,6 +1623,7 @@ export default function Sales_My_Leads() {
                 onClick={() => {
                   setNoteLead(null);
                   setNewNoteText("");
+                  setCallMinutes("");
                 }}
                 className="text-slate-400 hover:text-slate-800 p-1 rounded transition-colors"
               >
@@ -1607,7 +1662,7 @@ export default function Sales_My_Leads() {
                       className="bg-white border border-slate-200 rounded-lg p-3 shadow-xs"
                     >
                       <p className="text-sm text-slate-800">{entry.text}</p>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <span className="text-[10px] text-slate-400 font-mono">
                           {entry.createdAt
                             ? new Date(entry.createdAt).toLocaleString()
@@ -1618,6 +1673,19 @@ export default function Sales_My_Leads() {
                             {entry.createdBy}
                           </span>
                         )}
+                        {entry.channel === "whatsapp" ? (
+                          <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded font-semibold">
+                            💬 WhatsApp
+                          </span>
+                        ) : entry.callType === "missed" ? (
+                          <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
+                            📞 Missed Call
+                          </span>
+                        ) : entry.callMinutes ? (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold">
+                            📞 {entry.callMinutes} min
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   ))
@@ -1626,27 +1694,91 @@ export default function Sales_My_Leads() {
 
             <form
               onSubmit={handleAddNote}
-              className="p-4 border-t border-slate-100 bg-white flex items-end gap-3"
+              className="p-4 border-t border-slate-100 bg-white space-y-2"
             >
-              <div className="flex-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-                  New Follow-up Note
-                </label>
-                <textarea
-                  value={newNoteText}
-                  onChange={(e) => setNewNoteText(e.target.value)}
-                  rows={2}
-                  placeholder="Write what was discussed today..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors resize-none"
-                />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNoteChannel("call")}
+                  className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
+                    noteChannel === "call"
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                  }`}
+                >
+                  📞 Call
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNoteChannel("whatsapp")}
+                  className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
+                    noteChannel === "whatsapp"
+                      ? "bg-green-600 text-white border-green-600"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                  }`}
+                >
+                  💬 WhatsApp
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={mutationAddNote.isPending || !newNoteText.trim()}
-                className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] transition-colors disabled:opacity-40 whitespace-nowrap"
-              >
-                {mutationAddNote.isPending ? "Adding..." : "Add Note"}
-              </button>
+
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                    {noteChannel === "whatsapp"
+                      ? "What was discussed on WhatsApp"
+                      : "What was discussed on the call"}
+                  </label>
+                  <textarea
+                    value={newNoteText}
+                    onChange={(e) => setNewNoteText(e.target.value)}
+                    rows={2}
+                    placeholder="Write what was discussed today..."
+                    className="w-full px-3 py-2 border border-slate-200 rounded text-sm text-slate-800 focus:outline-none focus:border-[#99B562] transition-colors resize-none"
+                  />
+                </div>
+                {noteChannel === "call" && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                      Min <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      required
+                      value={callMinutes}
+                      onChange={(e) => setCallMinutes(e.target.value)}
+                      placeholder="e.g. 5"
+                      className="w-20 px-2 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-[#99B562]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center pt-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    mutationMissedCall.mutate(noteLead._id || noteLead.id)
+                  }
+                  disabled={mutationMissedCall.isPending}
+                  className="px-3 py-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold transition-all disabled:opacity-50"
+                >
+                  {mutationMissedCall.isPending
+                    ? "Logging..."
+                    : "Didn't Pick (+)"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    mutationAddNote.isPending ||
+                    !newNoteText.trim() ||
+                    (noteChannel === "call" && !callMinutes)
+                  }
+                  className="px-4 py-2 rounded bg-[#99B562] text-white text-xs font-bold hover:bg-[#85a052] transition-colors disabled:opacity-40 whitespace-nowrap"
+                >
+                  {mutationAddNote.isPending ? "Adding..." : "Add Note"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -1770,7 +1902,7 @@ export default function Sales_My_Leads() {
         </div>
       )}
 
-      {/* --- ✅ নতুন — TRANSFER LEAD MODAL --- */}
+      {/* --- TRANSFER LEAD MODAL --- */}
       {transferLead && (
         <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div

@@ -9,6 +9,9 @@ interface INoteEntry {
   text: string;
   createdAt?: string;
   createdBy?: string;
+  channel?: "call" | "whatsapp";
+  callType?: "picked" | "missed";
+  callMinutes?: number;
 }
 
 interface Lead {
@@ -35,6 +38,7 @@ interface Lead {
   dealmoney?: number;
   reminderAt?: string | null;
   reminderNote?: string;
+  missedCallCount?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -100,6 +104,18 @@ const statusColor = (status: string) => {
   return map[status] || "bg-gray-100 text-gray-600 border border-gray-200";
 };
 
+// ✅ নতুন — প্রতি lead-এর call/whatsapp/note activity বের করা
+const getActivityStats = (lead: Lead) => {
+  const history = lead.indicationsHistory || [];
+  const whatsapp = history.filter((n) => n.channel === "whatsapp").length;
+  const callsPicked = history.filter(
+    (n) => (n.channel || "call") === "call" && (n.callType || "picked") === "picked",
+  ).length;
+  const callsMissed = lead.missedCallCount || history.filter((n) => n.callType === "missed").length;
+  const totalMinutes = history.reduce((sum, n) => sum + (n.callMinutes || 0), 0);
+  return { whatsapp, callsPicked, callsMissed, totalMinutes, notes: history.length };
+};
+
 const SummaryCard = ({ label, value, prefix = "" }: { label: string; value: string; prefix?: string }) => (
   <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
     <p className="text-[11px] font-bold uppercase text-gray-400 tracking-wider mb-2">{label}</p>
@@ -144,6 +160,8 @@ const LeadDetailsModal = ({ lead, onClose }: { lead: Lead; onClose: () => void }
       )
     : [];
 
+  const stats = getActivityStats(lead);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="absolute inset-0" onClick={onClose}></div>
@@ -182,6 +200,26 @@ const LeadDetailsModal = ({ lead, onClose }: { lead: Lead; onClose: () => void }
             <div className="bg-white border border-gray-200 rounded-lg p-3">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Service</p>
               <p className="text-sm font-bold text-[#1E293B]">{lead.ServiceNeed || "—"}</p>
+            </div>
+          </div>
+
+          {/* ✅ নতুন — Call/WhatsApp/Note activity summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Calls Picked</p>
+              <p className="text-sm font-bold text-emerald-700">{stats.callsPicked}</p>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Calls Missed</p>
+              <p className="text-sm font-bold text-red-600">{stats.callsMissed}</p>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">WhatsApp</p>
+              <p className="text-sm font-bold text-green-700">{stats.whatsapp}</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Call Minutes</p>
+              <p className="text-sm font-bold text-[#1E293B]">{stats.totalMinutes}</p>
             </div>
           </div>
 
@@ -280,13 +318,26 @@ const LeadDetailsModal = ({ lead, onClose }: { lead: Lead; onClose: () => void }
                   sortedHistory.map((entry, idx) => (
                     <div key={entry._id || idx} className="bg-gray-50 border border-gray-100 rounded-lg p-3">
                       <p className="text-xs text-[#1E293B]">{entry.text}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <span className="text-[10px] text-gray-400 font-mono">
                           {entry.createdAt ? formatDateTime(entry.createdAt) : ""}
                         </span>
                         {entry.createdBy ? (
                           <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-semibold">
                             {entry.createdBy}
+                          </span>
+                        ) : null}
+                        {entry.channel === "whatsapp" ? (
+                          <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded font-semibold">
+                            💬 WhatsApp
+                          </span>
+                        ) : entry.callType === "missed" ? (
+                          <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
+                            📞 Missed Call
+                          </span>
+                        ) : entry.callMinutes ? (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold">
+                            📞 {entry.callMinutes} min
                           </span>
                         ) : null}
                       </div>
@@ -407,9 +458,24 @@ const LeadTimelineModal = ({ leadId, leadName, onClose }: { leadId: string; lead
                         {event.type === "note" && (
                           <div>
                             <p className="text-sm text-[#1E293B]">{event.data.text}</p>
-                            {event.data.createdBy ? (
-                              <p className="text-[11px] text-gray-400 mt-1">by {event.data.createdBy}</p>
-                            ) : null}
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {event.data.createdBy ? (
+                                <p className="text-[11px] text-gray-400">by {event.data.createdBy}</p>
+                              ) : null}
+                              {event.data.channel === "whatsapp" ? (
+                                <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded font-semibold">
+                                  💬 WhatsApp
+                                </span>
+                              ) : event.data.callType === "missed" ? (
+                                <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
+                                  📞 Missed Call
+                                </span>
+                              ) : event.data.callMinutes ? (
+                                <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold">
+                                  📞 {event.data.callMinutes} min
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                         )}
 
@@ -449,13 +515,13 @@ const AdminViewLeads = () => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ✅ নতুন — "Today's Work" টগল
+  // ✅ "Today's Work" টগল
   const [todayWork, setTodayWork] = useState(false);
 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [timelineLead, setTimelineLead] = useState<{ id: string; name: string } | null>(null);
 
-  // ✅ ফিক্সড বটম স্ক্রলবার — ref ও state (leads ডিফাইন হওয়ার আগে declare করা নিরাপদ)
+  // ✅ ফিক্সড বটম স্ক্রলবার — ref ও state
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const [scrollWidth, setScrollWidth] = useState(0);
@@ -471,7 +537,6 @@ const AdminViewLeads = () => {
       params.set("limit", String(PAGE_SIZE));
 
       if (todayWork) {
-        // ✅ Today's Work মোডে backend নিজেই updatedAt দিয়ে filter + sort করবে
         params.set("todayWork", "true");
       } else {
         if (startDate) params.set("startDate", startDate);
@@ -488,7 +553,6 @@ const AdminViewLeads = () => {
     enabled: !!id,
   });
 
-  // ✅ leads এখানে ডিফাইন হয় — useEffect অবশ্যই এই লাইনের পরে থাকতে হবে
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const leads = data?.pages.flatMap((p) => p.data) || [];
   const summary = data?.pages[0]?.summary;
@@ -528,7 +592,6 @@ const AdminViewLeads = () => {
     setTodayWork((prev) => {
       const next = !prev;
       if (next) {
-        // Today's Work চালু হলে ম্যানুয়াল date range বাতিল
         setStartDate("");
         setEndDate("");
       }
@@ -547,7 +610,6 @@ const AdminViewLeads = () => {
 
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen text-[#1E293B]">
-      {/* ✅ ইনলাইন স্টাইল — নেটিভ স্ক্রলবার লুকানো + ফিক্সড স্ক্রলবার সরু করা */}
       <style>{`
         .hidden-native-scrollbar::-webkit-scrollbar { display: none; }
         .hidden-native-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -613,7 +675,6 @@ const AdminViewLeads = () => {
             )}
           </div>
 
-          {/* ✅ নতুন — Today's Work বাটন */}
           <button
             onClick={toggleTodayWork}
             className={`px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm border transition-colors whitespace-nowrap ${
@@ -690,53 +751,78 @@ const AdminViewLeads = () => {
               )}
 
               {!isLoading &&
-                leads.map((l, idx) => (
-                  <tr
-                    key={l._id}
-                    onClick={() => setSelectedLead(l)}
-                    className="hover:bg-gray-50/60 transition-colors cursor-pointer"
-                  >
-                    <td className="p-4 text-sm font-medium text-gray-400">{idx + 1}</td>
-                    <td className="p-4 text-sm font-semibold">
-                      {l.leadName}
-                      {l.reminderAt && (
-                        <span className="ml-2 text-[10px] font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                          🔔 {formatDate(l.reminderAt)}
+                leads.map((l, idx) => {
+                  const stats = getActivityStats(l);
+                  return (
+                    <tr
+                      key={l._id}
+                      onClick={() => setSelectedLead(l)}
+                      className="hover:bg-gray-50/60 transition-colors cursor-pointer"
+                    >
+                      <td className="p-4 text-sm font-medium text-gray-400">{idx + 1}</td>
+                      <td className="p-4 text-sm font-semibold">
+                        {l.leadName}
+                        {l.reminderAt && (
+                          <span className="ml-2 text-[10px] font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                            🔔 {formatDate(l.reminderAt)}
+                          </span>
+                        )}
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {stats.callsPicked > 0 && (
+                            <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                              📞 {stats.callsPicked} picked{stats.totalMinutes ? ` · ${stats.totalMinutes}m` : ""}
+                            </span>
+                          )}
+                          {stats.callsMissed > 0 && (
+                            <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                              📞 {stats.callsMissed} missed
+                            </span>
+                          )}
+                          {stats.whatsapp > 0 && (
+                            <span className="text-[10px] font-mono font-bold text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded">
+                              💬 {stats.whatsapp}
+                            </span>
+                          )}
+                          {stats.notes > 0 && (
+                            <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
+                              📝 {stats.notes} notes
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm">{l.companyName || "-"}</td>
+                      <td className="p-4 text-sm">{l.ServiceNeed || "-"}</td>
+                      <td className="p-4 text-sm font-mono">{l.leadScore}</td>
+                      <td className="p-4 text-sm">
+                        {l.proposalSent ? (
+                          <span className="text-emerald-600 font-semibold">Yes</span>
+                        ) : (
+                          <span className="text-gray-400">No</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.updatedAt)}</td>
+                      <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.createdAt)}</td>
+                      <td className="p-4">
+                        <span
+                          className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${statusColor(l.status)}`}
+                        >
+                          {l.status}
                         </span>
-                      )}
-                    </td>
-                    <td className="p-4 text-sm">{l.companyName || "-"}</td>
-                    <td className="p-4 text-sm">{l.ServiceNeed || "-"}</td>
-                    <td className="p-4 text-sm font-mono">{l.leadScore}</td>
-                    <td className="p-4 text-sm">
-                      {l.proposalSent ? (
-                        <span className="text-emerald-600 font-semibold">Yes</span>
-                      ) : (
-                        <span className="text-gray-400">No</span>
-                      )}
-                    </td>
-                    <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.updatedAt)}</td>
-                    <td className="p-4 text-xs text-gray-500 whitespace-nowrap">{formatDate(l.createdAt)}</td>
-                    <td className="p-4">
-                      <span
-                        className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${statusColor(l.status)}`}
-                      >
-                        {l.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right whitespace-nowrap">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTimelineLead({ id: l._id, name: l.leadName });
-                        }}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
-                      >
-                        <FiClock size={12} /> Timeline
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-4 text-right whitespace-nowrap">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTimelineLead({ id: l._id, name: l.leadName });
+                          }}
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
+                        >
+                          <FiClock size={12} /> Timeline
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -754,7 +840,6 @@ const AdminViewLeads = () => {
         )}
       </div>
 
-      {/* ✅ ফিক্সড বটম স্ক্রলবার — viewport-এর সাথে লেগে থাকে */}
       {barRect && scrollWidth > barRect.width + 4 && (
         <div
           style={{ position: "fixed", bottom: 0, left: barRect.left, width: barRect.width, zIndex: 40 }}

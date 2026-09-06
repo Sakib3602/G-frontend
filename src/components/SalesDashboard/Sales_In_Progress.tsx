@@ -10,6 +10,9 @@ export interface INoteEntry {
   text: string;
   createdAt?: string;
   createdBy?: string;
+  channel?: "call" | "whatsapp";
+  callType?: "picked" | "missed";
+  callMinutes?: number;
 }
 
 export interface LeadData {
@@ -34,6 +37,7 @@ export interface LeadData {
   proposalLink?: string;
   reminderAt?: string | null;
   reminderNote?: string;
+  missedCallCount?: number;
 }
 
 type QualificationStatus = "Qualified" | "Unqualified";
@@ -69,7 +73,6 @@ export default function Sales_In_Progress() {
   const [reminderTime, setReminderTime] = useState("");
   const [reminderNoteText, setReminderNoteText] = useState("");
 
-  // ট্যাব স্টেট
   const [activeTab, setActiveTab] = useState<TabKey>("action");
 
   const axiosSales = useAxiosSales();
@@ -93,19 +96,15 @@ export default function Sales_In_Progress() {
 
   const leads = leadsData;
 
-  // Modal State
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
   const [isComposing, setIsComposing] = useState(false);
 
-  // Email Form State
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [proposalLink, setProposalLink] = useState("");
 
-  // Manual flag করার সময় link দেওয়ার জন্য
   const [manualProposalLink, setManualProposalLink] = useState("");
 
-  // Awaiting Response Status State
   const [responseStatus, setResponseStatus] =
     useState<QualificationStatus | null>(null);
   const [pendingQualification, setPendingQualification] =
@@ -117,6 +116,10 @@ export default function Sales_In_Progress() {
   const [newNoteText, setNewNoteText] = useState("");
   const [showNoteHistory, setShowNoteHistory] = useState(true);
 
+  // ✅ নতুন — Call / WhatsApp channel + minutes
+  const [noteChannel, setNoteChannel] = useState<"call" | "whatsapp">("call");
+  const [callMinutes, setCallMinutes] = useState("");
+
   // Lead Score edit state
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [scoreValue, setScoreValue] = useState<string>("1");
@@ -125,7 +128,6 @@ export default function Sales_In_Progress() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
 
-  // Split leads
   const needsProposal = leads.filter((lead) => !lead.proposalSent);
   const proposalSent = leads.filter((lead) => lead.proposalSent);
 
@@ -133,7 +135,6 @@ export default function Sales_In_Progress() {
 
   const getLeadId = (lead: LeadData | null) => lead?.id || lead?._id || "";
 
-  // Open Modal Handler
   const openModal = (lead: LeadData) => {
     setSelectedLead(lead);
     setIsComposing(false);
@@ -149,6 +150,10 @@ export default function Sales_In_Progress() {
     setIsEditingName(false);
     setNameValue(lead.leadName || "");
 
+    // ✅ note channel reset
+    setNoteChannel("call");
+    setCallMinutes("");
+
     setShowReminderBox(false);
     if (lead.reminderAt) {
       const d = new Date(lead.reminderAt);
@@ -161,7 +166,6 @@ export default function Sales_In_Progress() {
     setReminderNoteText(lead.reminderNote || "");
   };
 
-  // Close Modal Handler
   const closeModal = () => {
     setSelectedLead(null);
     setIsComposing(false);
@@ -172,6 +176,8 @@ export default function Sales_In_Progress() {
     setNewNoteText("");
     setIsEditingScore(false);
     setIsEditingName(false);
+    setNoteChannel("call");
+    setCallMinutes("");
   };
 
   const handleMarkProposalSend = () => {
@@ -212,7 +218,6 @@ export default function Sales_In_Progress() {
     },
   });
 
-  // Handle Send Proposal
   const handleSendProposal = () => {
     if (!selectedLead) return;
 
@@ -238,7 +243,6 @@ export default function Sales_In_Progress() {
     mutationForEmail.mutate(proposalData);
   };
 
-  // Handle Qualified/Unqualified Response
   const handleQualificationResponse = (qualification: QualificationStatus) => {
     if (!selectedLead) return;
 
@@ -323,7 +327,6 @@ export default function Sales_In_Progress() {
       return res.data;
     },
     onSuccess: (_, variables) => {
-      // ইমেইল পাঠানোর পর proposalLink সহ lead আপডেট হবে
       mutationUPProposalSent.mutate({
         leadId: getLeadId(selectedLead),
         proposalLink: variables.proposalLink,
@@ -392,12 +395,25 @@ export default function Sales_In_Progress() {
 
   const isSending = mutationForEmail.isPending;
 
-  // Note push mutation
+  // ✅ Note mutation — channel + callMinutes সহ
   const mutationAddNote = useMutation({
-    mutationFn: async ({ leadId, text }: { leadId: string; text: string }) => {
+    mutationFn: async ({
+      leadId,
+      text,
+      channel,
+      callMinutes,
+    }: {
+      leadId: string;
+      text: string;
+      channel: "call" | "whatsapp";
+      callMinutes?: string;
+    }) => {
       const res = await axiosSales.post(`/api/v1/sales/add-note/${leadId}`, {
         text,
         createdBy: userData?.name || "Sales",
+        channel,
+        callMinutes: channel === "call" ? callMinutes : undefined,
+        salesmanId: userData?._id,
       });
       return res.data;
     },
@@ -407,14 +423,39 @@ export default function Sales_In_Progress() {
         setSelectedLead(data.lead);
       }
       setNewNoteText("");
+      setCallMinutes("");
+    },
+  });
+
+  // ✅ নতুন — Didn't Pick (+) mutation
+  const mutationMissedCall = useMutation({
+    mutationFn: async (leadId: string) => {
+      const res = await axiosSales.put(
+        `/api/v1/sales/log-missed-call/${leadId}`,
+        {
+          salesmanId: userData?._id,
+          salesmanName: userData?.name,
+        },
+      );
+      return res.data;
+    },
+    onSuccess: (data) => {
+      refetch();
+      if (data?.lead) setSelectedLead(data.lead);
     },
   });
 
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLead || !newNoteText.trim()) return;
+    if (noteChannel === "call" && !callMinutes) return;
     const leadId = getLeadId(selectedLead);
-    mutationAddNote.mutate({ leadId, text: newNoteText.trim() });
+    mutationAddNote.mutate({
+      leadId,
+      text: newNoteText.trim(),
+      channel: noteChannel,
+      callMinutes,
+    });
   };
 
   // Lead Score আপডেট মিউটেশন
@@ -481,7 +522,6 @@ export default function Sales_In_Progress() {
     mutationUpdateName.mutate({ leadId, leadName: nameValue.trim() });
   };
 
-  // --- Loading / Error States ---
   if (isLoading) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-white">
@@ -541,7 +581,6 @@ export default function Sales_In_Progress() {
 
       <div className="w-full bg-white px-6 py-10 lg:px-14 font-sans min-h-screen text-slate-900 antialiased">
         <div className="max-w-6xl mx-auto">
-          {/* --- Minimalist Header --- */}
           <div className="mb-8 pb-6 border-b border-slate-100">
             <p className="text-[10px] tracking-widest text-slate-400 uppercase font-bold mb-1">
               Pipeline Distribution System
@@ -551,7 +590,6 @@ export default function Sales_In_Progress() {
             </h1>
           </div>
 
-          {/* --- Tabs --- */}
           <div className="flex items-center gap-1 border-b border-slate-100 mb-6">
             <button
               onClick={() => setActiveTab("action")}
@@ -581,7 +619,6 @@ export default function Sales_In_Progress() {
             </button>
           </div>
 
-          {/* --- Table --- */}
           <div className="overflow-x-auto border border-slate-200 rounded-xl">
             <table className="w-full text-xs">
               <thead>
@@ -640,6 +677,13 @@ export default function Sales_In_Progress() {
                         <p className="text-slate-400 mt-0.5">
                           {lead.title || "Executive"}
                         </p>
+                        {lead.missedCallCount ? (
+                          <p className="mt-1">
+                            <span className="text-[10px] font-mono font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                              📞 {lead.missedCallCount} missed
+                            </span>
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {lead.companyName || "—"}
@@ -692,7 +736,6 @@ export default function Sales_In_Progress() {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-xl w-full max-w-2xl flex flex-col max-h-[85vh] relative z-10 overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-white">
               <div>
-                {/* Lead Name — এডিটেবল */}
                 {!isEditingName ? (
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-slate-900">
@@ -773,7 +816,6 @@ export default function Sales_In_Progress() {
                         </p>
                       </div>
 
-                      {/* Manual flag করার সময় proposal link */}
                       <div>
                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
                           Proposal Link (optional)
@@ -813,7 +855,6 @@ export default function Sales_In_Progress() {
                         </p>
                       </div>
 
-                      {/* Proposal Link দেখানো */}
                       {selectedLead.proposalLink && (
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
@@ -1085,7 +1126,7 @@ export default function Sales_In_Progress() {
                     )}
                   </div>
 
-                  {/* Follow-up Note History সেকশন */}
+                  {/* Follow-up Note History সেকশন (Call/WhatsApp + Didn't Pick) */}
                   <div className="space-y-3">
                     <button
                       type="button"
@@ -1127,7 +1168,7 @@ export default function Sales_In_Progress() {
                                 <p className="text-xs text-slate-800">
                                   {entry.text}
                                 </p>
-                                <div className="flex items-center gap-2 mt-1.5">
+                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                   <span className="text-[10px] text-slate-400 font-mono">
                                     {entry.createdAt
                                       ? new Date(
@@ -1140,6 +1181,19 @@ export default function Sales_In_Progress() {
                                       {entry.createdBy}
                                     </span>
                                   )}
+                                  {entry.channel === "whatsapp" ? (
+                                    <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded font-semibold">
+                                      💬 WhatsApp
+                                    </span>
+                                  ) : entry.callType === "missed" ? (
+                                    <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
+                                      📞 Missed Call
+                                    </span>
+                                  ) : entry.callMinutes ? (
+                                    <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold">
+                                      📞 {entry.callMinutes} min
+                                    </span>
+                                  ) : null}
                                 </div>
                               </div>
                             ))
@@ -1147,26 +1201,78 @@ export default function Sales_In_Progress() {
                       </div>
                     )}
 
-                    <form
-                      onSubmit={handleAddNote}
-                      className="flex items-end gap-2 pt-1"
-                    >
-                      <textarea
-                        value={newNoteText}
-                        onChange={(e) => setNewNoteText(e.target.value)}
-                        rows={2}
-                        placeholder="Write a follow-up note..."
-                        className="flex-1 px-3 py-2 border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
-                      />
-                      <button
-                        type="submit"
-                        disabled={
-                          mutationAddNote.isPending || !newNoteText.trim()
-                        }
-                        className="px-3 py-2 rounded bg-[#99B562] text-white text-[11px] font-bold hover:bg-[#85a052] disabled:opacity-40 whitespace-nowrap transition-colors"
-                      >
-                        {mutationAddNote.isPending ? "..." : "+ Add Note"}
-                      </button>
+                    <form onSubmit={handleAddNote} className="space-y-2 pt-1">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setNoteChannel("call")}
+                          className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
+                            noteChannel === "call"
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                          }`}
+                        >
+                          📞 Call
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNoteChannel("whatsapp")}
+                          className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
+                            noteChannel === "whatsapp"
+                              ? "bg-green-600 text-white border-green-600"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                          }`}
+                        >
+                          💬 WhatsApp
+                        </button>
+                      </div>
+
+                      <div className="flex items-end gap-2">
+                        <textarea
+                          value={newNoteText}
+                          onChange={(e) => setNewNoteText(e.target.value)}
+                          rows={2}
+                          placeholder="Write a follow-up note..."
+                          className="flex-1 px-3 py-2 border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:border-[#99B562] resize-none transition-colors"
+                        />
+                        {noteChannel === "call" && (
+                          <input
+                            type="number"
+                            min={1}
+                            required
+                            value={callMinutes}
+                            onChange={(e) => setCallMinutes(e.target.value)}
+                            placeholder="Min *"
+                            className="w-16 px-2 py-2 border border-slate-200 rounded text-xs focus:outline-none focus:border-[#99B562]"
+                          />
+                        )}
+                        <button
+                          type="submit"
+                          disabled={
+                            mutationAddNote.isPending ||
+                            !newNoteText.trim() ||
+                            (noteChannel === "call" && !callMinutes)
+                          }
+                          className="px-3 py-2 rounded bg-[#99B562] text-white text-[11px] font-bold hover:bg-[#85a052] disabled:opacity-40 whitespace-nowrap transition-colors"
+                        >
+                          {mutationAddNote.isPending ? "..." : "+ Add Note"}
+                        </button>
+                      </div>
+
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            mutationMissedCall.mutate(getLeadId(selectedLead))
+                          }
+                          disabled={mutationMissedCall.isPending}
+                          className="px-3 py-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold transition-all disabled:opacity-50"
+                        >
+                          {mutationMissedCall.isPending
+                            ? "Logging..."
+                            : "Didn't Pick (+)"}
+                        </button>
+                      </div>
                     </form>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
 import {
   BarChart,
@@ -75,6 +75,31 @@ interface ActivitySummaryResponse {
   data: ActivitySummaryItem[];
 }
 
+// ✅ নতুন — call/whatsapp log
+interface CallLogEntry {
+  _id: string;
+  leadId: string;
+  leadName?: string;
+  channel: "call" | "whatsapp";
+  callType?: "picked" | "missed";
+  callMinutes?: number;
+  note?: string;
+  createdAt: string;
+}
+interface CallLogsResponse {
+  success: boolean;
+  data: CallLogEntry[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  summary: {
+    totalLogs: number;
+    callsPicked: number;
+    callsMissed: number;
+    whatsappTexts: number;
+    totalCallMinutes: number;
+  };
+}
+
 const COLORS = [
   "#6366F1",
   "#22C55E",
@@ -139,7 +164,7 @@ const AdminSalesDetails = () => {
   const navigate = useNavigate();
   const axiosAdmin = useAxiosAdmin();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "activity">(
+  const [activeTab, setActiveTab] = useState<"overview" | "activity" | "calls">(
     "overview",
   );
 
@@ -152,6 +177,14 @@ const AdminSalesDetails = () => {
     currentMonth.start,
   );
   const [activityEndDate, setActivityEndDate] = useState(currentMonth.end);
+
+  // ✅ Call log tab — ডিফল্ট আজকের দিন
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [callStartDate, setCallStartDate] = useState(todayStr);
+  const [callEndDate, setCallEndDate] = useState(todayStr);
+  const [callChannel, setCallChannel] = useState<"all" | "call" | "whatsapp">("all");
+  const [callSortBy, setCallSortBy] = useState<"createdAt" | "callMinutes" | "leadName">("createdAt");
+  const [callSortOrder, setCallSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data, isLoading } = useQuery<SalesDetailsResponse>({
     queryKey: ["salesman-details", id, startDate, endDate],
@@ -184,6 +217,69 @@ const AdminSalesDetails = () => {
       },
       enabled: !!id && activeTab === "activity",
     });
+
+  // ✅ Call/WhatsApp log query
+  const {
+    data: callLogsData,
+    isLoading: isCallLogsLoading,
+    fetchNextPage: fetchNextCallLogs,
+    hasNextPage: hasMoreCallLogs,
+    isFetchingNextPage: isFetchingMoreCallLogs,
+  } = useInfiniteQuery<CallLogsResponse>({
+    queryKey: ["call-logs", id, callStartDate, callEndDate, callChannel, callSortBy, callSortOrder],
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams();
+      if (callStartDate) params.set("startDate", callStartDate);
+      if (callEndDate) params.set("endDate", callEndDate);
+      if (callChannel !== "all") params.set("channel", callChannel);
+      params.set("sortBy", callSortBy);
+      params.set("sortOrder", callSortOrder);
+      params.set("limit", "30");
+      if (pageParam) params.set("cursor", pageParam as string);
+
+      const res = await axiosAdmin.get(`/call-logs/${id}?${params.toString()}`);
+      return res.data;
+    },
+    initialPageParam: null,
+    getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
+    enabled: !!id && activeTab === "calls",
+  });
+
+  const callLogs = callLogsData?.pages.flatMap((p) => p.data) || [];
+  const callLogsSummary = callLogsData?.pages[0]?.summary;
+
+  const setQuickRange = (range: "today" | "yesterday" | "week" | "month") => {
+    const now = new Date();
+    if (range === "today") {
+      const d = now.toISOString().split("T")[0];
+      setCallStartDate(d);
+      setCallEndDate(d);
+    } else if (range === "yesterday") {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      const d = y.toISOString().split("T")[0];
+      setCallStartDate(d);
+      setCallEndDate(d);
+    } else if (range === "week") {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 6);
+      setCallStartDate(start.toISOString().split("T")[0]);
+      setCallEndDate(now.toISOString().split("T")[0]);
+    } else {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      setCallStartDate(start.toISOString().split("T")[0]);
+      setCallEndDate(now.toISOString().split("T")[0]);
+    }
+  };
+
+  const toggleCallSort = (field: "createdAt" | "callMinutes" | "leadName") => {
+    if (callSortBy === field) {
+      setCallSortOrder((p) => (p === "asc" ? "desc" : "asc"));
+    } else {
+      setCallSortBy(field);
+      setCallSortOrder("desc");
+    }
+  };
 
   const summary = data?.summary;
   const hasDateFilter = !!(startDate || endDate);
@@ -285,6 +381,16 @@ const AdminSalesDetails = () => {
           }`}
         >
           Activity Summary
+        </button>
+        <button
+          onClick={() => setActiveTab("calls")}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 -mb-px transition-colors ${
+            activeTab === "calls"
+              ? "border-[#1E293B] text-[#1E293B]"
+              : "border-transparent text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          Call & WhatsApp Log
         </button>
       </div>
 
@@ -654,6 +760,178 @@ const AdminSalesDetails = () => {
               )}
             </>
           )}
+        </>
+      )}
+
+      {/* ================= CALL & WHATSAPP LOG TAB ================= */}
+      {activeTab === "calls" && (
+        <>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <p className="text-sm text-gray-500">
+              প্রতিটা call/WhatsApp entry — কার সাথে, কতক্ষণ, কী নিয়ে কথা হয়েছে।
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
+                <input
+                  type="date"
+                  value={callStartDate}
+                  onChange={(e) => setCallStartDate(e.target.value)}
+                  className="text-sm focus:outline-none"
+                />
+                <span className="text-gray-300">→</span>
+                <input
+                  type="date"
+                  value={callEndDate}
+                  onChange={(e) => setCallEndDate(e.target.value)}
+                  className="text-sm focus:outline-none"
+                />
+              </div>
+              {(["today", "yesterday", "week", "month"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setQuickRange(r)}
+                  className="text-[11px] font-bold text-gray-600 border border-gray-200 rounded px-2.5 py-1.5 bg-white hover:bg-gray-50 capitalize"
+                >
+                  {r === "today"
+                    ? "Today"
+                    : r === "yesterday"
+                      ? "Yesterday"
+                      : r === "week"
+                        ? "7 Days"
+                        : "This Month"}
+                </button>
+              ))}
+              <select
+                value={callChannel}
+                onChange={(e) => setCallChannel(e.target.value as any)}
+                className="text-sm font-semibold border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm"
+              >
+                <option value="all">All Channels</option>
+                <option value="call">📞 Call Only</option>
+                <option value="whatsapp">💬 WhatsApp Only</option>
+              </select>
+            </div>
+          </div>
+
+          {callLogsSummary && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <SummaryCard
+                label="Calls Picked"
+                value={formatNumber(callLogsSummary.callsPicked)}
+                accent="text-emerald-600"
+              />
+              <SummaryCard
+                label="Calls Missed"
+                value={formatNumber(callLogsSummary.callsMissed)}
+                accent="text-red-600"
+              />
+              <SummaryCard
+                label="WhatsApp Texts"
+                value={formatNumber(callLogsSummary.whatsappTexts)}
+                accent="text-green-600"
+              />
+              <SummaryCard
+                label="Total Call Minutes"
+                value={formatNumber(callLogsSummary.totalCallMinutes)}
+                accent="text-indigo-600"
+              />
+            </div>
+          )}
+
+          <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-sm">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50/80 border-b border-gray-100">
+                <tr>
+                  <th
+                    onClick={() => toggleCallSort("createdAt")}
+                    className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
+                  >
+                    Time {callSortBy === "createdAt" && (callSortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    onClick={() => toggleCallSort("leadName")}
+                    className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
+                  >
+                    Lead {callSortBy === "leadName" && (callSortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
+                    Channel
+                  </th>
+                  <th
+                    onClick={() => toggleCallSort("callMinutes")}
+                    className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
+                  >
+                    Minutes {callSortBy === "callMinutes" && (callSortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
+                    Discussion
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {isCallLogsLoading && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-gray-400 text-xs">
+                      Loading...
+                    </td>
+                  </tr>
+                )}
+                {!isCallLogsLoading && callLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-gray-400 text-xs">
+                      এই রেঞ্জে কোনো call/WhatsApp entry নেই।
+                    </td>
+                  </tr>
+                )}
+                {callLogs.map((log) => (
+                  <tr key={log._id} className="hover:bg-gray-50/60">
+                    <td className="p-3 text-xs text-gray-500 font-mono whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="p-3 text-sm font-semibold text-[#1E293B]">
+                      {log.leadName || "—"}
+                    </td>
+                    <td className="p-3">
+                      {log.channel === "whatsapp" ? (
+                        <span className="text-[10px] font-bold bg-green-50 text-green-600 border border-green-200 px-2 py-0.5 rounded-full">
+                          💬 WhatsApp
+                        </span>
+                      ) : log.callType === "missed" ? (
+                        <span className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">
+                          📞 Missed
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          📞 Picked
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-sm font-mono">{log.callMinutes || "—"}</td>
+                    <td className="p-3 text-sm text-gray-600 max-w-xs truncate" title={log.note || ""}>
+                      {log.note || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {hasMoreCallLogs && (
+              <div className="flex justify-center py-4 border-t border-gray-100">
+                <button
+                  onClick={() => fetchNextCallLogs()}
+                  disabled={isFetchingMoreCallLogs}
+                  className="rounded-lg border border-gray-200 bg-white px-6 py-2.5 text-sm font-semibold text-[#1E293B] shadow-sm hover:bg-gray-50 disabled:opacity-60"
+                >
+                  {isFetchingMoreCallLogs ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

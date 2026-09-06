@@ -116,7 +116,7 @@ const Sales_Home = () => {
     },
     { name: "Emails", path: "/dashboard/sales/emails", icon: Mail },
     { name: "Tasks", path: "/dashboard/sales/tasks", icon: ClipboardList },
-    { name: "Compliance", path: "/dashboard/sales/compliance", icon: Shield },
+    { name: "Complaints", path: "/dashboard/sales/complaints", icon: Shield },
   ];
 
   return (

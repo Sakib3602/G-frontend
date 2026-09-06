@@ -38,6 +38,9 @@ const statusColors: Record<string, string> = {
   ACCEPTED: "bg-teal-100 text-teal-700",
 };
 
+const GRID_COLS =
+  "grid-cols-[60px_110px_120px_1fr_1fr_130px_110px]";
+
 const ClientCalendarView = () => {
   const { token } = useParams();
   const axiosPublic = useAxiosPublic();
@@ -100,11 +103,13 @@ const ClientCalendarView = () => {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="grid grid-cols-[80px_120px_1fr_1fr_140px_120px] gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <div
+            className={`grid ${GRID_COLS} gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}
+          >
             <span>#</span>
             <span>Schedule Date</span>
             <span>Post Type</span>
-         
+            <span>Headline</span>
             <span>Platforms</span>
             <span>Status</span>
           </div>
@@ -118,7 +123,7 @@ const ClientCalendarView = () => {
               {items.map((item, index) => (
                 <li
                   key={item._id}
-                  className={`grid grid-cols-[80px_120px_1fr_1fr_140px_120px] gap-2 px-4 py-3 text-sm ${
+                  className={`grid ${GRID_COLS} gap-2 px-4 py-3 text-sm ${
                     index !== items.length - 1 ? "border-b border-slate-100" : ""
                   }`}
                 >
@@ -127,7 +132,7 @@ const ClientCalendarView = () => {
                     {formatDate(item.scheduleDate)}
                   </span>
                   <span className="text-slate-600">{item.postType || "—"}</span>
-                  {/* <span className="text-slate-600">{item.postHeadline || "—"}</span> */}
+                  <span className="text-slate-600">{item.postHeadline || "—"}</span>
                   <span className="flex flex-wrap gap-1">
                     {(item.platforms ?? []).map((p) => (
                       <span
