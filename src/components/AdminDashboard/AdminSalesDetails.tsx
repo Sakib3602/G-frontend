@@ -768,7 +768,7 @@ const AdminSalesDetails = () => {
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-gray-500">
-              প্রতিটা call/WhatsApp entry — কার সাথে, কতক্ষণ, কী নিয়ে কথা হয়েছে।
+              Every call and WhatsApp text sent to leads is logged here. You can filter by date range, channel, and sort by time, lead name, or call duration.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
