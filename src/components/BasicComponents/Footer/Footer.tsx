@@ -177,10 +177,8 @@ const Footer: React.FC = () => {
                       Location
                     </span>
                     <span className="font-medium text-sm leading-relaxed">
-                      Flat A3, House 08, Road-08, Dhaka 1230 <br />
-                      <span className="text-white/70 font-normal">
-                        Adress full
-                      </span>
+                      6/A, Tropical Alauddin Tower<br /> Road 2, Sector 3, Uttara, Dhaka-1230, 
+                      
                     </span>
                   </div>
                 </a>
