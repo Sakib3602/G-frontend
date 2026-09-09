@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
+import { FiMessageSquare } from "react-icons/fi";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -22,6 +23,16 @@ type ItemStatus =
   | "SCHEDULED"
   | "NO POST";
 
+interface CommentItem {
+  _id: string;
+  userId: string;
+  userName: string;
+  userRole?: string;
+  message: string;
+  readBy?: string[];
+  createdAt: string;
+}
+
 interface CalendarItem {
   _id: string;
   scheduleDate: string;
@@ -36,6 +47,7 @@ interface CalendarItem {
   deliveryLink?: string;
   notes?: string;
   reportSent?: boolean;
+  comments?: CommentItem[];
 }
 
 interface CalendarDoc {
@@ -112,6 +124,17 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   YOUTUBE: "bg-red-600",
 };
 
+// ⚠️ PLACEHOLDER — tomader actual auth context/hook diye eita replace koro.
+// Ekhon localStorage-e "user" key-e logged-in marketer-er info dhore nichi.
+const CURRENT_USER_ID = () => {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw)?._id ?? "" : "";
+  } catch {
+    return "";
+  }
+};
+
 // ─── Helpers ──────────────────────────────────────────────────
 
 const fmt = (d?: string) => {
@@ -122,6 +145,19 @@ const fmt = (d?: string) => {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  });
+};
+
+const fmtDateTime = (d?: string) => {
+  if (!d) return "";
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return "";
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -481,6 +517,183 @@ const StatusCell = ({
   );
 };
 
+// ─── Comment Button (small icon + red dot, sits beside the row number) ────
+
+const CommentButton = ({
+  item,
+  myId,
+  onClick,
+}: {
+  item: CalendarItem;
+  myId: string;
+  onClick: () => void;
+}) => {
+  const comments = item.comments ?? [];
+  const count = comments.length;
+  const hasUnread = comments.some(
+    (c) => c.userId !== myId && !(c.readBy ?? []).includes(myId),
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Comments"
+      className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-400 transition hover:bg-indigo-50 hover:text-indigo-600"
+    >
+      <FiMessageSquare className="h-3.5 w-3.5" />
+      {count > 0 && (
+        <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-slate-200 px-1 text-[8px] font-bold leading-tight text-slate-600">
+          {count}
+        </span>
+      )}
+      {hasUnread && (
+        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
+      )}
+    </button>
+  );
+};
+
+// ─── Comment Modal ──────────────────────────────────────────────
+
+const CommentModal = ({
+  itemId,
+  onClose,
+}: {
+  itemId: string;
+  onClose: () => void;
+}) => {
+  const axiosMarketing = useAxiosMarketing();
+  const queryClient = useQueryClient();
+  const [message, setMessage] = useState("");
+  const myId = CURRENT_USER_ID();
+
+  const { data: comments = [], isLoading } = useQuery<CommentItem[]>({
+    queryKey: ["item-comments", itemId],
+    queryFn: async () => {
+      const res = await axiosMarketing.get(`/calendar-item/${itemId}/comments`);
+      return res.data.data;
+    },
+  });
+
+  // Modal open hobar shathe shathe ei item-er shob comment "read" mark hoye jabe,
+  // jate row-e red dot ta cole jay.
+  const markReadMutation = useMutation({
+    mutationFn: async () => {
+      await axiosMarketing.patch(`/calendar-item/${itemId}/comments/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendarItems"] });
+    },
+  });
+
+  useEffect(() => {
+    markReadMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemId]);
+
+  const addCommentMutation = useMutation({
+    mutationFn: async () => {
+      const res = await axiosMarketing.post(
+        `/calendar-item/${itemId}/comment`,
+        { message },
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      setMessage("");
+      queryClient.invalidateQueries({ queryKey: ["item-comments", itemId] });
+      queryClient.invalidateQueries({ queryKey: ["calendarItems"] });
+    },
+  });
+
+  const handleSend = () => {
+    if (!message.trim()) return;
+    addCommentMutation.mutate();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-900">Comments</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm text-slate-400 hover:text-slate-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+          {isLoading ? (
+            <p className="py-6 text-center text-xs text-slate-400">
+              Loading...
+            </p>
+          ) : comments.length === 0 ? (
+            <p className="py-6 text-center text-xs text-slate-400">
+              No comments yet.
+            </p>
+          ) : (
+            comments.map((c) => (
+              <div
+                key={c._id}
+                className={`rounded-xl border px-3 py-2 ${
+                  c.userId === myId
+                    ? "border-indigo-100 bg-indigo-50"
+                    : "border-slate-100 bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-slate-700">
+                    {c.userName}
+                    {c.userRole && (
+                      <span className="ml-1 text-[10px] font-normal uppercase text-slate-400">
+                        ({c.userRole})
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-[10px] text-slate-400">
+                    {fmtDateTime(c.createdAt)}
+                  </span>
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600">
+                  {c.message}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-3 flex items-end gap-2 border-t border-slate-100 pt-3">
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Write a comment..."
+            rows={2}
+            className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+          />
+          <button
+            type="button"
+            disabled={!message.trim() || addCommentMutation.isPending}
+            onClick={handleSend}
+            className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
+          >
+            {addCommentMutation.isPending ? "Sending..." : "Send"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Week Separator ───────────────────────────────────────────
 
 const WeekRow = ({ week }: { week: number }) => (
@@ -508,6 +721,9 @@ const ContentCalMain = () => {
   const [selectedCalendar, setSelectedCalendar] = useState<CalendarDoc | null>(
     null,
   );
+  const [commentItemId, setCommentItemId] = useState<string | null>(null);
+
+  const myId = CURRENT_USER_ID();
 
   // Extra in-session guard so we don't fire the mutation twice for the
   // same item while waiting for the refetch to land (item.reportSent is
@@ -770,10 +986,10 @@ const ContentCalMain = () => {
             <div className="overflow-x-auto px-4">
               <table
                 className="w-full text-left"
-                style={{ tableLayout: "fixed", minWidth: "1100px" }}
+                style={{ tableLayout: "fixed", minWidth: "1120px" }}
               >
                 <colgroup>
-                  <col style={{ width: "36px" }} />
+                  <col style={{ width: "56px" }} />
                   <col style={{ width: "110px" }} />
                   <col style={{ width: "100px" }} />
                   <col style={{ width: "100px" }} />
@@ -816,10 +1032,7 @@ const ContentCalMain = () => {
                     const weekNumber = Math.floor(idx / WEEK_SIZE) + 1;
                     const isWeekStart = idx % WEEK_SIZE === 0;
 
-                    // Permanently red once reportSent is true on the
-                    // server — falls back to the live check only before
-                    // that flag has been set (e.g. on the very first
-                    // render before the mutation lands).
+                
                     const overdue =
                       item.reportSent || isOverdueMissingDelivery(item);
 
@@ -837,8 +1050,17 @@ const ContentCalMain = () => {
                               : "border-slate-100 hover:bg-indigo-50/30"
                           }`}
                         >
-                          <td className="px-3 py-2.5 text-xs text-slate-400">
-                            {idx + 1}
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-slate-400">
+                                {idx + 1}
+                              </span>
+                              <CommentButton
+                                item={item}
+                                myId={myId}
+                                onClick={() => setCommentItemId(item._id)}
+                              />
+                            </div>
                           </td>
 
                           <td className="px-3 py-2.5">
@@ -966,6 +1188,14 @@ const ContentCalMain = () => {
             Select a calendar above to view content rows.
           </p>
         </div>
+      )}
+
+      {/* Comment Modal */}
+      {commentItemId && (
+        <CommentModal
+          itemId={commentItemId}
+          onClose={() => setCommentItemId(null)}
+        />
       )}
     </div>
   );

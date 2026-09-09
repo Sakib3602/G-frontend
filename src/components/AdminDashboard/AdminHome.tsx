@@ -18,7 +18,7 @@ import {
 } from "react-icons/hi";
 import { SiCardmarket, SiMoneygram } from "react-icons/si";
 import { IoDocumentTextSharp } from "react-icons/io5";
-import { Shield } from "lucide-react";
+import { Shield , Megaphone } from "lucide-react";
 
 const NOTIFICATION_SCOPE = "admin-tasks";
 
@@ -32,6 +32,7 @@ const MENU_ITEMS = [
   { name: "Marketing Dept.", path: "/dashboard/admin/marketing", icon: SiCardmarket },
   { name: "Sales Dept.", path: "/dashboard/admin/sales", icon: SiMoneygram },
   { name: "Add Task", path: "/dashboard/admin/add-task", icon: HiOutlineQuestionMarkCircle, notificationScope: NOTIFICATION_SCOPE },
+  { name: "Announcements", path: "/dashboard/admin/announcements", icon: Megaphone },
   { name: "Lead Transfers", path: "/dashboard/admin/lead-transfers", icon: HiOutlineSwitchHorizontal },
   { name: "Complaints", path: "/dashboard/admin/compliance", icon: Shield },
   { name: "Pending Assignments", path: "/dashboard/admin/pending-assignments", icon: HiOutlineClock },

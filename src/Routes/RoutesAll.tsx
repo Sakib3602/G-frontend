@@ -67,6 +67,8 @@ import TeamAssignedLeads from "@/components/Common/TeamAssignedLeads";
 import DesignerAssignedLeads from "@/components/DesignerDashboard/DesignerAssignedLeads";
 import AdminMissingFollowups from "@/components/AdminDashboard/AdminMissingFollowups";
 import AdminLeadTransfers from "@/components/AdminDashboard/AdminLeadTransfers";
+import Sales_Missed_Calls from "@/components/SalesDashboard/Sales_Missed_Calls";
+import AdminAnnouncements from "@/components/AdminDashboard/AdminAnnouncements";
 
 const RoutesAll = () => {
   return (
@@ -122,6 +124,7 @@ const RoutesAll = () => {
           path="/dashboard/sales/complaints"
           element={<SubmitCompliance />}
         />
+        <Route path="missed-calls" element={<Sales_Missed_Calls />} />
       </Route>
       {/* sales dashboard end */}
       {/* marketing dashboard start */}
@@ -254,6 +257,10 @@ const RoutesAll = () => {
           element={<AdminContentCalMain />}
         />
         <Route
+          path="/dashboard/admin/announcements"
+          element={<AdminAnnouncements />}
+        />
+        <Route
           path="/dashboard/admin/delay-works"
           element={<AdminDelayWorks />}
         />
@@ -289,12 +296,12 @@ const RoutesAll = () => {
           path="pending-assignments"
           element={<AdminPendingAssignments />}
         />
+
         <Route
           path="/dashboard/admin/missed-followups/:id/view"
           element={<AdminMissingFollowups />}
         />
         <Route path="lead-transfers" element={<AdminLeadTransfers />} />
-       
       </Route>
 
       {/* Admin dashboard end */}

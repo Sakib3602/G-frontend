@@ -16,6 +16,7 @@ import {
   Mail,
   Shield,
   Bell,
+  PhoneMissed,
 } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
@@ -23,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosSales from "@/uri/useAxiosSales";
 import { Helmet } from "react-helmet";
 import EditProfileButton from "../Common/Editprofilebutton";
+import AnnouncementPopup from "../Common/AnnouncementPopup";
 
 const NOTIFICATION_SCOPE = "sales-tasks";
 
@@ -91,6 +93,11 @@ const Sales_Home = () => {
       icon: LayersPlus,
     },
     { name: "My Leads", path: "/dashboard/sales/all-leads", icon: Users },
+     {
+      name: "Missed Calls",
+      path: "/dashboard/sales/missed-calls",
+      icon: PhoneMissed,
+    },
     { name: "My Meetings", path: "/dashboard/sales/meetings", icon: Calendar },
     {
       name: "In Progress",
@@ -98,6 +105,7 @@ const Sales_Home = () => {
       icon: Briefcase,
     },
     { name: "Reminders", path: "/dashboard/sales/remainder", icon: Timer },
+   
     {
       name: "Qualified Deals",
       path: "/dashboard/sales/qualified",
@@ -125,6 +133,8 @@ const Sales_Home = () => {
         <meta charSet="utf-8" />
         <title>Genesys - Sales Dashboard</title>
       </Helmet>
+
+      <AnnouncementPopup axiosInstance={axiosSales} />
 
       <aside
         className={`${

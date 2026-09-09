@@ -21,6 +21,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useUserDataDesigner } from "./HOOK/user_data_designer";
 import useAxiosDesigner from "@/uri/useAxiosDesigner";
+import AnnouncementPopup from "../Common/AnnouncementPopup";
 
 const NOTIFICATION_SCOPE = "designer-tasks";
 
@@ -113,6 +114,7 @@ const DesignerHome = () => {
 
   return (
     <div className="poppins-regular flex h-screen bg-[#F7F4EE] text-stone-800">
+      <AnnouncementPopup axiosInstance={axiosDesigner} />
       <aside
         className={`${isSidebarOpen ? "w-72" : "w-24"}
         border-r border-[#DDD2C3] bg-linear-to-b from-[#FBF8F3] via-[#F3ECE2] to-[#EDE3D5] transition-all duration-300 flex flex-col backdrop-blur-xl`}

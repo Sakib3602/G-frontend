@@ -24,6 +24,7 @@ import { AuthContext } from "../Authentication/AuthProvider/AuthProvider";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import EditProfileButton from "../Common/Editprofilebutton";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
+import AnnouncementPopup from "../Common/AnnouncementPopup";
 
 const NOTIFICATION_SCOPE = "marketing-tasks";
 
@@ -139,6 +140,7 @@ const MarketingHome = () => {
         <meta charSet="utf-8" />
         <title>Genesys - Marketing Dashboard</title>
       </Helmet>
+      <AnnouncementPopup axiosInstance={axiosMarketing} basePath="/announcements" />
       <aside
         className={`${isSidebarOpen ? "w-64" : "w-20"}
         bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-20`}
