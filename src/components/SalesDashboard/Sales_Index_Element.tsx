@@ -158,7 +158,7 @@ export default function Sales_Index_Element() {
   // ==========================================
   return (
     <div className="w-full bg-[#f8fafc] p-6 lg:p-10 font-sans min-h-screen text-slate-800 relative">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className=" mx-auto space-y-8">
         
         {/* --- Header --- */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

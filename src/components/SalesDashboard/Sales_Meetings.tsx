@@ -378,7 +378,7 @@ export default function Sales_Meetings() {
       </div>
 
       <div className="w-full bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] px-6 py-10 lg:px-14 font-sans min-h-screen text-slate-900 antialiased">
-        <div className="max-w-[1400px] mx-auto">
+        <div className=" mx-auto">
 
           {/* --- HEADER --- */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b border-slate-200 pb-6">

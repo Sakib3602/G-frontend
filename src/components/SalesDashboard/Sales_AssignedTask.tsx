@@ -76,7 +76,7 @@ const Sales_AssignedTask = () => {
 
     return (
         <div className="w-full">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className=" mx-auto mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900">Assigned Tasks</h1>
                     <p className="mt-1 text-sm text-slate-500">

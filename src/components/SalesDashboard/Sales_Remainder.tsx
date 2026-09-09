@@ -10,7 +10,7 @@ export interface INoteEntry {
   createdAt?: string;
   createdBy?: string;
   channel?: "call" | "whatsapp";
-  callType?: "picked" | "missed";
+  callType?: "picked" | "missed" | "phone_off";
   callMinutes?: number;
 }
 
@@ -34,6 +34,7 @@ export interface LeadData {
   reminderAt: string;
   reminderNote?: string;
   missedCallCount?: number;
+  phoneOffCount?: number;
 }
 
 // ✅ Professional stat card component
@@ -266,14 +267,21 @@ export default function Sales_Remainder() {
     },
   });
 
-  // ✅ নতুন — Didn't Pick (+) mutation
+  // ✅ পরিবর্তিত — এখন "missed" বা "phone_off" দুটোই handle করে
   const mutationMissedCall = useMutation({
-    mutationFn: async (leadId: string) => {
+    mutationFn: async ({
+      leadId,
+      type,
+    }: {
+      leadId: string;
+      type: "missed" | "phone_off";
+    }) => {
       const res = await axiosSales.put(
         `/api/v1/sales/log-missed-call/${leadId}`,
         {
           salesmanId: userData?._id,
           salesmanName: userData?.name,
+          type,
         },
       );
       return res.data;
@@ -330,7 +338,7 @@ export default function Sales_Remainder() {
       </div>
 
       <div className="w-full bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans min-h-screen text-slate-900 antialiased">
-        <div className="max-w-6xl mx-auto">
+        <div className=" mx-auto">
           {/* ---------- Header ---------- */}
           <div className="mb-6">
             <p className="text-[10px] tracking-widest text-[#99B562] uppercase font-bold mb-1">Follow-up Calendar</p>
@@ -470,11 +478,18 @@ export default function Sales_Remainder() {
                           <td className="px-5 py-3">
                             <p className="font-semibold text-slate-800 hover:text-[#99B562] transition-colors">{lead.leadName}</p>
                             <p className="text-xs text-slate-400">{lead.title || "—"} {lead.companyName && `• ${lead.companyName}`}</p>
-                            {lead.missedCallCount ? (
-                              <div className="mt-1">
-                                <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
-                                  📞 {lead.missedCallCount} missed
-                                </span>
+                            {(lead.missedCallCount || lead.phoneOffCount) ? (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {lead.missedCallCount ? (
+                                  <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                                    📞 {lead.missedCallCount} missed
+                                  </span>
+                                ) : null}
+                                {lead.phoneOffCount ? (
+                                  <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded">
+                                    📵 {lead.phoneOffCount} off
+                                  </span>
+                                ) : null}
                               </div>
                             ) : null}
                           </td>
@@ -766,7 +781,7 @@ export default function Sales_Remainder() {
                 )}
               </div>
 
-              {/* Follow-up Note History সেকশন (Call/WhatsApp + Didn't Pick) */}
+              {/* Follow-up Note History সেকশন (Call/WhatsApp + Didn't Pick + Phone Off) */}
               <div className="space-y-3 pt-2 border-t border-slate-200">
                 <button
                   type="button"
@@ -804,6 +819,10 @@ export default function Sales_Remainder() {
                               {entry.channel === "whatsapp" ? (
                                 <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded font-semibold">
                                   💬 WhatsApp
+                                </span>
+                              ) : entry.callType === "phone_off" ? (
+                                <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-300 px-1.5 py-0.5 rounded font-semibold">
+                                  📵 Phone Off
                                 </span>
                               ) : entry.callType === "missed" ? (
                                 <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
@@ -879,16 +898,34 @@ export default function Sales_Remainder() {
                     </button>
                   </div>
 
-                  <div>
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() =>
-                        selectedLeadDetails && mutationMissedCall.mutate(getLeadId(selectedLeadDetails))
+                        selectedLeadDetails &&
+                        mutationMissedCall.mutate({
+                          leadId: getLeadId(selectedLeadDetails),
+                          type: "missed",
+                        })
                       }
                       disabled={mutationMissedCall.isPending}
                       className="px-3 py-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold transition-all disabled:opacity-50"
                     >
                       {mutationMissedCall.isPending ? "Logging..." : "Didn't Pick (+)"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        selectedLeadDetails &&
+                        mutationMissedCall.mutate({
+                          leadId: getLeadId(selectedLeadDetails),
+                          type: "phone_off",
+                        })
+                      }
+                      disabled={mutationMissedCall.isPending}
+                      className="px-3 py-1.5 rounded border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-all disabled:opacity-50"
+                    >
+                      {mutationMissedCall.isPending ? "Logging..." : "📵 Phone Off (+)"}
                     </button>
                   </div>
                 </form>

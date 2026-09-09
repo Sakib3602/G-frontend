@@ -156,7 +156,7 @@ const SalesTaskAD = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto ">
         {/* Header Section */}
         <div className="mb-8 border-b border-gray-200 pb-5">
           <div className="mb-3 inline-flex items-center gap-2 rounded bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-700 shadow-sm border border-blue-100">
