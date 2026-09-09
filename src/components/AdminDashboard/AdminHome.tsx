@@ -228,7 +228,7 @@ const AdminHome = () => {
 
         {/* Scrollable Page Content */}
         <main className="flex-1 overflow-y-auto bg-slate-50 p-6 md:p-8">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto">
             <Outlet />
           </div>
         </main>

@@ -73,7 +73,7 @@ const AdminCampaigns = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6  mx-auto">
       <ToastContainer />
       
       {/* Header Section */}

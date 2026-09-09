@@ -205,7 +205,7 @@ export default function Admin_Announcements() {
       </div>
 
       <div className="w-full min-h-screen bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans text-slate-900 antialiased">
-        <div className="max-w-350 mx-auto">
+        <div className=" mx-auto">
           <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
             <div>
               <p className="text-[10px] tracking-widest text-[#7FA23B] uppercase font-bold mb-1">
