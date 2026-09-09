@@ -546,7 +546,7 @@ export default function Admin_Announcements() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm relative z-10 overflow-hidden border border-slate-200 p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-2">Delete Announcement?</h2>
             <p className="text-sm text-slate-500 mb-6">
-              "{deleteTarget.title}" — এটা permanently মুছে যাবে, undo করা যাবে না।
+              "{deleteTarget.title}" — This action cannot be undone. Are you sure you want to delete this announcement?
             </p>
             <div className="flex justify-end gap-2">
               <button
