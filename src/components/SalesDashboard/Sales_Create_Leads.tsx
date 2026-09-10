@@ -23,6 +23,7 @@ type LeadFormData = {
   profileUrl: string;
   leadCreatedBy: string;
   ServiceNeed: string;
+  source: string;
 };
 
 const Sales_Create_leads = () => {
@@ -49,6 +50,7 @@ const Sales_Create_leads = () => {
     profileUrl: "",
     leadCreatedBy: userData?._id || "",
     ServiceNeed: "Graphic",
+    source: "CRM",
   });
 
   const handleChange = (
@@ -81,6 +83,7 @@ const Sales_Create_leads = () => {
       profileUrl: "",
       leadCreatedBy: userData?._id || "",
       ServiceNeed: "Graphic",
+      source: "CRM",
     });
   };
 
@@ -97,7 +100,6 @@ const Sales_Create_leads = () => {
       queryClient.invalidateQueries({ queryKey: ["all-sales-leads"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard_data"] });
     },
-    
   });
 
   const MutationCreateLead = useMutation<unknown, Error, LeadFormData>({
@@ -114,7 +116,7 @@ const Sales_Create_leads = () => {
     },
     onError: () => {
       setShowNotificationError(true);
-    }
+    },
   });
 
   // Dropdown Options
@@ -123,7 +125,6 @@ const Sales_Create_leads = () => {
     "Attempted to contact",
     "Contacted",
     "In Progress",
-    
   ];
 
   const titleOptions = [
@@ -138,10 +139,52 @@ const Sales_Create_leads = () => {
     "Consultant",
     "Intern",
   ];
+  const sourceOptions = [
+    "CRM",
+    "Ad",
+    "Facebook",
+    "LinkedIn",
+    "Audit",
+    "Referral",
+    "Website",
+    "Cold Call",
+    "Other",
+  ];
 
-  const regionOptions = ["Global", "BANGLADESH", "INDIA", "PAKISTAN", "SOUTH ASIA", "MIDDLE EAST", "AFRICA", "UK", "EUROPE", "US", "CANADA", "AUSTRALIA", "LATIN AMERICA"];
+  const regionOptions = [
+    "Global",
+    "BANGLADESH",
+    "INDIA",
+    "PAKISTAN",
+    "SOUTH ASIA",
+    "MIDDLE EAST",
+    "AFRICA",
+    "UK",
+    "EUROPE",
+    "US",
+    "CANADA",
+    "AUSTRALIA",
+    "LATIN AMERICA",
+  ];
   const scoreOptions = ["1", "2", "3", "4", "5"];
-  const serviceNeedOptions = ["Graphic", "Web", "Software", "Marketing", "SEO", "WEB & Graphic", "Other", "GRAPHIC & MARKETING",  "WEB & MARKETING",  "MARKETING & SOFTWARE", "App","WEB & SOFTWARE", "GRAPHIC & SOFTWARE", "WEB & GRAPHIC & SOFTWARE", "WEB & GRAPHIC & MARKETING", "WEB & GRAPHIC & MARKETING & SOFTWARE"];
+  const serviceNeedOptions = [
+    "Graphic",
+    "Web",
+    "Software",
+    "Marketing",
+    "SEO",
+    "WEB & Graphic",
+    "Other",
+    "GRAPHIC & MARKETING",
+    "WEB & MARKETING",
+    "MARKETING & SOFTWARE",
+    "App",
+    "WEB & SOFTWARE",
+    "GRAPHIC & SOFTWARE",
+    "WEB & GRAPHIC & SOFTWARE",
+    "WEB & GRAPHIC & MARKETING",
+    "WEB & GRAPHIC & MARKETING & SOFTWARE",
+  ];
 
   const CancelAll = () => {
     setFormData({
@@ -159,6 +202,7 @@ const Sales_Create_leads = () => {
       profileUrl: "",
       leadCreatedBy: userData?._id || "",
       ServiceNeed: "Graphic",
+      source: "CRM",
     });
   };
 
@@ -223,7 +267,8 @@ const Sales_Create_leads = () => {
               {/* --- Quick Add (সবসময় দেখাবে, দ্রুত এন্ট্রির জন্য) --- */}
               <div className="mb-2">
                 <h3 className="text-[10px] font-bold text-[#99B562] uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
-                  Quick Add — Fill the essential fields to create a new lead in the pipeline.
+                  Quick Add — Fill the essential fields to create a new lead in
+                  the pipeline.
                 </h3>
               </div>
 
@@ -235,7 +280,6 @@ const Sales_Create_leads = () => {
                   <input
                     type="text"
                     name="leadName"
-                 
                     value={formData.leadName}
                     onChange={handleChange}
                     placeholder="e.g. Unknown User"
@@ -270,6 +314,23 @@ const Sales_Create_leads = () => {
                     placeholder="liam@enterprise.com"
                     className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 font-mono focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
                   />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">
+                    Lead Source
+                  </label>
+                  <select
+                    name="source"
+                    value={formData.source}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 bg-white transition-all shadow-xs appearance-none cursor-pointer"
+                  >
+                    {sourceOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -417,8 +478,6 @@ const Sales_Create_leads = () => {
                       className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 transition-all shadow-xs"
                     />
                   </div>
-
-                
                 </div>
               )}
 

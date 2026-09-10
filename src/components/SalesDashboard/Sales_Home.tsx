@@ -72,7 +72,7 @@ const Sales_Home = () => {
     }
   };
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
 
   const userName = userData?.name || "Unknown User";

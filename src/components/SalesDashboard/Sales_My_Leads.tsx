@@ -37,6 +37,7 @@ export interface LeadData {
   region: string;
   profileUrl: string;
   ServiceNeed?: string;
+  source?: string;
   reminderAt?: string | null;
   reminderNote?: string;
   updatedAt?: string;
@@ -98,6 +99,10 @@ const statusOptions = [
   "Unqualified",
 ];
 
+// ✅ নতুন — Operations-এর সব বাটনের সাইজ uniform রাখার জন্য common class
+const opBtnBase =
+  "min-w-[92px] inline-flex items-center justify-center px-3 py-1.5 rounded border text-[11px] font-bold transition-all shadow-xs whitespace-nowrap";
+
 const createMeetingForm = (lead?: LeadData | null): IMeeting => ({
   title: "",
   leadId: lead?._id || lead?.id,
@@ -124,6 +129,15 @@ export default function Sales_My_Leads() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+
+  // ✅ নতুন — Created-date range filter
+  const [rangeStartDate, setRangeStartDate] = useState("");
+  const [rangeEndDate, setRangeEndDate] = useState("");
+  const hasDateRangeFilter = !!(rangeStartDate || rangeEndDate);
+  const clearDateRangeFilter = () => {
+    setRangeStartDate("");
+    setRangeEndDate("");
+  };
 
   const [meetingLead, setMeetingLead] = useState<LeadData | null>(null);
   const [meetingForm, setMeetingForm] = useState<IMeeting>(createMeetingForm());
@@ -185,12 +199,17 @@ export default function Sales_My_Leads() {
     isLoading,
     isError,
   } = useInfiniteQuery<LeadsPage>({
-    queryKey: ["my-leads", userData?._id],
+    queryKey: ["my-leads", userData?._id, rangeStartDate, rangeEndDate],
     queryFn: async ({ pageParam }) => {
       const res = await axiosSales.get(
         `/api/v1/sales/get-my-leads/${userData._id}?status=new`,
         {
-          params: { cursor: pageParam, limit: 20 },
+          params: {
+            cursor: pageParam,
+            limit: 20,
+            startDate: rangeStartDate || undefined,
+            endDate: rangeEndDate || undefined,
+          },
         },
       );
       return res.data;
@@ -395,7 +414,7 @@ export default function Sales_My_Leads() {
     },
   });
 
-  // ✅ পরিবর্তিত — এখন "missed" বা "phone_off" দুটোই handle করে
+  // ✅ "missed" বা "phone_off" দুটোই handle করে
   const mutationMissedCall = useMutation({
     mutationFn: async ({
       leadId,
@@ -759,7 +778,7 @@ export default function Sales_My_Leads() {
             </div>
           </div>
 
-          <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between items-center">
+          <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
             <div className="relative w-full lg:max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg
@@ -810,6 +829,8 @@ export default function Sales_My_Leads() {
               )}
             </div>
 
+           
+
             <div className="flex w-full lg:w-auto gap-3">
               <select
                 className="block w-full lg:w-auto pl-3 pr-8 py-2 text-sm border border-slate-200 rounded-md bg-white text-slate-700 focus:outline-none focus:border-[#99B562] focus:ring-1 focus:ring-[#99B562]/20 shadow-xs cursor-pointer appearance-none"
@@ -821,6 +842,47 @@ export default function Sales_My_Leads() {
                 <option value="Attempted to contact">Attempted</option>
                 <option value="Contacted">Contacted</option>
               </select>
+               {/* ✅ নতুন — Created-date range filter */}
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg shadow-xs px-3 py-1.5">
+              <div className="flex flex-col">
+                <label className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">
+                  From
+                </label>
+                <input
+                  type="date"
+                  value={rangeStartDate}
+                  onChange={(e) => setRangeStartDate(e.target.value)}
+                  max={rangeEndDate || undefined}
+                  disabled={isSearchMode}
+                  className="text-xs font-medium bg-transparent focus:outline-none w-28 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              <span className="text-slate-300">→</span>
+              <div className="flex flex-col">
+                <label className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">
+                  To
+                </label>
+                <input
+                  type="date"
+                  value={rangeEndDate}
+                  onChange={(e) => setRangeEndDate(e.target.value)}
+                  min={rangeStartDate || undefined}
+                  disabled={isSearchMode}
+                  className="text-xs font-medium bg-transparent focus:outline-none w-28 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              {hasDateRangeFilter && (
+                <button
+                  onClick={clearDateRangeFilter}
+                  title="Clear date filter"
+                  className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              )}
+            </div>
             </div>
           </div>
 
@@ -841,7 +903,7 @@ export default function Sales_My_Leads() {
                     Last Work
                   </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                    Email Address
+                    Source
                   </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                     Contact No.
@@ -849,9 +911,6 @@ export default function Sales_My_Leads() {
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                     Service Category
                   </th>
-                  {/* <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                    Company
-                  </th> */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -919,20 +978,6 @@ export default function Sales_My_Leads() {
                           </span>
                         </div>
                       )}
-                      {(lead.missedCallCount || lead.phoneOffCount) ? (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {lead.missedCallCount ? (
-                            <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
-                              📞 {lead.missedCallCount} missed
-                            </span>
-                          ) : null}
-                          {lead.phoneOffCount ? (
-                            <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded">
-                              📵 {lead.phoneOffCount} off
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : null}
                       {myPendingTransferLeadIds.has(lead._id) && (
                         <div className="mt-1">
                           <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
@@ -946,13 +991,13 @@ export default function Sales_My_Leads() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => openMeetingPopup(lead)}
-                          className="whitespace-nowrap px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition-all shadow-xs"
+                          className={`${opBtnBase} border-slate-200 bg-white hover:bg-slate-50 text-slate-700`}
                         >
                           Schedule
                         </button>
                         <button
                           onClick={() => openNotePopup(lead)}
-                          className="whitespace-nowrap px-3 py-1.5 rounded border border-[#99B562]/30 bg-[#99B562]/10 hover:bg-[#99B562]/15 text-[#6f8a3f] text-[11px] font-bold transition-all shadow-xs"
+                          className={`${opBtnBase} border-[#99B562]/30 bg-[#99B562]/10 hover:bg-[#99B562]/15 text-[#6f8a3f]`}
                         >
                           Notes{" "}
                           {lead.indicationsHistory?.length
@@ -961,16 +1006,16 @@ export default function Sales_My_Leads() {
                         </button>
                         <button
                           onClick={() => openReminderPopup(lead)}
-                          className="whitespace-nowrap px-3 py-1.5 rounded border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] font-bold transition-all shadow-xs"
+                          className={`${opBtnBase} border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700`}
                         >
                           Follow-up
                         </button>
                         <button
                           onClick={() => openTransferPopup(lead)}
-                          className="whitespace-nowrap px-3 py-1.5 rounded border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold transition-all shadow-xs"
+                          className={`${opBtnBase} border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700`}
                         >
                           {myPendingTransferLeadIds.has(lead._id)
-                            ? "Transfer Pending"
+                            ? "Pending"
                             : "Transfer"}
                         </button>
                       </div>
@@ -1012,12 +1057,9 @@ export default function Sales_My_Leads() {
                       {formatLastWork(lead.updatedAt)}
                     </td>
                     <td className="px-5 py-3">
-                      <a
-                        href={`mailto:${lead.email}`}
-                        className="text-slate-500 hover:text-slate-900 text-xs font-mono transition-colors"
-                      >
-                        {lead.email || "—"}
-                      </a>
+                      <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider">
+                        {lead.source || "CRM"}
+                      </span>
                     </td>
                     <td className="px-5 py-3 text-slate-500 text-xs font-mono">
                       {lead.phone || "—"}
@@ -1027,9 +1069,6 @@ export default function Sales_My_Leads() {
                         {lead.ServiceNeed || "General"}
                       </span>
                     </td>
-                    {/* <td className="px-5 py-3 text-slate-600 font-medium text-xs">
-                      {lead.companyName || "—"}
-                    </td> */}
                   </tr>
                 ))}
               </tbody>
