@@ -75,13 +75,13 @@ interface ActivitySummaryResponse {
   data: ActivitySummaryItem[];
 }
 
-// ✅ নতুন — call/whatsapp log
+// ✅ পরিবর্তিত — callType-এ phone_off যোগ করা হলো
 interface CallLogEntry {
   _id: string;
   leadId: string;
   leadName?: string;
   channel: "call" | "whatsapp";
-  callType?: "picked" | "missed";
+  callType?: "picked" | "missed" | "phone_off";
   callMinutes?: number;
   note?: string;
   createdAt: string;
@@ -95,6 +95,7 @@ interface CallLogsResponse {
     totalLogs: number;
     callsPicked: number;
     callsMissed: number;
+    phoneOffCount: number; // ✅ নতুন
     whatsappTexts: number;
     totalCallMinutes: number;
   };
@@ -182,7 +183,8 @@ const AdminSalesDetails = () => {
   const todayStr = new Date().toISOString().split("T")[0];
   const [callStartDate, setCallStartDate] = useState(todayStr);
   const [callEndDate, setCallEndDate] = useState(todayStr);
-  const [callChannel, setCallChannel] = useState<"all" | "call" | "whatsapp">("all");
+  // ✅ পরিবর্তিত — channel filter-এ phone_off যোগ করা হলো
+  const [callChannel, setCallChannel] = useState<"all" | "call" | "whatsapp" | "phone_off">("all");
   const [callSortBy, setCallSortBy] = useState<"createdAt" | "callMinutes" | "leadName">("createdAt");
   const [callSortOrder, setCallSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -218,7 +220,7 @@ const AdminSalesDetails = () => {
       enabled: !!id && activeTab === "activity",
     });
 
-  // ✅ Call/WhatsApp log query
+  // ✅ Call/WhatsApp/Phone-off log query
   const {
     data: callLogsData,
     isLoading: isCallLogsLoading,
@@ -231,7 +233,9 @@ const AdminSalesDetails = () => {
       const params = new URLSearchParams();
       if (callStartDate) params.set("startDate", callStartDate);
       if (callEndDate) params.set("endDate", callEndDate);
-      if (callChannel !== "all") params.set("channel", callChannel);
+      // ✅ পরিবর্তিত — "phone_off" filter হলে channel=call পাঠাই, callType আলাদাভাবে ফ্রন্টএন্ডেই ফিল্টার করব
+      if (callChannel === "whatsapp") params.set("channel", "whatsapp");
+      if (callChannel === "call" || callChannel === "phone_off") params.set("channel", "call");
       params.set("sortBy", callSortBy);
       params.set("sortOrder", callSortOrder);
       params.set("limit", "30");
@@ -245,7 +249,15 @@ const AdminSalesDetails = () => {
     enabled: !!id && activeTab === "calls",
   });
 
-  const callLogs = callLogsData?.pages.flatMap((p) => p.data) || [];
+  const allCallLogs = callLogsData?.pages.flatMap((p) => p.data) || [];
+  // ✅ নতুন — "phone_off" ফিল্টার হলে শুধু সেই টাইপগুলো দেখাও (backend শুধু channel="call" দিয়েছে, callType বাদ যায়নি)
+  const callLogs =
+    callChannel === "phone_off"
+      ? allCallLogs.filter((l) => l.callType === "phone_off")
+      : callChannel === "call"
+        ? allCallLogs.filter((l) => l.callType !== "phone_off")
+        : allCallLogs;
+
   const callLogsSummary = callLogsData?.pages[0]?.summary;
 
   const setQuickRange = (range: "today" | "yesterday" | "week" | "month") => {
@@ -768,7 +780,7 @@ const AdminSalesDetails = () => {
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-gray-500">
-              Every call and WhatsApp text sent to leads is logged here. You can filter by date range, channel, and sort by time, lead name, or call duration.
+              Every call, phone-off attempt, and WhatsApp text sent to leads is logged here. You can filter by date range, channel, and sort by time, lead name, or call duration.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
@@ -801,20 +813,22 @@ const AdminSalesDetails = () => {
                         : "This Month"}
                 </button>
               ))}
+              {/* ✅ পরিবর্তিত — Phone Off অপশন যোগ করা হলো */}
               <select
                 value={callChannel}
                 onChange={(e) => setCallChannel(e.target.value as any)}
                 className="text-sm font-semibold border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm"
               >
                 <option value="all">All Channels</option>
-                <option value="call">📞 Call Only</option>
+                <option value="call">📞 Call Only (Picked/Missed)</option>
+                <option value="phone_off">📵 Phone Off Only</option>
                 <option value="whatsapp">💬 WhatsApp Only</option>
               </select>
             </div>
           </div>
 
           {callLogsSummary && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <SummaryCard
                 label="Calls Picked"
                 value={formatNumber(callLogsSummary.callsPicked)}
@@ -824,6 +838,12 @@ const AdminSalesDetails = () => {
                 label="Calls Missed"
                 value={formatNumber(callLogsSummary.callsMissed)}
                 accent="text-red-600"
+              />
+              {/* ✅ নতুন — Phone Off card */}
+              <SummaryCard
+                label="Phone Off"
+                value={formatNumber(callLogsSummary.phoneOffCount)}
+                accent="text-slate-600"
               />
               <SummaryCard
                 label="WhatsApp Texts"
@@ -879,7 +899,7 @@ const AdminSalesDetails = () => {
                 {!isCallLogsLoading && callLogs.length === 0 && (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-gray-400 text-xs">
-                      এই রেঞ্জে কোনো call/WhatsApp entry নেই।
+                      এই রেঞ্জে কোনো entry নেই।
                     </td>
                   </tr>
                 )}
@@ -900,6 +920,10 @@ const AdminSalesDetails = () => {
                       {log.channel === "whatsapp" ? (
                         <span className="text-[10px] font-bold bg-green-50 text-green-600 border border-green-200 px-2 py-0.5 rounded-full">
                           💬 WhatsApp
+                        </span>
+                      ) : log.callType === "phone_off" ? (
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300 px-2 py-0.5 rounded-full">
+                          📵 Phone Off
                         </span>
                       ) : log.callType === "missed" ? (
                         <span className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">
