@@ -10,7 +10,7 @@ export interface INoteEntry {
   createdAt?: string;
   createdBy?: string;
   channel?: "call" | "whatsapp";
-  callType?: "picked" | "missed";
+  callType?: "picked" | "missed" | "phone_off";
   callMinutes?: number;
 }
 
@@ -26,6 +26,8 @@ export interface LeadData {
   ServiceNeed?: string;
   updatedAt?: string;
   missedCallCount?: number;
+  phoneOffCount?: number;
+  lastCallOutcome?: "missed" | "picked" | "whatsapp" | "phone_off" | null;
 }
 
 interface MissedCallLeadsResponse {
@@ -35,9 +37,16 @@ interface MissedCallLeadsResponse {
   currentPage: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
+  counts: {
+    missed: number;
+    phoneOff: number;
+    all: number;
+  };
 }
 
-const PAGE_LIMIT = 30;
+type OutcomeFilter = "all" | "missed" | "phone_off";
+
+const PAGE_LIMIT = 25;
 
 export default function Sales_Missed_Calls() {
   const axiosSales = useAxiosSales();
@@ -45,6 +54,7 @@ export default function Sales_Missed_Calls() {
   const { userData } = useUserData();
 
   const [page, setPage] = useState(1);
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>("all");
 
   const [showNoti, setShowNoti] = useState(false);
 
@@ -66,11 +76,11 @@ export default function Sales_Missed_Calls() {
   };
 
   const { data, isLoading, isError } = useQuery<MissedCallLeadsResponse>({
-    queryKey: ["missed-call-leads", userData?._id, page],
+    queryKey: ["missed-call-leads", userData?._id, page, outcomeFilter],
     queryFn: async () => {
       const res = await axiosSales.get(
         `/api/v1/sales/get-missed-call-leads/${userData._id}`,
-        { params: { page, limit: PAGE_LIMIT } },
+        { params: { page, limit: PAGE_LIMIT, outcome: outcomeFilter } },
       );
       return res.data;
     },
@@ -81,6 +91,12 @@ export default function Sales_Missed_Calls() {
   const leads = data?.data ?? [];
   const totalPages = data?.totalPages ?? 1;
   const totalCount = data?.totalCount ?? 0;
+  const counts = data?.counts ?? { missed: 0, phoneOff: 0, all: 0 };
+
+  const switchFilter = (f: OutcomeFilter) => {
+    setOutcomeFilter(f);
+    setPage(1);
+  };
 
   const openNotePopup = (lead: LeadData) => {
     setNoteLead(lead);
@@ -117,7 +133,6 @@ export default function Sales_Missed_Calls() {
       return res.data;
     },
     onSuccess: () => {
-  
       queryClient.invalidateQueries({ queryKey: ["missed-call-leads"] });
       queryClient.invalidateQueries({ queryKey: ["my-leads"] });
       setShowNoti(true);
@@ -125,13 +140,21 @@ export default function Sales_Missed_Calls() {
     },
   });
 
+  // ✅ পরিবর্তিত — "missed" বা "phone_off" দুটোই handle করে
   const mutationMissedCall = useMutation({
-    mutationFn: async (leadId: string) => {
+    mutationFn: async ({
+      leadId,
+      type,
+    }: {
+      leadId: string;
+      type: "missed" | "phone_off";
+    }) => {
       const res = await axiosSales.put(
         `/api/v1/sales/log-missed-call/${leadId}`,
         {
           salesmanId: userData?._id,
           salesmanName: userData?.name,
+          type,
         },
       );
       return res.data;
@@ -167,6 +190,22 @@ export default function Sales_Missed_Calls() {
     const end = Math.min(totalPages, start + 4);
     for (let i = start; i <= end; i++) nums.push(i);
     return nums;
+  };
+
+  // ✅ নতুন — lead-এর last outcome অনুযায়ী badge (list-এ কোন ফিল্টারেই একটাই badge দেখাবে)
+  const renderOutcomeBadge = (lead: LeadData) => {
+    if (lead.lastCallOutcome === "phone_off") {
+      return (
+        <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded">
+          📵 {lead.phoneOffCount || 0} phone off
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+        📞 {lead.missedCallCount || 0} missed
+      </span>
+    );
   };
 
   if (isLoading) {
@@ -208,21 +247,71 @@ export default function Sales_Missed_Calls() {
 
       <div className="poppins-regular w-full min-h-screen bg-[#f8fafc] px-6 py-10 lg:px-14 font-sans text-slate-900 antialiased">
         <div className=" mx-auto">
-          <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
+          <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
             <div>
               <p className="text-[10px] tracking-widest text-red-500 uppercase font-bold mb-1">
                 CRM Directory
               </p>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                Didn't Pick — Missed Calls
+                Uncontacted Leads
               </h1>
               <p className="text-sm text-slate-500 mt-1">
-                Total leads with missed calls:{" "}
+                Leads where the phone wasn't picked up or was switched off —{" "}
                 <span className="font-semibold text-slate-800">
                   {totalCount}
-                </span>
+                </span>{" "}
+                showing.
               </p>
             </div>
+          </div>
+
+          {/* ✅ নতুন — Outcome ফিল্টার ট্যাব, প্রতিটাতে count */}
+          <div className="mb-6 flex items-center gap-2">
+            <button
+              onClick={() => switchFilter("all")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                outcomeFilter === "all"
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+              }`}
+            >
+              All{" "}
+              <span
+                className={`ml-1 ${outcomeFilter === "all" ? "text-slate-300" : "text-slate-400"}`}
+              >
+                ({counts.all})
+              </span>
+            </button>
+            <button
+              onClick={() => switchFilter("missed")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                outcomeFilter === "missed"
+                  ? "bg-red-600 text-white border-red-600"
+                  : "bg-white text-red-600 border-red-200 hover:bg-red-50"
+              }`}
+            >
+              📞 Didn't Pick{" "}
+              <span
+                className={`ml-1 ${outcomeFilter === "missed" ? "text-red-200" : "text-red-400"}`}
+              >
+                ({counts.missed})
+              </span>
+            </button>
+            <button
+              onClick={() => switchFilter("phone_off")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                outcomeFilter === "phone_off"
+                  ? "bg-slate-700 text-white border-slate-700"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              📵 Phone Off{" "}
+              <span
+                className={`ml-1 ${outcomeFilter === "phone_off" ? "text-slate-300" : "text-slate-400"}`}
+              >
+                ({counts.phoneOff})
+              </span>
+            </button>
           </div>
 
           <div className="overflow-x-auto bg-white border border-slate-200 shadow-sm rounded-lg">
@@ -233,7 +322,7 @@ export default function Sales_Missed_Calls() {
                     Lead Name
                   </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                    Missed Count
+                    Status
                   </th>
                   <th className="px-5 py-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                     Last Activity
@@ -259,7 +348,7 @@ export default function Sales_Missed_Calls() {
                       colSpan={7}
                       className="px-5 py-10 text-center text-slate-400 text-xs"
                     >
-                      No missed call leads found.
+                      No leads found for this filter.
                     </td>
                   </tr>
                 )}
@@ -272,11 +361,7 @@ export default function Sales_Missed_Calls() {
                     <td className="px-5 py-3 font-semibold text-slate-800">
                       {lead.leadName}
                     </td>
-                    <td className="px-5 py-3">
-                      <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
-                        📞 {lead.missedCallCount || 0} missed
-                      </span>
-                    </td>
+                    <td className="px-5 py-3">{renderOutcomeBadge(lead)}</td>
                     <td className="px-5 py-3 text-slate-600 font-medium text-xs">
                       {formatDate(lead.updatedAt)}
                     </td>
@@ -310,7 +395,7 @@ export default function Sales_Missed_Calls() {
               </tbody>
             </table>
 
-            {/* --- PAGINATION (30 per page) --- */}
+            {/* --- PAGINATION (25 per page) --- */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-1.5 py-4 border-t border-slate-100">
                 <button
@@ -372,7 +457,7 @@ export default function Sales_Missed_Calls() {
         </div>
       </div>
 
-      {/* --- NOTE MODAL (Call/WhatsApp + Didn't Pick) --- */}
+      {/* --- NOTE MODAL (Call/WhatsApp + Didn't Pick + Phone Off) --- */}
       {noteLead && (
         <div className="fixed inset-0 z-80 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="absolute inset-0" onClick={closeNotePopup}></div>
@@ -443,6 +528,10 @@ export default function Sales_Missed_Calls() {
                         {entry.channel === "whatsapp" ? (
                           <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded font-semibold">
                             💬 WhatsApp
+                          </span>
+                        ) : entry.callType === "phone_off" ? (
+                          <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-300 px-1.5 py-0.5 rounded font-semibold">
+                            📵 Phone Off
                           </span>
                         ) : entry.callType === "missed" ? (
                           <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
@@ -521,19 +610,39 @@ export default function Sales_Missed_Calls() {
                 )}
               </div>
 
-              <div className="flex justify-between items-center pt-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    mutationMissedCall.mutate(noteLead._id || noteLead.id)
-                  }
-                  disabled={mutationMissedCall.isPending}
-                  className="px-3 py-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold transition-all disabled:opacity-50"
-                >
-                  {mutationMissedCall.isPending
-                    ? "Logging..."
-                    : "Didn't Pick (+)"}
-                </button>
+              <div className="flex justify-between items-center pt-1 flex-wrap gap-2">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      mutationMissedCall.mutate({
+                        leadId: noteLead._id || noteLead.id,
+                        type: "missed",
+                      })
+                    }
+                    disabled={mutationMissedCall.isPending}
+                    className="px-3 py-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold transition-all disabled:opacity-50"
+                  >
+                    {mutationMissedCall.isPending
+                      ? "Logging..."
+                      : "Didn't Pick (+)"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      mutationMissedCall.mutate({
+                        leadId: noteLead._id || noteLead.id,
+                        type: "phone_off",
+                      })
+                    }
+                    disabled={mutationMissedCall.isPending}
+                    className="px-3 py-1.5 rounded border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-all disabled:opacity-50"
+                  >
+                    {mutationMissedCall.isPending
+                      ? "Logging..."
+                      : "📵 Phone Off (+)"}
+                  </button>
+                </div>
                 <button
                   type="submit"
                   disabled={
