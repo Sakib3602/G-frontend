@@ -69,6 +69,10 @@ import AdminMissingFollowups from "@/components/AdminDashboard/AdminMissingFollo
 import AdminLeadTransfers from "@/components/AdminDashboard/AdminLeadTransfers";
 import Sales_Missed_Calls from "@/components/SalesDashboard/Sales_Missed_Calls";
 import AdminAnnouncements from "@/components/AdminDashboard/AdminAnnouncements";
+import ProposalListPage from "@/components/pages/Proposal/ProposalListPage";
+import ProposalBuilderPage from "@/components/pages/Proposal/ProposalBuilderPage";
+// import ProposalPublicView from "@/components/PublicClient/ProposalPublicView";
+
 
 const RoutesAll = () => {
   return (
@@ -80,6 +84,7 @@ const RoutesAll = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/reset/password" element={<Reset />} />
         <Route path="/view/calendar/:token" element={<ClientCalendarView />} />
+       {/* <Route path="/view/proposal/:token" element={<ProposalPublicView />} /> */}
       </Route>
       {/* sales dashboard start */}
       <Route
@@ -117,9 +122,17 @@ const RoutesAll = () => {
           path="/dashboard/sales/assigned"
           element={<Sales_AssignedTask />}
         />
+
+
+        <Route path="/dashboard/sales/proposals" element={<ProposalListPage />} />
+        <Route path="/dashboard/sales/proposals/new" element={<ProposalBuilderPage />} />
+        <Route path="/dashboard/sales/proposals/:id" element={<ProposalBuilderPage />} />
+
+
         <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
         <Route path="/dashboard/sales/emails" element={<Sales_Emails />} />
         <Route path="/dashboard/sales/tasks" element={<SalesTaskAD />} />
+        
         <Route
           path="/dashboard/sales/complaints"
           element={<SubmitCompliance />}
