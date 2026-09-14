@@ -7,9 +7,16 @@ const client = axios.create({
   withCredentials: true,
 });
 
+export type ProposalPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export const proposalApi = {
-  list: (params?: { status?: string; search?: string }) =>
-    client.get<{ success: boolean; data: Proposal[] }>("/", { params }),
+  list: (params?: { status?: string; search?: string; page?: number; limit?: number; scope?: "mine" | "all" }) =>
+  client.get<{ success: boolean; data: Proposal[]; pagination: ProposalPagination }>("/", { params }),
 
   getById: (id: string) => client.get<{ success: boolean; data: Proposal }>(`/${id}`),
 
@@ -23,14 +30,15 @@ export const proposalApi = {
 
   preview: (id: string) => client.post<string>(`/${id}/preview`, {}, { responseType: "text" }),
 
-  downloadUrl: (id: string) => `${BASE_URL}/${id}/download`, // internal (authenticated) download
+  downloadUrl: (id: string) => `${BASE_URL}/${id}/download`,
   viewUrl: (id: string) => `${BASE_URL}/${id}/view`,
 
   markSent: (id: string, sentTo: string) => client.post(`/${id}/mark-sent`, { sentTo }),
+  updateStatus: (id: string, status: string) =>
+  client.put<{ success: boolean; data: Proposal }>(`/${id}`, { status }),
 
   getSettings: () => client.get(`/settings/company`),
   updateSettings: (payload: any) => client.put(`/settings/company`, payload),
 
-  // client k pathanor jonno shareable link — nijer (frontend) domain e
   shareUrl: (token: string) => `${import.meta.env.VITE_BACKEND_URL}/api/v1/public/proposals/${token}`,
 };

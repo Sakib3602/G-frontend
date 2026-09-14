@@ -3,13 +3,20 @@ import AddSectionMenu from "@/components/Proposal/AddSectionMenu";
 import SectionCard from "@/components/Proposal/SectionCard";
 import { defaultDataFor, type Proposal, type Section, type SectionType } from "@/types/proposal";
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation } from "react-router";
 
 const uuid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
 
 export default function ProposalBuilderPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // "/dashboard/sales/proposals/new" -> "/dashboard/sales"
+  // "/dashboard/marketing/proposals/123" -> "/dashboard/marketing"
+  // eivabe je department theke eshechi shei department er base path automatically dhore nei,
+  // tai ekই component sales ar marketing dutoteई kaj kore, kono hardcode lage na
+  const basePath = location.pathname.split("/proposals")[0];
 
   const [proposal, setProposal] = useState<Proposal>({
     title: "",
@@ -66,7 +73,7 @@ export default function ProposalBuilderPage() {
       } else {
         const res = await proposalApi.create(proposal);
         setProposal(res.data.data);
-        navigate(`/dashboard/sales/proposals/${res.data.data._id}`, { replace: true });
+        navigate(`${basePath}/proposals/${res.data.data._id}`, { replace: true });
       }
       alert("Saved successfully");
     } catch (err) {
@@ -94,7 +101,6 @@ export default function ProposalBuilderPage() {
       await navigator.clipboard.writeText(link);
       alert("Share link copied!\n\n" + link);
     } catch {
-      // clipboard permission na thakle fallback
       window.prompt("Copy this link:", link);
     }
   };

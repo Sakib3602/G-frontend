@@ -73,7 +73,6 @@ import ProposalListPage from "@/components/pages/Proposal/ProposalListPage";
 import ProposalBuilderPage from "@/components/pages/Proposal/ProposalBuilderPage";
 // import ProposalPublicView from "@/components/PublicClient/ProposalPublicView";
 
-
 const RoutesAll = () => {
   return (
     <Routes>
@@ -84,7 +83,7 @@ const RoutesAll = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/reset/password" element={<Reset />} />
         <Route path="/view/calendar/:token" element={<ClientCalendarView />} />
-       {/* <Route path="/view/proposal/:token" element={<ProposalPublicView />} /> */}
+        {/* <Route path="/view/proposal/:token" element={<ProposalPublicView />} /> */}
       </Route>
       {/* sales dashboard start */}
       <Route
@@ -123,16 +122,23 @@ const RoutesAll = () => {
           element={<Sales_AssignedTask />}
         />
 
-
-        <Route path="/dashboard/sales/proposals" element={<ProposalListPage />} />
-        <Route path="/dashboard/sales/proposals/new" element={<ProposalBuilderPage />} />
-        <Route path="/dashboard/sales/proposals/:id" element={<ProposalBuilderPage />} />
-
+        <Route
+          path="/dashboard/sales/proposals"
+          element={<ProposalListPage />}
+        />
+        <Route
+          path="/dashboard/sales/proposals/new"
+          element={<ProposalBuilderPage />}
+        />
+        <Route
+          path="/dashboard/sales/proposals/:id"
+          element={<ProposalBuilderPage />}
+        />
 
         <Route path="/dashboard/sales/whatsapp" element={<Whatsapp />} />
         <Route path="/dashboard/sales/emails" element={<Sales_Emails />} />
         <Route path="/dashboard/sales/tasks" element={<SalesTaskAD />} />
-        
+
         <Route
           path="/dashboard/sales/complaints"
           element={<SubmitCompliance />}
@@ -206,6 +212,18 @@ const RoutesAll = () => {
         <Route
           path="/dashboard/marketing/compliance"
           element={<SubmitCompliance />}
+        />
+        <Route
+          path="/dashboard/marketing/proposals"
+          element={<ProposalListPage />}
+        />
+        <Route
+          path="/dashboard/marketing/proposals/new"
+          element={<ProposalBuilderPage />}
+        />
+        <Route
+          path="/dashboard/marketing/proposals/:id"
+          element={<ProposalBuilderPage />}
         />
       </Route>
       {/* marketing dashboard end */}
@@ -308,6 +326,18 @@ const RoutesAll = () => {
         <Route
           path="pending-assignments"
           element={<AdminPendingAssignments />}
+        />
+        <Route
+          path="/dashboard/admin/proposals"
+          element={<ProposalListPage />}
+        />
+        <Route
+          path="/dashboard/admin/proposals/new"
+          element={<ProposalBuilderPage />}
+        />
+        <Route
+          path="/dashboard/admin/proposals/:id"
+          element={<ProposalBuilderPage />}
         />
 
         <Route

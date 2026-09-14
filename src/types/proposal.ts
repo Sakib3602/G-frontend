@@ -26,9 +26,11 @@ export interface Proposal {
   totalAmount?: number;
   currency?: string;
   shareToken?: string;
+  proposalNumber?: string;
   sentAt?: string | null;
   sentTo?: string | null;
   version?: number;
+  createdBy?: { _id: string; name?: string; email?: string } | string;
 }
 
 export const SECTION_LABELS: Record<SectionType, string> = {
@@ -49,11 +51,33 @@ export function defaultDataFor(type: SectionType): any {
     case "text":
       return { heading: "", body: "" };
     case "table":
-      return { heading: "",description: "", columns: [], rows: [] };
+      return { heading: "", description: "", columns: [], rows: [] };
     case "investment":
       return { heading: "", items: [], paymentTerms: [] };
     case "contact":
-      return { heading: "", rows: [] };
+      // Contact section select korlei ei fixed info auto-fill hoy, chaile edit kora jabe
+      return {
+        heading: "Contact Us",
+        subheading: "We welcome all inquiries and are happy to arrange a call at a time that suits you.",
+        rows: [
+          {
+            label: "Headquarters",
+            value: "Room 6/A, Plot 32/C, Tropical Alauddin Tower, 6th Floor, Road 2, Sector 3, Uttara, Dhaka - 1230",
+          },
+          {
+            label: "Sales Enquiries",
+            value: "sales@genesysltd.com | 01329743367 | 01329743366",
+          },
+          {
+            label: "Support",
+            value: "support@genesysltd.com | Available 24/7 for active project clients",
+          },
+          {
+            label: "Website",
+            value: "www.genesysltd.com",
+          },
+        ],
+      };
     case "thankyou":
       return { heading: "" };
     case "custom":

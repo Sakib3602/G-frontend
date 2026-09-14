@@ -190,6 +190,12 @@ export function ContactEditor({ data, onChange }: EditorProps) {
         value={data.heading || ""}
         onChange={(e) => onChange({ ...data, heading: e.target.value })}
       />
+      <input
+        className="w-full border rounded p-2"
+        placeholder="Subheading (optional)"
+        value={data.subheading || ""}
+        onChange={(e) => onChange({ ...data, subheading: e.target.value })}
+      />
       {rows.map((r, i) => (
         <div key={i} className="flex gap-2">
           <input className="w-40 border rounded p-1" placeholder="Label" value={r.label} onChange={(e) => updateRow(i, "label", e.target.value)} />

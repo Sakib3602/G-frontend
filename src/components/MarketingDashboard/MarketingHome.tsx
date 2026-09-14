@@ -15,6 +15,7 @@ import {
   Shield,
   Loader,
   Bell,
+  ClipboardList,
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Link, Outlet, useLocation } from "react-router";
@@ -41,10 +42,12 @@ const MarketingHome = () => {
 
   const { logOut } = auth;
 
-   const { data: notifCount = 0 } = useQuery<number>({
+  const { data: notifCount = 0 } = useQuery<number>({
     queryKey: ["notification-count", NOTIFICATION_SCOPE],
     queryFn: async () => {
-      const res = await axiosMarketing.get(`/notifications/count?scope=${NOTIFICATION_SCOPE}`);
+      const res = await axiosMarketing.get(
+        `/notifications/count?scope=${NOTIFICATION_SCOPE}`,
+      );
       return res.data?.count ?? 0;
     },
     refetchInterval: 20000,
@@ -52,7 +55,9 @@ const MarketingHome = () => {
 
   const mutationMarkSeen = useMutation({
     mutationFn: async (scope: string) => {
-      const res = await axiosMarketing.post(`/notifications/mark-seen`, { scope });
+      const res = await axiosMarketing.post(`/notifications/mark-seen`, {
+        scope,
+      });
       return res.data;
     },
   });
@@ -108,6 +113,11 @@ const MarketingHome = () => {
       icon: TimerReset,
     },
     {
+      name: "Proposals",
+      path: "/dashboard/marketing/proposals",
+      icon: ClipboardList,
+    },
+    {
       name: "Complete Tasks",
       path: "/dashboard/marketing/complete-tasks",
       icon: CheckCircle,
@@ -140,7 +150,10 @@ const MarketingHome = () => {
         <meta charSet="utf-8" />
         <title>Genesys - Marketing Dashboard</title>
       </Helmet>
-      <AnnouncementPopup axiosInstance={axiosMarketing} basePath="/announcements" />
+      <AnnouncementPopup
+        axiosInstance={axiosMarketing}
+        basePath="/announcements"
+      />
       <aside
         className={`${isSidebarOpen ? "w-64" : "w-20"}
         bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-20`}

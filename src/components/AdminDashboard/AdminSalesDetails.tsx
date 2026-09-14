@@ -20,6 +20,7 @@ import {
   Line,
 } from "recharts";
 import { FiArrowLeft, FiX } from "react-icons/fi";
+import { proposalApi } from "@/api/proposalApi";
 
 interface Summary {
   totalLeads: number;
@@ -75,7 +76,6 @@ interface ActivitySummaryResponse {
   data: ActivitySummaryItem[];
 }
 
-// ✅ পরিবর্তিত — callType-এ phone_off যোগ করা হলো
 interface CallLogEntry {
   _id: string;
   leadId: string;
@@ -95,9 +95,42 @@ interface CallLogsResponse {
     totalLogs: number;
     callsPicked: number;
     callsMissed: number;
-    phoneOffCount: number; // ✅ নতুন
+    phoneOffCount: number;
     whatsappTexts: number;
     totalCallMinutes: number;
+  };
+}
+
+// ✅ notun — proposal tab er type
+interface ProposalItem {
+  _id: string;
+  title: string;
+  clientName: string;
+  clientPhone?: string;
+  status: "draft" | "sent" | "approved" | "rejected";
+  totalAmount: number;
+  currency: string;
+  createdAt: string;
+  sentAt?: string | null;
+  shareToken?: string;
+  proposalNumber?: string;
+}
+
+interface ProposalsBySalesmanResponse {
+  success: boolean;
+  data: ProposalItem[];
+  counts: {
+    total: number;
+    draft: number;
+    sent: number;
+    approved: number;
+    rejected: number;
+  };
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
 }
 
@@ -123,6 +156,33 @@ const getCurrentMonthRange = () => {
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const fmt = (d: Date) => d.toISOString().split("T")[0];
   return { start: fmt(start), end: fmt(end) };
+};
+
+// ✅ notun — proposal status color map
+const PROPOSAL_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-gray-100 text-gray-700",
+  sent: "bg-blue-100 text-blue-700",
+  approved: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-700",
+};
+
+const formatProposalDate = (d?: string | null) => {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+const handleCopyProposalLink = async (shareToken?: string) => {
+  if (!shareToken) return alert("Ei proposal er kono share link nai");
+  const link = proposalApi.shareUrl(shareToken);
+  try {
+    await navigator.clipboard.writeText(link);
+    alert("Share link copied!\n\n" + link);
+  } catch {
+    window.prompt("Copy this link:", link);
+  }
 };
 
 const SummaryCard = ({
@@ -165,28 +225,39 @@ const AdminSalesDetails = () => {
   const navigate = useNavigate();
   const axiosAdmin = useAxiosAdmin();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "activity" | "calls">(
-    "overview",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "activity" | "calls" | "proposals"
+  >("overview");
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Activity tab-এর জন্য আলাদা date range, ডিফল্ট = চলতি মাস
   const currentMonth = getCurrentMonthRange();
   const [activityStartDate, setActivityStartDate] = useState(
     currentMonth.start,
   );
   const [activityEndDate, setActivityEndDate] = useState(currentMonth.end);
 
-  // ✅ Call log tab — ডিফল্ট আজকের দিন
   const todayStr = new Date().toISOString().split("T")[0];
   const [callStartDate, setCallStartDate] = useState(todayStr);
   const [callEndDate, setCallEndDate] = useState(todayStr);
-  // ✅ পরিবর্তিত — channel filter-এ phone_off যোগ করা হলো
-  const [callChannel, setCallChannel] = useState<"all" | "call" | "whatsapp" | "phone_off">("all");
-  const [callSortBy, setCallSortBy] = useState<"createdAt" | "callMinutes" | "leadName">("createdAt");
+  const [callChannel, setCallChannel] = useState<
+    "all" | "call" | "whatsapp" | "phone_off"
+  >("all");
+  const [callSortBy, setCallSortBy] = useState<
+    "createdAt" | "callMinutes" | "leadName"
+  >("createdAt");
   const [callSortOrder, setCallSortOrder] = useState<"asc" | "desc">("desc");
+
+  // ✅ notun — proposal tab er state
+  const [proposalSearch, setProposalSearch] = useState("");
+  const [proposalPage, setProposalPage] = useState(1);
+  const [proposalSortBy, setProposalSortBy] = useState<
+    "createdAt" | "totalAmount" | "clientName"
+  >("createdAt");
+  const [proposalSortOrder, setProposalSortOrder] = useState<"asc" | "desc">(
+    "desc",
+  );
 
   const { data, isLoading } = useQuery<SalesDetailsResponse>({
     queryKey: ["salesman-details", id, startDate, endDate],
@@ -220,7 +291,6 @@ const AdminSalesDetails = () => {
       enabled: !!id && activeTab === "activity",
     });
 
-  // ✅ Call/WhatsApp/Phone-off log query
   const {
     data: callLogsData,
     isLoading: isCallLogsLoading,
@@ -228,14 +298,22 @@ const AdminSalesDetails = () => {
     hasNextPage: hasMoreCallLogs,
     isFetchingNextPage: isFetchingMoreCallLogs,
   } = useInfiniteQuery<CallLogsResponse>({
-    queryKey: ["call-logs", id, callStartDate, callEndDate, callChannel, callSortBy, callSortOrder],
+    queryKey: [
+      "call-logs",
+      id,
+      callStartDate,
+      callEndDate,
+      callChannel,
+      callSortBy,
+      callSortOrder,
+    ],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (callStartDate) params.set("startDate", callStartDate);
       if (callEndDate) params.set("endDate", callEndDate);
-      // ✅ পরিবর্তিত — "phone_off" filter হলে channel=call পাঠাই, callType আলাদাভাবে ফ্রন্টএন্ডেই ফিল্টার করব
       if (callChannel === "whatsapp") params.set("channel", "whatsapp");
-      if (callChannel === "call" || callChannel === "phone_off") params.set("channel", "call");
+      if (callChannel === "call" || callChannel === "phone_off")
+        params.set("channel", "call");
       params.set("sortBy", callSortBy);
       params.set("sortOrder", callSortOrder);
       params.set("limit", "30");
@@ -250,7 +328,6 @@ const AdminSalesDetails = () => {
   });
 
   const allCallLogs = callLogsData?.pages.flatMap((p) => p.data) || [];
-  // ✅ নতুন — "phone_off" ফিল্টার হলে শুধু সেই টাইপগুলো দেখাও (backend শুধু channel="call" দিয়েছে, callType বাদ যায়নি)
   const callLogs =
     callChannel === "phone_off"
       ? allCallLogs.filter((l) => l.callType === "phone_off")
@@ -259,6 +336,45 @@ const AdminSalesDetails = () => {
         : allCallLogs;
 
   const callLogsSummary = callLogsData?.pages[0]?.summary;
+
+  // ✅ notun — proposal tab er query
+  const { data: proposalsData, isLoading: isProposalsLoading } =
+    useQuery<ProposalsBySalesmanResponse>({
+      queryKey: [
+        "salesman-proposals",
+        id,
+        proposalSearch,
+        proposalPage,
+        proposalSortBy,
+        proposalSortOrder,
+      ],
+      queryFn: async () => {
+        const params = new URLSearchParams();
+        if (proposalSearch) params.set("search", proposalSearch);
+        params.set("page", String(proposalPage));
+        params.set("limit", "25");
+        params.set("sortBy", proposalSortBy);
+        params.set("sortOrder", proposalSortOrder);
+
+        const res = await axiosAdmin.get(
+          `/proposals/${id}?${params.toString()}`,
+        );
+        return res.data;
+      },
+      enabled: !!id && activeTab === "proposals",
+    });
+
+  const toggleProposalSort = (
+    field: "createdAt" | "totalAmount" | "clientName",
+  ) => {
+    if (proposalSortBy === field) {
+      setProposalSortOrder((p) => (p === "asc" ? "desc" : "asc"));
+    } else {
+      setProposalSortBy(field);
+      setProposalSortOrder("desc");
+    }
+    setProposalPage(1);
+  };
 
   const setQuickRange = (range: "today" | "yesterday" | "week" | "month") => {
     const now = new Date();
@@ -328,7 +444,6 @@ const AdminSalesDetails = () => {
 
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen text-[#1E293B]">
-      {/* Back + Header */}
       <button
         onClick={() => navigate(-1)}
         className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-black mb-4"
@@ -403,6 +518,16 @@ const AdminSalesDetails = () => {
           }`}
         >
           Call & WhatsApp Log
+        </button>
+        <button
+          onClick={() => setActiveTab("proposals")}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 -mb-px transition-colors ${
+            activeTab === "proposals"
+              ? "border-[#1E293B] text-[#1E293B]"
+              : "border-transparent text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          Proposals
         </button>
       </div>
 
@@ -780,7 +905,9 @@ const AdminSalesDetails = () => {
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <p className="text-sm text-gray-500">
-              Every call, phone-off attempt, and WhatsApp text sent to leads is logged here. You can filter by date range, channel, and sort by time, lead name, or call duration.
+              Every call, phone-off attempt, and WhatsApp text sent to leads is
+              logged here. You can filter by date range, channel, and sort by
+              time, lead name, or call duration.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
@@ -813,7 +940,6 @@ const AdminSalesDetails = () => {
                         : "This Month"}
                 </button>
               ))}
-              {/* ✅ পরিবর্তিত — Phone Off অপশন যোগ করা হলো */}
               <select
                 value={callChannel}
                 onChange={(e) => setCallChannel(e.target.value as any)}
@@ -839,7 +965,6 @@ const AdminSalesDetails = () => {
                 value={formatNumber(callLogsSummary.callsMissed)}
                 accent="text-red-600"
               />
-              {/* ✅ নতুন — Phone Off card */}
               <SummaryCard
                 label="Phone Off"
                 value={formatNumber(callLogsSummary.phoneOffCount)}
@@ -866,13 +991,17 @@ const AdminSalesDetails = () => {
                     onClick={() => toggleCallSort("createdAt")}
                     className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
                   >
-                    Time {callSortBy === "createdAt" && (callSortOrder === "asc" ? "↑" : "↓")}
+                    Time{" "}
+                    {callSortBy === "createdAt" &&
+                      (callSortOrder === "asc" ? "↑" : "↓")}
                   </th>
                   <th
                     onClick={() => toggleCallSort("leadName")}
                     className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
                   >
-                    Lead {callSortBy === "leadName" && (callSortOrder === "asc" ? "↑" : "↓")}
+                    Lead{" "}
+                    {callSortBy === "leadName" &&
+                      (callSortOrder === "asc" ? "↑" : "↓")}
                   </th>
                   <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
                     Channel
@@ -881,7 +1010,9 @@ const AdminSalesDetails = () => {
                     onClick={() => toggleCallSort("callMinutes")}
                     className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
                   >
-                    Minutes {callSortBy === "callMinutes" && (callSortOrder === "asc" ? "↑" : "↓")}
+                    Minutes{" "}
+                    {callSortBy === "callMinutes" &&
+                      (callSortOrder === "asc" ? "↑" : "↓")}
                   </th>
                   <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
                     Discussion
@@ -891,14 +1022,20 @@ const AdminSalesDetails = () => {
               <tbody className="divide-y divide-gray-100">
                 {isCallLogsLoading && (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-400 text-xs">
+                    <td
+                      colSpan={5}
+                      className="p-8 text-center text-gray-400 text-xs"
+                    >
                       Loading...
                     </td>
                   </tr>
                 )}
                 {!isCallLogsLoading && callLogs.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-400 text-xs">
+                    <td
+                      colSpan={5}
+                      className="p-8 text-center text-gray-400 text-xs"
+                    >
                       এই রেঞ্জে কোনো entry নেই।
                     </td>
                   </tr>
@@ -935,8 +1072,13 @@ const AdminSalesDetails = () => {
                         </span>
                       )}
                     </td>
-                    <td className="p-3 text-sm font-mono">{log.callMinutes || "—"}</td>
-                    <td className="p-3 text-sm text-gray-600 max-w-xs truncate" title={log.note || ""}>
+                    <td className="p-3 text-sm font-mono">
+                      {log.callMinutes || "—"}
+                    </td>
+                    <td
+                      className="p-3 text-sm text-gray-600 max-w-xs truncate"
+                      title={log.note || ""}
+                    >
                       {log.note || "—"}
                     </td>
                   </tr>
@@ -955,6 +1097,211 @@ const AdminSalesDetails = () => {
                 </button>
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {/* ================= PROPOSALS TAB ================= */}
+      {activeTab === "proposals" && (
+        <>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <p className="text-sm text-gray-500">
+              Every proposal created by this employee — sorted by most recently
+              created.
+            </p>
+            <input
+              type="text"
+              placeholder="Search by title, client, phone, or proposal no."
+              value={proposalSearch}
+              onChange={(e) => {
+                setProposalSearch(e.target.value);
+                setProposalPage(1);
+              }}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm w-full sm:w-80"
+            />
+          </div>
+
+          {proposalsData?.counts && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <SummaryCard
+                label="Total"
+                value={formatNumber(proposalsData.counts.total)}
+              />
+              <SummaryCard
+                label="Draft"
+                value={formatNumber(proposalsData.counts.draft)}
+                accent="text-gray-600"
+              />
+              <SummaryCard
+                label="Sent"
+                value={formatNumber(proposalsData.counts.sent)}
+                accent="text-blue-600"
+              />
+              <SummaryCard
+                label="Approved"
+                value={formatNumber(proposalsData.counts.approved)}
+                accent="text-emerald-600"
+              />
+              <SummaryCard
+                label="Rejected"
+                value={formatNumber(proposalsData.counts.rejected)}
+                accent="text-red-600"
+              />
+            </div>
+          )}
+
+          <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-sm">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50/80 border-b border-gray-100">
+                <tr>
+                  <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
+                    No.
+                  </th>
+                  <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
+                    Title
+                  </th>
+                  <th
+                    onClick={() => toggleProposalSort("clientName")}
+                    className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
+                  >
+                    Client{" "}
+                    {proposalSortBy === "clientName" &&
+                      (proposalSortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
+                    Status
+                  </th>
+                  <th
+                    onClick={() => toggleProposalSort("totalAmount")}
+                    className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
+                  >
+                    Amount{" "}
+                    {proposalSortBy === "totalAmount" &&
+                      (proposalSortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    onClick={() => toggleProposalSort("createdAt")}
+                    className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider cursor-pointer"
+                  >
+                    Created{" "}
+                    {proposalSortBy === "createdAt" &&
+                      (proposalSortOrder === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
+                    Sent On
+                  </th>
+                  <th className="p-3 text-[11px] font-bold uppercase text-gray-400 tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {isProposalsLoading && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="p-8 text-center text-gray-400 text-xs"
+                    >
+                      Loading...
+                    </td>
+                  </tr>
+                )}
+                {!isProposalsLoading &&
+                  (proposalsData?.data.length ?? 0) === 0 && (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="p-8 text-center text-gray-400 text-xs"
+                      >
+                        No proposals found.
+                      </td>
+                    </tr>
+                  )}
+                {proposalsData?.data.map((p) => (
+                  <tr key={p._id} className="hover:bg-gray-50/60">
+                    <td className="p-3 text-xs font-mono text-gray-500">
+                      {p.proposalNumber ? `#${p.proposalNumber}` : "—"}
+                    </td>
+                    <td className="p-3 text-sm font-semibold text-blue-600">
+                      <a
+                        href={proposalApi.shareUrl(p.shareToken || "")}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:underline"
+                      >
+                        {p.title}
+                      </a>
+                    </td>
+                    <td className="p-3 text-sm text-gray-600">
+                      {p.clientName}
+                      {p.clientPhone && (
+                        <span className="block text-xs text-gray-400">
+                          {p.clientPhone}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${PROPOSAL_STATUS_COLORS[p.status]}`}
+                      >
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="p-3 text-sm font-mono">
+                      {p.currency} {formatNumber(p.totalAmount)}
+                    </td>
+                    <td className="p-3 text-xs text-gray-500 whitespace-nowrap">
+                      {formatProposalDate(p.createdAt)}
+                    </td>
+                    <td className="p-3 text-xs text-gray-500 whitespace-nowrap">
+                      {formatProposalDate(p.sentAt)}
+                    </td>
+                    <td className="p-3 text-xs whitespace-nowrap">
+                      <button
+                        onClick={() => handleCopyProposalLink(p.shareToken)}
+                        className="text-blue-600 hover:underline font-semibold"
+                      >
+                        Copy Link
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {proposalsData?.pagination &&
+              proposalsData.pagination.totalPages > 1 && (
+                <div className="flex justify-between items-center p-4 border-t border-gray-100">
+                  <span className="text-xs text-gray-500">
+                    Page {proposalsData.pagination.page} of{" "}
+                    {proposalsData.pagination.totalPages} (
+                    {proposalsData.pagination.total} total)
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setProposalPage((p) => Math.max(1, p - 1))}
+                      disabled={proposalsData.pagination.page <= 1}
+                      className="px-3 py-1.5 border rounded text-xs font-semibold disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      onClick={() =>
+                        setProposalPage((p) =>
+                          Math.min(proposalsData.pagination.totalPages, p + 1),
+                        )
+                      }
+                      disabled={
+                        proposalsData.pagination.page >=
+                        proposalsData.pagination.totalPages
+                      }
+                      className="px-3 py-1.5 border rounded text-xs font-semibold disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
           </div>
         </>
       )}
