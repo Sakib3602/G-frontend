@@ -71,6 +71,8 @@ import Sales_Missed_Calls from "@/components/SalesDashboard/Sales_Missed_Calls";
 import AdminAnnouncements from "@/components/AdminDashboard/AdminAnnouncements";
 import ProposalListPage from "@/components/pages/Proposal/ProposalListPage";
 import ProposalBuilderPage from "@/components/pages/Proposal/ProposalBuilderPage";
+import AdminKpiDashboard from "@/components/AdminDashboard/AdminKpiDashboard";
+import DesignerMyKpi from "@/components/DesignerDashboard/DesignerMyKpi";
 // import ProposalPublicView from "@/components/PublicClient/ProposalPublicView";
 
 const RoutesAll = () => {
@@ -261,6 +263,7 @@ const RoutesAll = () => {
           path="/dashboard/designer/content-tasks"
           element={<DesignerMyTasksContent />}
         />
+        <Route path="my-kpi" element={<DesignerMyKpi />} />
         <Route
           path="/dashboard/designer/compliance"
           element={<SubmitCompliance />}
@@ -339,6 +342,7 @@ const RoutesAll = () => {
           path="/dashboard/admin/proposals/:id"
           element={<ProposalBuilderPage />}
         />
+        <Route path="kpi" element={<AdminKpiDashboard />} />
 
         <Route
           path="/dashboard/admin/missed-followups/:id/view"

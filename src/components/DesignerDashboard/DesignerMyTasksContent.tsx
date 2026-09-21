@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FiMessageSquare } from "react-icons/fi";
 
 import useAxiosDesigner from "@/uri/useAxiosDesigner";
-
+import { POST_TYPE_OPTIONS } from "@/constants/postTypes";
 // ─── Types ────────────────────────────────────────────────────
 
 type Platform = "FACEBOOK" | "INSTAGRAM" | "LINKEDIN" | "YOUTUBE";
@@ -124,16 +124,7 @@ const PLATFORM_SHORT: Record<Platform, string> = {
   YOUTUBE: "YT",
 };
 
-// ব্যাকএন্ডের POST_TYPE_OPTIONS এর সাথে হুবহু মিলিয়ে রাখো — নাহলে
-// dropdown এ পাঠানো value backend এ invalid বলে reject হবে।
-const POST_TYPE_OPTIONS = [
-  "Static",
-  "Reel",
-  "Motion Graphics",
-  "Memes (Static)",
-  "No Post",
-  "Cover Photo",
-];
+
 
 // ব্যাকএন্ডের STATUS_OPTIONS এর সাথে হুবহু মিলিয়ে রাখা — full-access
 // designer শুধু এই লিস্টের মধ্যে থেকেই status বদলাতে পারবে, নাহলে

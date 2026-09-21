@@ -6,7 +6,7 @@ import { useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 import { FiMessageSquare } from "react-icons/fi";
-
+import { POST_TYPE_OPTIONS as POST_TYPES } from "@/constants/postTypes";
 // ─── Types ────────────────────────────────────────────────────
 
 type Platform = "FACEBOOK" | "INSTAGRAM" | "LINKEDIN" | "YOUTUBE";
@@ -64,14 +64,6 @@ interface UserOption {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const POST_TYPES = [
-  "Static",
-  "Reel",
-  "Motion Graphics",
-  "Memes (Static)",
-  "No Post",
-  "Cover Photo",
-];
 
 const ITEM_STATUSES: { value: ItemStatus; label: string }[] = [
   { value: "NEW", label: "New" },

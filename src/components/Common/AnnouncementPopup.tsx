@@ -12,7 +12,7 @@ interface AnnouncementApi {
 
 interface AnnouncementPopupProps {
   axiosInstance: any;
-  basePath?: string; // default full path; marketing dashboard e "/announcements" pass koro
+  basePath?: string; 
 }
 
 const AnnouncementPopup = ({ axiosInstance, basePath = "/api/v1/announcements" }: AnnouncementPopupProps) => {
@@ -73,10 +73,13 @@ const AnnouncementPopup = ({ axiosInstance, basePath = "/api/v1/announcements" }
     : "";
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/55 px-4">
-      <div className="flex w-full max-w-xl overflow-hidden bg-white shadow-[0_25px_70px_rgba(0,0,0,0.35)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 sm:p-6">
+      
+      {/* Updated: Added max-h-[90vh], max-w-2xl for better width, and rounded-xl */}
+      <div className="flex w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-[0_25px_70px_rgba(0,0,0,0.35)]">
+        
         {/* Left icon panel */}
-        <div className="flex w-28 shrink-0 flex-col items-center justify-center bg-slate-900 py-8">
+        <div className="flex w-24 shrink-0 sm:w-28 flex-col items-center justify-center bg-slate-900 py-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
             <Megaphone className="h-6 w-6 text-amber-400" strokeWidth={1.75} />
           </div>
@@ -88,7 +91,7 @@ const AnnouncementPopup = ({ axiosInstance, basePath = "/api/v1/announcements" }
         </div>
 
         {/* Right content panel */}
-        <div className="flex flex-1 flex-col p-7">
+        <div className="flex flex-1 flex-col overflow-hidden p-6 sm:p-8">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">
             Announcement
           </p>
@@ -96,11 +99,15 @@ const AnnouncementPopup = ({ axiosInstance, basePath = "/api/v1/announcements" }
             {current.title}
           </h3>
 
-          <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">
-            {current.message}
-          </p>
+          {/* Updated: Added overflow-y-auto to handle long scrolling text */}
+          <div className="mt-4 flex-1 overflow-y-auto pr-2">
+            <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">
+              {current.message}
+            </p>
+          </div>
 
-          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+          {/* Footer - Updated with shrink-0 so it never gets squeezed */}
+          <div className="mt-6 flex shrink-0 items-center justify-between border-t border-slate-100 pt-5">
             <div className="text-xs text-slate-400">
               {current.createdByName && (
                 <span className="font-medium text-slate-500">{current.createdByName}</span>
@@ -112,7 +119,7 @@ const AnnouncementPopup = ({ axiosInstance, basePath = "/api/v1/announcements" }
             <button
               onClick={handleGotIt}
               disabled={mutationDismiss.isPending}
-              className="bg-slate-900 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+              className="rounded-md bg-slate-900 px-6 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
             >
               {mutationDismiss.isPending ? "..." : "Got it"}
             </button>

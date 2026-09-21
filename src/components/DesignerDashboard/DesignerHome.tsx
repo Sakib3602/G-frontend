@@ -14,6 +14,7 @@ import {
   ListChecks,
   Database,
   Bell,
+  ChartNoAxesColumn,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -106,7 +107,12 @@ const DesignerHome = () => {
       icon: AudioLines,
     },
     {
-      name: "Compliance",
+      name: "My KPI",
+      path: "/dashboard/designer/my-kpi",
+      icon: ChartNoAxesColumn,
+    },
+    {
+      name: "Complaints",
       path: "/dashboard/designer/compliance",
       icon: Shield,
     },

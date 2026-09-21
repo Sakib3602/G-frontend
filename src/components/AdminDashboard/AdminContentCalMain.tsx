@@ -1,12 +1,11 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosAdmin from "@/uri/useAxiosAdmin";
+import { POST_TYPE_OPTIONS as POST_TYPES } from "@/constants/postTypes";
 import { FiArrowLeft, FiMessageSquare } from "react-icons/fi";
 
-// ─── Types ────────────────────────────────────────────────────
+
 
 type Platform = "FACEBOOK" | "INSTAGRAM" | "LINKEDIN" | "YOUTUBE";
 
@@ -70,14 +69,7 @@ interface ShareStatus {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const POST_TYPES = [
-  "Carousel Static",
-  "Reel",
-  "Motion Graphics",
-  "Memes (Static)",
-  "No Post",
-  "Cover Photo",
-];
+
 
 const ITEM_STATUSES: { value: ItemStatus; label: string }[] = [
   { value: "NEW", label: "New" },

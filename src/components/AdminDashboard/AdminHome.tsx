@@ -25,6 +25,7 @@ const NOTIFICATION_SCOPE = "admin-tasks";
 const MENU_ITEMS = [
   { name: "Home", path: "/dashboard/admin", icon: HiOutlineHome },
   { name: "All Employees", path: "/dashboard/admin/employees", icon: HiOutlineUsers },
+  { name: "KPI Dashboard", path: "/dashboard/admin/kpi", icon: HiOutlineUsers },
   { name: "Content Calendars", path: "/dashboard/admin/content-calendar", icon: HiOutlineCalendar },
   { name: "Delay Works", path: "/dashboard/admin/delay-works", icon: HiOutlineClock },
   { name: "EM Reports", path: "/dashboard/admin/em-reports", icon: IoDocumentTextSharp },
