@@ -1436,7 +1436,7 @@ export default function Sales_In_Progress() {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-                  Deal Price ($)
+                  Deal Price (৳)
                 </label>
                 <input
                   type="number"

@@ -591,7 +591,7 @@ const AdminSalesDetails = () => {
                 <SummaryCard
                   label="Total Revenue"
                   value={formatNumber(summary.totalRevenue)}
-                  prefix="$"
+                  prefix="৳"
                   accent="text-emerald-600"
                 />
                 <SummaryCard

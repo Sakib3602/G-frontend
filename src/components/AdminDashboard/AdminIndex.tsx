@@ -97,11 +97,21 @@ interface DashboardResponse {
 // --- Constants & Helpers ---
 const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#F43F5E", "#0EA5E9", "#8B5CF6", "#EC4899", "#14B8A6"];
 
-const formatNumber = (n?: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n || 0);
+// ✅ পরিবর্তন — আর compact notation না, full number দেখাবে
+const formatNumber = (n?: number) => new Intl.NumberFormat("en-US").format(n || 0);
 const formatFull = (n?: number) => new Intl.NumberFormat("en-US").format(n || 0);
 
 const toChartData = (obj: Record<string, number> = {}) =>
   Object.entries(obj).map(([name, value]) => ({ name, value }));
+
+// ✅ নতুন — চলতি মাসের start/end date বের করার জন্য
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const fmt = (d: Date) => d.toISOString().split("T")[0];
+  return { start: fmt(start), end: fmt(end) };
+};
 
 // --- UI Components ---
 const KPICard = ({
@@ -143,8 +153,11 @@ const ChartCard = ({ title, subtitle, children, className = "" }: { title: strin
 // --- Main Page Component ---
 const AdminIndex = () => {
   const axiosAdmin = useAxiosAdmin();
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+
+  // ✅ পরিবর্তন — default এখন চলতি মাস, খালি স্ট্রিং না
+  const currentMonth = getCurrentMonthRange();
+  const [startDate, setStartDate] = useState(currentMonth.start);
+  const [endDate, setEndDate] = useState(currentMonth.end);
 
   const { data, isLoading } = useQuery<DashboardResponse>({
     queryKey: ["admin-dashboard", startDate, endDate],
@@ -161,6 +174,14 @@ const AdminIndex = () => {
   const isProfit = (summary?.profitOrLoss ?? 0) >= 0;
   const hasDateFilter = !!(startDate || endDate);
 
+  // ✅ নতুন — চলতি মাসে ফিরে যাওয়ার জন্য
+  const resetToCurrentMonth = () => {
+    const range = getCurrentMonthRange();
+    setStartDate(range.start);
+    setEndDate(range.end);
+  };
+
+  // এখন এটা "সব সময়ের ডেটা" (all-time) দেখানোর জন্য ব্যবহার হবে
   const clearDateFilter = () => {
     setStartDate("");
     setEndDate("");
@@ -224,8 +245,22 @@ const AdminIndex = () => {
                 className="text-xs font-semibold text-slate-700 focus:outline-none bg-transparent cursor-pointer w-[110px]"
               />
             </div>
+
+            {/* ✅ নতুন — This Month বাটন */}
+            <button
+              onClick={resetToCurrentMonth}
+              title="Reset to current month"
+              className="text-[10px] font-bold text-slate-500 hover:text-slate-800 px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white shadow-sm whitespace-nowrap"
+            >
+              This Month
+            </button>
+
             {hasDateFilter && (
-              <button onClick={clearDateFilter} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors border border-slate-100 shadow-sm">
+              <button
+                onClick={clearDateFilter}
+                title="Clear filter (show all-time data)"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors border border-slate-100 shadow-sm"
+              >
                 <X size={16} />
               </button>
             )}
@@ -239,14 +274,14 @@ const AdminIndex = () => {
               <KPICard
                 icon={TrendingUp}
                 label="Total Revenue"
-                value={`$${formatNumber(summary.totalRevenue)}`}
+                value={`৳${formatNumber(summary.totalRevenue)}`}
                 iconBg="bg-indigo-50"
                 iconColor="text-indigo-600"
               />
               <KPICard
                 icon={isProfit ? TrendingUp : TrendingDown}
                 label={isProfit ? "Net Profit" : "Net Loss"}
-                value={`$${formatNumber(Math.abs(summary.profitOrLoss))}`}
+                value={`৳${formatNumber(Math.abs(summary.profitOrLoss))}`}
                 accent={isProfit ? "text-emerald-600" : "text-rose-600"}
                 iconBg={isProfit ? "bg-emerald-50" : "bg-rose-50"}
                 iconColor={isProfit ? "text-emerald-600" : "text-rose-600"}
@@ -454,7 +489,7 @@ const AdminIndex = () => {
                         </td>
                         <td className="py-4">
                           <span className="text-sm font-bold text-emerald-600">
-                            ${formatFull(emp.revenue)}
+                            ৳{formatFull(emp.revenue)}
                           </span>
                         </td>
                         <td className="py-4">

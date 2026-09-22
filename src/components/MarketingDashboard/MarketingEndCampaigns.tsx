@@ -24,7 +24,7 @@ const formatDate = (value?: string) => {
 
 const formatCurrency = (value?: number) => {
   if (!value || value <= 0) return "--";
-  return `$${value.toLocaleString()}`;
+  return `৳${value.toLocaleString()}`;
 };
 
 const mapCompletedCampaign = (campaign: CompletedCampaignApi): Campaign => {

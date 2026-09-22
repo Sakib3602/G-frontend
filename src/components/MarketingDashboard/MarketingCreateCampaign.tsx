@@ -635,7 +635,7 @@ const MarketingCreateCampaign = () => {
                   <div className="mcf-field">
                     <label className="mcf-label">Total budget</label>
                     <div className="mcf-input-wrap">
-                      <span className="mcf-prefix">$</span>
+                      <span className="mcf-prefix">৳</span>
                       <input
                         type="number"
                         placeholder="1500"
@@ -692,13 +692,13 @@ const MarketingCreateCampaign = () => {
                     <div className="mcf-review-row">
                       <span className="mcf-review-key">Budget</span>
                       <span className="mcf-review-val gold">
-                        {values?.totalBudget ? `$${Number(values.totalBudget).toLocaleString()}` : "—"}
+                        {values?.totalBudget ? `৳${Number(values.totalBudget).toLocaleString()}` : "—"}
                       </span>
                     </div>
                     <div className="mcf-review-row">
                       <span className="mcf-review-key">Per day cost</span>
                       <span className="mcf-review-val gold">
-                        {perDayCost !== null ? `$${perDayCost.toFixed(2)}` : "—"}
+                        {perDayCost !== null ? `৳${perDayCost.toFixed(2)}` : "—"}
                       </span>
                     </div>
                   </div>

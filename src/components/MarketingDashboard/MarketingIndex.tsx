@@ -70,8 +70,8 @@ const MarketingIndex = () => {
   // Safely destructure with default empty objects so it never crashes
   const { campaigns = {}, tasks = {}, qualified = {} } = data;
 
-  const formatCurrency = (amount : number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+  const formatCurrency = (amount: number) => 
+  `৳${new Intl.NumberFormat('en-US').format(amount || 0)}`;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-8 font-sans">
