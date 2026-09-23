@@ -392,7 +392,7 @@ const AdminIndex = () => {
               </div>
             )}
 
-            {/* --- NEW Row: Client Campaigns (Informational only, not in profit/loss) --- */}
+
             {clientCampaignsSummary && clientCampaignsSummary.totalCampaigns > 0 && (
               <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                 <div className="mb-5 flex items-center justify-between">

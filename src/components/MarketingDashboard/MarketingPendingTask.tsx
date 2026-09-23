@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import useAxiosMarketing from "@/uri/useAxiosMarketing";
 import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
@@ -98,41 +97,81 @@ const MarketingPendingTask = () => {
     });
   };
 
-  const getRemainingDate = (dueDate?: string) => {
+  // ✅ NEW: dueDate + dueTime ("HH:mm") কে একটা সিঙ্গেল Date object এ combine করার helper
+  const getDueDateTime = (task: Pick<Task, "dueDate" | "dueTime">): Date | null => {
+    if (!task.dueDate) return null;
+
+    const base = new Date(task.dueDate);
+    if (Number.isNaN(base.getTime())) return null;
+
+    if (task.dueTime) {
+      const parts = task.dueTime.split(":").map((p) => Number(p));
+      const hours = parts[0];
+      const minutes = parts[1] ?? 0;
+
+      if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+        base.setHours(hours, minutes, 0, 0);
+      }
+    }
+
+    return base;
+  };
+
+  // ✅ FIXED: এখন dueTime সহ সঠিক due datetime এর ভিত্তিতে overdue/remaining হিসাব হয়,
+  // এবং overdue হলে সবসময় "Overdue by X" ফরম্যাটে টেক্সট রিটার্ন করে (কখনো "X left" দেখাবে না)
+  const getRemainingDate = (dueDate?: string, dueTime?: string) => {
     if (!dueDate) return "N/A";
 
-    const due = new Date(dueDate);
-    if (Number.isNaN(due.getTime())) return "N/A";
+    const due = getDueDateTime({ dueDate, dueTime: dueTime ?? "" });
+    if (!due) return "N/A";
 
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const dueStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    const now = new Date();
+    const diffMs = due.getTime() - now.getTime();
 
-    const dayDiff = Math.ceil((dueStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffMs <= 0) {
+      const overdueMs = Math.abs(diffMs);
+      const overdueDays = Math.floor(overdueMs / (1000 * 60 * 60 * 24));
+      const overdueHours = Math.floor((overdueMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const overdueMinutes = Math.floor((overdueMs % (1000 * 60 * 60)) / (1000 * 60));
 
-    if (dayDiff > 0) return `${dayDiff} day${dayDiff === 1 ? "" : "s"} left`;
-    if (dayDiff === 0) return "Due today";
+      if (overdueDays > 0) return `Overdue by ${overdueDays} day${overdueDays === 1 ? "" : "s"}`;
+      if (overdueHours > 0) return `Overdue by ${overdueHours} hour${overdueHours === 1 ? "" : "s"}`;
+      if (overdueMinutes > 0) return `Overdue by ${overdueMinutes} minute${overdueMinutes === 1 ? "" : "s"}`;
+      return "Overdue";
+    }
 
-    const overdueDays = Math.abs(dayDiff);
-    return `Overdue by ${overdueDays} day${overdueDays === 1 ? "" : "s"}`;
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) return `${days} day${days === 1 ? "" : "s"} left`;
+    if (hours > 0) return `${hours} hour${hours === 1 ? "" : "s"} left`;
+    if (minutes > 0) return `${minutes} minute${minutes === 1 ? "" : "s"} left`;
+    return "Due now";
+  };
+
+  // ✅ FIXED: dueTime সহ সঠিক datetime দিয়ে overdue চেক
+  const isOverdue = (task: Task) => {
+    const due = getDueDateTime(task);
+    if (!due) return false;
+    const now = new Date();
+    return due.getTime() < now.getTime() && task.status.toLowerCase() !== "completed";
   };
 
   const isTaskOverdue = (task: Task) => task.remainingDate?.isOverdue ?? isOverdue(task);
 
+
   const getRemainingSummary = (task: Task) => {
+    const overdue = isTaskOverdue(task);
+
+    if (overdue) {
+      return getRemainingDate(task.dueDate, task.dueTime);
+    }
+
     if (task.remainingDate?.dueTimeWithDayAndHour) {
       return task.remainingDate.dueTimeWithDayAndHour;
     }
-    return getRemainingDate(task.dueDate);
-  };
-
- 
-
-  const isOverdue = (task: Task) => {
-    if (!task.dueDate) return false;
-    const due = new Date(task.dueDate);
-    const now = new Date();
-    return due.getTime() < now.getTime() && task.status.toLowerCase() !== "completed";
+    return getRemainingDate(task.dueDate, task.dueTime);
   };
 
   const getReferenceName = (
@@ -187,7 +226,7 @@ const MarketingPendingTask = () => {
     });
   }, [tasks, searchTerm, selectedPriority, selectedStatus]);
 
-  const overdueCount = filteredTasks.filter((task) => isOverdue(task)).length;
+  const overdueCount = filteredTasks.filter((task) => isTaskOverdue(task)).length;
   const highPriorityCount = filteredTasks.filter((task) => task.priority === "High").length;
 
   const resetFilters = () => {
@@ -362,7 +401,7 @@ const MarketingPendingTask = () => {
                       {task.status}
                     </span>
                   </div>
-                  {isOverdue(task) && (
+                  {isUrgent && (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md bg-rose-50 border border-rose-100 text-rose-700">
                       <AlertTriangle className="w-3.5 h-3.5" /> Overdue
                     </span>
