@@ -551,7 +551,7 @@ const AdminIndex = () => {
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Compliance Log" subtitle={`${summary.totalCompliance} total records submitted`}>
+              <ChartCard title="Complients Log" subtitle={`${summary.totalCompliance} total records submitted`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={complianceByCategoryData} layout="vertical" margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
