@@ -6,6 +6,9 @@ import { useUserDataMarketing } from "./HOOK/User_Data_Marketer";
 import { useMutation } from "@tanstack/react-query";
 import Alert from "./Alert/Alert";
 
+// ── NEW: Own company list (Genesys / UniApply) ──
+const OWN_COMPANIES = ["Genesys", "UniApply"] as const;
+
 type CampaignFormData = {
   campaignName: string;
   channel: string;
@@ -13,11 +16,13 @@ type CampaignFormData = {
   endDate: string;
   totalBudget: number;
   targetLeads: number;
+  // ── NEW ──
+  campaignCategory: "OWN" | "CLIENT";
+  companyName: string;
 };
 
-
 export type CampaignForm = CampaignFormData & {
-    marketerId: string;
+  marketerId: string;
 };
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
@@ -375,7 +380,7 @@ const styles = `
     font-size: 13px;
     color: var(--text-muted);
     margin: 0 0 2rem;
-    max-width: 280px;
+    max-width: 300px;
   }
   .mcf-divider {
     width: 48px;
@@ -385,12 +390,12 @@ const styles = `
   }
 `;
 
-
-
 const MarketingCreateCampaign = () => {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
-  const [submittedData, setSubmittedData] = useState<CampaignFormData | null>(null);
+  const [submittedData, setSubmittedData] = useState<CampaignFormData | null>(
+    null,
+  );
 
   const [showNotification, setShowNotification] = useState(false);
 
@@ -403,10 +408,10 @@ const MarketingCreateCampaign = () => {
 
     return () => clearTimeout(timer);
   }, [showNotification]);
-  
-  const {userData}  = useUserDataMarketing()
 
-  const axiosMarketer = useAxiosMarketing()
+  const { userData } = useUserDataMarketing();
+
+  const axiosMarketer = useAxiosMarketing();
 
   const {
     register,
@@ -421,11 +426,15 @@ const MarketingCreateCampaign = () => {
   const values = useWatch({ control }) as Partial<CampaignFormData> | undefined;
 
   const getPerDayCost = (): number | null => {
-    if (!values?.startDate || !values?.endDate || !values?.totalBudget) return null;
+    if (!values?.startDate || !values?.endDate || !values?.totalBudget)
+      return null;
 
     const startDate = new Date(values.startDate);
     const endDate = new Date(values.endDate);
-    const dayDifference = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const dayDifference =
+      Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      ) + 1;
 
     if (!Number.isFinite(dayDifference) || dayDifference <= 0) return null;
 
@@ -436,7 +445,9 @@ const MarketingCreateCampaign = () => {
 
   const nextStep = async () => {
     let fields: (keyof CampaignFormData)[] = [];
-    if (step === 1) fields = ["campaignName", "channel"];
+    // ── NEW: campaignCategory ও companyName এখন step 1 এর validation এ যোগ ──
+    if (step === 1)
+      fields = ["campaignName", "campaignCategory", "companyName", "channel"];
     if (step === 2) fields = ["startDate", "endDate", "totalBudget"];
     const valid = await trigger(fields);
     if (valid) setStep((s) => Math.min(s + 1, 3));
@@ -450,21 +461,15 @@ const MarketingCreateCampaign = () => {
     console.log("Launch campaign clicked:", {
       ...data,
       perDayCost: submittedPerDayCost,
-
     });
 
     const dataFOrCreate = {
       ...data,
-    perDayCost: getPerDayCost(),
-    marketerId: userData?._id
+      perDayCost: getPerDayCost(),
+      marketerId: userData?._id,
+    };
 
-    }
-
-   
-
-  
     mutationCreateCampaign.mutate(dataFOrCreate);
-
 
     setSubmittedData(data);
     resetForm();
@@ -473,18 +478,17 @@ const MarketingCreateCampaign = () => {
   };
 
   const mutationCreateCampaign = useMutation({
-    mutationFn: async(data: CampaignForm)=>{
-      const res = await axiosMarketer.post("/campaigns/create-campaign",data)
+    mutationFn: async (data: CampaignForm) => {
+      const res = await axiosMarketer.post("/campaigns/create-campaign", data);
       return res.data;
     },
-      onSuccess: () => {
-        setShowNotification(true);  
-      },
-      onError: (error)=>{
-        console.error("Error creating campaign:", error);
-      }
-    
-  })
+    onSuccess: () => {
+      setShowNotification(true);
+    },
+    onError: (error) => {
+      console.error("Error creating campaign:", error);
+    },
+  });
 
   const handleCreateAnother = () => {
     setStep(1);
@@ -499,13 +503,21 @@ const MarketingCreateCampaign = () => {
   };
 
   const stepLabelColor = (s: number): string =>
-    s < step ? "var(--gold-dark)" : s === step ? "var(--gold-mid)" : "var(--text-muted)";
+    s < step
+      ? "var(--gold-dark)"
+      : s === step
+        ? "var(--gold-mid)"
+        : "var(--text-muted)";
 
   return (
     <>
-    {showNotification && 
-    <Alert title="Campaign launched" message={`The campaign "${submittedData?.campaignName}" has been launched successfully.`} onClose={() => setShowNotification(false)} />
-    }
+      {showNotification && (
+        <Alert
+          title="Campaign launched"
+          message={`The campaign "${submittedData?.campaignName}" has been launched successfully.`}
+          onClose={() => setShowNotification(false)}
+        />
+      )}
 
       <style>{styles}</style>
       <div className="mcf-wrap">
@@ -517,16 +529,32 @@ const MarketingCreateCampaign = () => {
           <div className="mcf-success">
             <div className="mcf-success-icon">
               <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <path d="M6 15.5L12.5 22L24 9" stroke="#2a1f00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M6 15.5L12.5 22L24 9"
+                  stroke="#2a1f00"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <h2 className="mcf-success-title">Campaign launched</h2>
             <div className="mcf-divider" />
             <p className="mcf-success-sub">
-              <strong style={{ color: "var(--gold-dark)" }}>{submittedData?.campaignName}</strong> via{" "}
-              {submittedData?.channel} is live and ready to perform.
+              <strong style={{ color: "var(--gold-dark)" }}>
+                {submittedData?.campaignName}
+              </strong>{" "}
+              via {submittedData?.channel} is live and ready to perform.
+              {/* ✅ FIXED: এখন লজিক উল্টো */}
+              {submittedData?.campaignCategory === "CLIENT"
+                ? " No admin approval needed — this is a client campaign."
+                : " Waiting for admin approval since this is an own-company campaign."}
             </p>
-            <button type="button" className="mcf-btn-next" onClick={handleCreateAnother}>
+            <button
+              type="button"
+              className="mcf-btn-next"
+              onClick={handleCreateAnother}
+            >
               + Create another
             </button>
           </div>
@@ -536,7 +564,9 @@ const MarketingCreateCampaign = () => {
             <div className="mcf-header">
               <p className="mcf-eyebrow">Marketing suite</p>
               <h1 className="mcf-title">New Campaign</h1>
-              <p className="mcf-subtitle">Configure your campaign in three steps</p>
+              <p className="mcf-subtitle">
+                Configure your campaign in three steps
+              </p>
             </div>
 
             {/* Step indicators */}
@@ -550,16 +580,37 @@ const MarketingCreateCampaign = () => {
                   <div className="mcf-step-item">
                     <div className={`mcf-step-circle ${stepStatus(n)}`}>
                       {n < step ? (
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M2.5 7L5.5 10L11.5 4" stroke="var(--gold-mid)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                        >
+                          <path
+                            d="M2.5 7L5.5 10L11.5 4"
+                            stroke="var(--gold-mid)"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
-                      ) : n}
+                      ) : (
+                        n
+                      )}
                     </div>
-                    <span className="mcf-step-label" style={{ color: stepLabelColor(n) }}>{label}</span>
+                    <span
+                      className="mcf-step-label"
+                      style={{ color: stepLabelColor(n) }}
+                    >
+                      {label}
+                    </span>
                   </div>
                   {i < 2 && (
                     <div className="mcf-step-line">
-                      <div className="mcf-step-line-fill" style={{ width: step > n ? "100%" : "0%" }} />
+                      <div
+                        className="mcf-step-line-fill"
+                        style={{ width: step > n ? "100%" : "0%" }}
+                      />
                     </div>
                   )}
                 </React.Fragment>
@@ -568,7 +619,6 @@ const MarketingCreateCampaign = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)}>
-
               {/* Step 1 */}
               {step === 1 && (
                 <div className="mcf-panel">
@@ -577,15 +627,89 @@ const MarketingCreateCampaign = () => {
                     <input
                       className={`mcf-input${errors.campaignName ? " error" : ""}`}
                       placeholder="e.g. Black Friday Sale 2026"
-                      {...register("campaignName", { required: "Campaign name is required" })}
+                      {...register("campaignName", {
+                        required: "Campaign name is required",
+                      })}
                     />
-                    {errors.campaignName && <p className="mcf-error-msg">{errors.campaignName.message}</p>}
+                    {errors.campaignName && (
+                      <p className="mcf-error-msg">
+                        {errors.campaignName.message}
+                      </p>
+                    )}
                   </div>
+
+                  {/* ── NEW: Campaign category ── */}
+                  <div className="mcf-field">
+                    <label className="mcf-label">Campaign type</label>
+                    <select
+                      className={`mcf-select${errors.campaignCategory ? " error" : ""}`}
+                      {...register("campaignCategory", {
+                        required: "Please select campaign type",
+                      })}
+                    >
+                      <option value="">Select type</option>
+                      <option value="OWN">
+                        Own Company (Genesys / UniApply)
+                      </option>
+                      <option value="CLIENT">Client Campaign</option>
+                    </select>
+                    {errors.campaignCategory && (
+                      <p className="mcf-error-msg">
+                        {errors.campaignCategory.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* ── NEW: conditional company field ── */}
+                  {values?.campaignCategory === "OWN" && (
+                    <div className="mcf-field">
+                      <label className="mcf-label">Which company</label>
+                      <select
+                        className={`mcf-select${errors.companyName ? " error" : ""}`}
+                        {...register("companyName", {
+                          required: "Please select the company",
+                        })}
+                      >
+                        <option value="">Select company</option>
+                        {OWN_COMPANIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.companyName && (
+                        <p className="mcf-error-msg">
+                          {errors.companyName.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {values?.campaignCategory === "CLIENT" && (
+                    <div className="mcf-field">
+                      <label className="mcf-label">Client / company name</label>
+                      <input
+                        className={`mcf-input${errors.companyName ? " error" : ""}`}
+                        placeholder="e.g. Acme Corp"
+                        {...register("companyName", {
+                          required: "Client name is required",
+                        })}
+                      />
+                      {errors.companyName && (
+                        <p className="mcf-error-msg">
+                          {errors.companyName.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div className="mcf-field">
                     <label className="mcf-label">Marketing channel</label>
                     <select
                       className={`mcf-select${errors.channel ? " error" : ""}`}
-                      {...register("channel", { required: "Please select a channel" })}
+                      {...register("channel", {
+                        required: "Please select a channel",
+                      })}
                     >
                       <option value="">Select a channel</option>
                       <option value="Google Ads">Google Ads</option>
@@ -593,7 +717,9 @@ const MarketingCreateCampaign = () => {
                       <option value="LinkedIn">LinkedIn</option>
                       <option value="SEO Blog">SEO Blog</option>
                     </select>
-                    {errors.channel && <p className="mcf-error-msg">{errors.channel.message}</p>}
+                    {errors.channel && (
+                      <p className="mcf-error-msg">{errors.channel.message}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -610,7 +736,11 @@ const MarketingCreateCampaign = () => {
                           className={`mcf-input${errors.startDate ? " error" : ""}`}
                           {...register("startDate", { required: "Required" })}
                         />
-                        {errors.startDate && <p className="mcf-error-msg">{errors.startDate.message}</p>}
+                        {errors.startDate && (
+                          <p className="mcf-error-msg">
+                            {errors.startDate.message}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="mcf-label">End date</label>
@@ -624,11 +754,17 @@ const MarketingCreateCampaign = () => {
 
                               if (!startDate || !endDate) return true;
 
-                              return endDate >= startDate || "Please check the date";
+                              return (
+                                endDate >= startDate || "Please check the date"
+                              );
                             },
                           })}
                         />
-                        {errors.endDate && <p className="mcf-error-msg">{errors.endDate.message}</p>}
+                        {errors.endDate && (
+                          <p className="mcf-error-msg">
+                            {errors.endDate.message}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -647,7 +783,11 @@ const MarketingCreateCampaign = () => {
                         })}
                       />
                     </div>
-                    {errors.totalBudget && <p className="mcf-error-msg">{errors.totalBudget.message}</p>}
+                    {errors.totalBudget && (
+                      <p className="mcf-error-msg">
+                        {errors.totalBudget.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -664,10 +804,17 @@ const MarketingCreateCampaign = () => {
                       {...register("targetLeads", {
                         required: "Target leads is required",
                         valueAsNumber: true,
-                        min: { value: 0, message: "Must target at least 1 lead" },
+                        min: {
+                          value: 0,
+                          message: "Must target at least 1 lead",
+                        },
                       })}
                     />
-                    {errors.targetLeads && <p className="mcf-error-msg">{errors.targetLeads.message}</p>}
+                    {errors.targetLeads && (
+                      <p className="mcf-error-msg">
+                        {errors.targetLeads.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="mcf-review">
@@ -677,28 +824,49 @@ const MarketingCreateCampaign = () => {
                     </div>
                     <div className="mcf-review-row">
                       <span className="mcf-review-key">Campaign name</span>
-                      <span className="mcf-review-val">{values?.campaignName || "—"}</span>
+                      <span className="mcf-review-val">
+                        {values?.campaignName || "—"}
+                      </span>
+                    </div>
+                    {/* ── NEW: category summary row ── */}
+                    <div className="mcf-review-row">
+                      <span className="mcf-review-key">Campaign type</span>
+                      <span className="mcf-review-val">
+                        {values?.campaignCategory === "OWN"
+                          ? `Own — ${values?.companyName || "—"}`
+                          : values?.campaignCategory === "CLIENT"
+                            ? `Client — ${values?.companyName || "—"}`
+                            : "—"}
+                      </span>
                     </div>
                     <div className="mcf-review-row">
                       <span className="mcf-review-key">Channel</span>
-                      <span className="mcf-review-val">{values?.channel || "—"}</span>
+                      <span className="mcf-review-val">
+                        {values?.channel || "—"}
+                      </span>
                     </div>
                     <div className="mcf-review-row">
                       <span className="mcf-review-key">Duration</span>
                       <span className="mcf-review-val">
-                        {values?.startDate && values?.endDate ? `${values.startDate} → ${values.endDate}` : "—"}
+                        {values?.startDate && values?.endDate
+                          ? `${values.startDate} → ${values.endDate}`
+                          : "—"}
                       </span>
                     </div>
                     <div className="mcf-review-row">
                       <span className="mcf-review-key">Budget</span>
                       <span className="mcf-review-val gold">
-                        {values?.totalBudget ? `৳${Number(values.totalBudget).toLocaleString()}` : "—"}
+                        {values?.totalBudget
+                          ? `৳${Number(values.totalBudget).toLocaleString()}`
+                          : "—"}
                       </span>
                     </div>
                     <div className="mcf-review-row">
                       <span className="mcf-review-key">Per day cost</span>
                       <span className="mcf-review-val gold">
-                        {perDayCost !== null ? `৳${perDayCost.toFixed(2)}` : "—"}
+                        {perDayCost !== null
+                          ? `৳${perDayCost.toFixed(2)}`
+                          : "—"}
                       </span>
                     </div>
                   </div>
@@ -707,17 +875,31 @@ const MarketingCreateCampaign = () => {
 
               {/* Actions */}
               <div className="mcf-actions">
-                <button type="button" className="mcf-btn-back" disabled={step === 1} onClick={prevStep}>
+                <button
+                  type="button"
+                  className="mcf-btn-back"
+                  disabled={step === 1}
+                  onClick={prevStep}
+                >
                   ← Back
                 </button>
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "14px" }}
+                >
                   <div className="mcf-dots">
                     {[1, 2, 3].map((d) => (
-                      <div key={d} className={`mcf-dot ${d === step ? "active" : "inactive"}`} />
+                      <div
+                        key={d}
+                        className={`mcf-dot ${d === step ? "active" : "inactive"}`}
+                      />
                     ))}
                   </div>
                   {step < 3 ? (
-                    <button type="button" className="mcf-btn-next" onClick={nextStep}>
+                    <button
+                      type="button"
+                      className="mcf-btn-next"
+                      onClick={nextStep}
+                    >
                       Next step <span style={{ fontSize: 16 }}>→</span>
                     </button>
                   ) : (

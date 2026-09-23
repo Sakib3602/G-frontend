@@ -809,8 +809,7 @@ const CalendarTable = ({
     },
   });
 
-  // Creative Team, Post Type, ও Status — সবগুলাই এই একই endpoint দিয়ে
-  // আপডেট হয়, প্রতিটা কল এ যেকোনো একটা field পাঠানো হয়।
+
   const updateFullAccessFieldsMutation = useMutation({
     mutationFn: async ({
       id,

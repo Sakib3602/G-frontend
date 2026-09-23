@@ -25,6 +25,9 @@ interface Campaign {
     leadGenerated: number;
     createdAt: string;
     updatedAt: string;
+    // ── NEW ──
+    campaignCategory?: "OWN" | "CLIENT";
+    companyName?: string;
 }
 
 interface Summary {
@@ -41,6 +44,9 @@ interface ApiResponse {
     data: Campaign[];
     summary: Summary;
 }
+
+// ── NEW ──
+type CampaignCategoryFilter = "all" | "OWN" | "CLIENT";
 
 const statusStyles: Record<string, string> = {
     approved: "bg-emerald-50 text-emerald-600 border border-emerald-200",
@@ -63,15 +69,19 @@ const AdminMarketingDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [statusFilter, setStatusFilter] = useState("all");
+    // ── NEW ──
+    const [categoryFilter, setCategoryFilter] = useState<CampaignCategoryFilter>("all");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const axiosAdmin = useAxiosAdmin();
 
     const { data, isLoading } = useQuery<ApiResponse>({
-        queryKey: ["campaign-details", id, statusFilter, startDate, endDate],
+        queryKey: ["campaign-details", id, statusFilter, categoryFilter, startDate, endDate],
         queryFn: async () => {
             const params = new URLSearchParams();
             params.set("status", statusFilter);
+            // ── NEW ──
+            if (categoryFilter !== "all") params.set("category", categoryFilter);
             if (startDate) params.set("startDate", startDate);
             if (endDate) params.set("endDate", endDate);
 
@@ -151,6 +161,20 @@ const AdminMarketingDetails = () => {
                         )}
                     </div>
 
+                    {/* ── NEW: category filter ── */}
+                    <div className="relative w-fit">
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value as CampaignCategoryFilter)}
+                            className="appearance-none bg-white border border-gray-200 text-sm font-semibold px-4 py-2.5 pr-9 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+                        >
+                            <option value="all">All Types</option>
+                            <option value="OWN">Own Company</option>
+                            <option value="CLIENT">Client</option>
+                        </select>
+                        <FiChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                    </div>
+
                     {/* Status filter */}
                     <div className="relative w-fit">
                         <select
@@ -208,11 +232,13 @@ const AdminMarketingDetails = () => {
             {/* Campaign Table */}
             <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm bg-white">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[860px]">
+                    <table className="w-full text-left border-collapse min-w-[940px]">
                         <thead className="bg-gray-50/80">
                             <tr>
                                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">#</th>
                                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Campaign</th>
+                                {/* ── NEW ── */}
+                                <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Type / Company</th>
                                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Channel</th>
                                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Duration</th>
                                 <th className="p-4 text-[11px] font-bold uppercase text-gray-400 tracking-wider">Budget/Day</th>
@@ -226,7 +252,7 @@ const AdminMarketingDetails = () => {
                             {isLoading &&
                                 Array.from({ length: 4 }).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        {Array.from({ length: 9 }).map((__, j) => (
+                                        {Array.from({ length: 10 }).map((__, j) => (
                                             <td key={j} className="p-4">
                                                 <div className="h-4 bg-gray-100 rounded w-3/4" />
                                             </td>
@@ -236,7 +262,7 @@ const AdminMarketingDetails = () => {
 
                             {!isLoading && campaigns.length === 0 && (
                                 <tr>
-                                    <td colSpan={9} className="p-10 text-center text-sm text-gray-400">
+                                    <td colSpan={10} className="p-10 text-center text-sm text-gray-400">
                                         No campaigns found for this filter.
                                     </td>
                                 </tr>
@@ -247,6 +273,19 @@ const AdminMarketingDetails = () => {
                                     <tr key={c._id} className="hover:bg-gray-50/60 transition-colors">
                                         <td className="p-4 text-sm font-medium text-gray-400">{idx + 1}</td>
                                         <td className="p-4 text-sm font-semibold">{c.campaignName}</td>
+                                        {/* ── NEW: category/company cell ── */}
+                                        <td className="p-4">
+                                            <span
+                                                className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase mr-1 ${
+                                                    c.campaignCategory === "OWN"
+                                                        ? "bg-indigo-100 text-indigo-700"
+                                                        : "bg-teal-100 text-teal-700"
+                                                }`}
+                                            >
+                                                {c.campaignCategory === "OWN" ? "Own" : "Client"}
+                                            </span>
+                                            <div className="text-xs text-gray-500 mt-1">{c.companyName || "—"}</div>
+                                        </td>
                                         <td className="p-4 text-sm">{c.channel}</td>
                                         <td className="p-4 text-xs text-gray-500 whitespace-nowrap">
                                             {formatDate(c.startDate)} → {formatDate(c.endDate)}

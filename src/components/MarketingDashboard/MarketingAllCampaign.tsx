@@ -29,6 +29,9 @@ export interface Campaign {
   totalBudget: number;
   revenue?: number;
   adminApproval?: "pending" | "approved" | "rejected" | "running";
+  // ── NEW ──
+  campaignCategory?: "OWN" | "CLIENT";
+  companyName?: string;
 }
 
 type ApiCampaign = Partial<Campaign> & {
@@ -38,6 +41,8 @@ type ApiCampaign = Partial<Campaign> & {
 };
 
 type CampaignStatusFilter = "all" | "approved" | "pending" | "rejected" | "running";
+// ── NEW ──
+type CampaignCategoryFilter = "all" | "OWN" | "CLIENT";
 
 const normalizeStatus = (status?: string): Campaign["adminApproval"] => {
   const value = String(status ?? "pending").toLowerCase();
@@ -64,6 +69,9 @@ const mapCampaign = (campaign: ApiCampaign): Campaign => {
     totalBudget: Number(campaign.totalBudget ?? 0),
     revenue: Number(campaign.revenue ?? campaign.totalRevenue ?? 0),
     adminApproval: normalizeStatus(campaign.adminApproval),
+    // ── NEW ──
+    campaignCategory: campaign.campaignCategory as "OWN" | "CLIENT" | undefined,
+    companyName: campaign.companyName ? String(campaign.companyName) : undefined,
   };
 };
 
@@ -77,6 +85,8 @@ const formatDate = (value?: string) => {
 const MarketingAllCampaign = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<CampaignStatusFilter>("all");
+  // ── NEW ──
+  const [filterCategory, setFilterCategory] = useState<CampaignCategoryFilter>("all");
   const { userData } = useUserDataMarketing();
   const axiosMarketing = useAxiosMarketing();
 
@@ -113,18 +123,26 @@ const MarketingAllCampaign = () => {
     (c) => c.adminApproval === "running",
   ).length;
 
+  // ── NEW: own vs client count ──
+  const ownCount = campaigns.filter((c) => c.campaignCategory === "OWN").length;
+  const clientCount = campaigns.filter((c) => c.campaignCategory === "CLIENT").length;
+
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
       const isStatusMatched =
         filterStatus === "all" ? true : campaign.adminApproval === filterStatus;
+      // ── NEW ──
+      const isCategoryMatched =
+        filterCategory === "all" ? true : campaign.campaignCategory === filterCategory;
       const query = searchTerm.trim().toLowerCase();
       const isSearchMatched =
         campaign.campaignName.toLowerCase().includes(query) ||
-        campaign.channel.toLowerCase().includes(query);
+        campaign.channel.toLowerCase().includes(query) ||
+        (campaign.companyName ?? "").toLowerCase().includes(query);
 
-      return isStatusMatched && isSearchMatched;
+      return isStatusMatched && isCategoryMatched && isSearchMatched;
     });
-  }, [campaigns, filterStatus, searchTerm]);
+  }, [campaigns, filterStatus, filterCategory, searchTerm]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -134,6 +152,12 @@ const MarketingAllCampaign = () => {
   const handleFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value as CampaignStatusFilter;
     setFilterStatus(value);
+  };
+
+  // ── NEW ──
+  const handleCategoryFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as CampaignCategoryFilter;
+    setFilterCategory(value);
   };
 
   // /status-change
@@ -217,6 +241,22 @@ const MarketingAllCampaign = () => {
     }
   };
 
+  // ── NEW: category badge ──
+  const getCategoryBadge = (campaign: Campaign) => (
+    <div className="mt-1 flex items-center gap-1.5">
+      <span
+        className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+          campaign.campaignCategory === "OWN"
+            ? "bg-indigo-100 text-indigo-700"
+            : "bg-teal-100 text-teal-700"
+        }`}
+      >
+        {campaign.campaignCategory === "OWN" ? "Own" : "Client"}
+      </span>
+      <span className="text-xs text-slate-500">{campaign.companyName || "—"}</span>
+    </div>
+  );
+
   return (
     <div className="mx-auto min-h-screen max-w-7xl space-y-6 p-6">
       <ToastContainer
@@ -242,10 +282,19 @@ const MarketingAllCampaign = () => {
             Monitor status, performance, and revenue updates in one place.
           </p>
         </div>
-        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50/60 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md">
-          <Wallet className="h-3.5 w-3.5 text-slate-500" />
-          Total Campaigns: {campaigns.length}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50/60 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur-md">
+            <Wallet className="h-3.5 w-3.5 text-slate-500" />
+            Total Campaigns: {campaigns.length}
+          </span>
+          {/* ── NEW: own vs client quick counts ── */}
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+            Own: {ownCount}
+          </span>
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+            Client: {clientCount}
+          </span>
+        </div>
       </div>
 
       {/* Top Summary Cards */}
@@ -318,19 +367,35 @@ const MarketingAllCampaign = () => {
           />
         </div>
 
-        <div className="relative w-full sm:w-auto flex items-center gap-2">
-          <Filter className="h-4 w-4 text-slate-400" />
-          <select
-            value={filterStatus}
-            onChange={handleFilter}
-            className="w-full cursor-pointer rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-48"
-          >
-            <option value="all">All Status</option>
-            <option value="approved">Approved</option>
-            <option value="pending">Pending</option>
-            <option value="running">Running</option>
-            <option value="rejected">Rejected</option>
-          </select>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {/* ── NEW: category filter ── */}
+          <div className="relative w-full sm:w-auto flex items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-400" />
+            <select
+              value={filterCategory}
+              onChange={handleCategoryFilter}
+              className="w-full cursor-pointer rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-40"
+            >
+              <option value="all">All Types</option>
+              <option value="OWN">Own Company</option>
+              <option value="CLIENT">Client</option>
+            </select>
+          </div>
+
+          <div className="relative w-full sm:w-auto flex items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-400" />
+            <select
+              value={filterStatus}
+              onChange={handleFilter}
+              className="w-full cursor-pointer rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-48"
+            >
+              <option value="all">All Status</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
+              <option value="running">Running</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -376,6 +441,8 @@ const MarketingAllCampaign = () => {
                     <div className="text-sm font-medium text-slate-900">
                       {campaign.campaignName}
                     </div>
+                    {/* ── NEW: category badge under campaign name ── */}
+                    {getCategoryBadge(campaign)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="rounded-md border border-slate-200/70 bg-slate-50/60 px-2.5 py-1 text-sm text-slate-600 backdrop-blur-sm">

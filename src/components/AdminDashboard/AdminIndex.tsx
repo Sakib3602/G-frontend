@@ -76,9 +76,33 @@ interface EmployeeStat {
   calendarItemsHandled: number;
 }
 
+// ── NEW: own company breakdown (Genesys / UniApply) ──
+interface OwnCompanyStat {
+  totalBudget: number;
+  count: number;
+  revenue: number;
+  profit: number;
+}
+
+// ── NEW: client campaigns (informational only) ──
+interface ClientCampaignByClient {
+  companyName: string;
+  totalBudget: number;
+  count: number;
+}
+
+interface ClientCampaignsSummary {
+  totalCampaigns: number;
+  totalAdSpend: number;
+  byClient: ClientCampaignByClient[];
+}
+
 interface DashboardResponse {
   success: boolean;
   summary: Summary;
+  // ── NEW ──
+  ownCompanyBreakdown: Record<string, OwnCompanyStat>;
+  clientCampaignsSummary: ClientCampaignsSummary;
   campaignByChannel: Record<string, number>;
   campaignByStatus: Record<string, number>;
   leadsByStatus: Record<string, number>;
@@ -195,6 +219,10 @@ const AdminIndex = () => {
   const funnelData = data?.funnel || [];
   const monthlyTrend = data?.monthlyTrend || [];
   const leaderboard = (data?.leaderboard || []).slice(0, 10);
+
+  // ── NEW ──
+  const ownCompanyBreakdown = data?.ownCompanyBreakdown || {};
+  const clientCampaignsSummary = data?.clientCampaignsSummary;
 
   const deliveryRadialData = summary ? [{ name: "On Time", value: summary.onTimeRate, fill: "#10B981" }] : [];
   const taskRadialData = summary ? [{ name: "Completed", value: summary.taskCompletionRate, fill: "#4F46E5" }] : [];
@@ -315,6 +343,103 @@ const AdminIndex = () => {
                 iconColor="text-teal-600"
               />
             </div>
+
+            {/* --- NEW Row: Own Company Ad Spend Breakdown (Genesys vs UniApply) --- */}
+            {Object.keys(ownCompanyBreakdown).length > 0 && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                <div className="mb-5">
+                  <h3 className="text-base font-bold text-slate-900">Own Company Ad Spend</h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    Genesys vs UniApply — for the selected date range (counted in company profit/loss above)
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {Object.entries(ownCompanyBreakdown).map(([companyName, stat]) => {
+                    const isProfitable = stat.profit >= 0;
+                    return (
+                      <div
+                        key={companyName}
+                        className="rounded-xl border border-slate-200 bg-slate-50/60 p-5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-slate-800">{companyName}</p>
+                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-500 border border-slate-200">
+                            {stat.count} campaign{stat.count === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase text-slate-400">Spend</p>
+                            <p className="text-sm font-bold text-slate-900">৳{formatFull(stat.totalBudget)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase text-slate-400">Revenue</p>
+                            <p className="text-sm font-bold text-slate-900">৳{formatFull(stat.revenue)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase text-slate-400">
+                              {isProfitable ? "Profit" : "Loss"}
+                            </p>
+                            <p className={`text-sm font-bold ${isProfitable ? "text-emerald-600" : "text-rose-600"}`}>
+                              ৳{formatFull(Math.abs(stat.profit))}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* --- NEW Row: Client Campaigns (Informational only, not in profit/loss) --- */}
+            {clientCampaignsSummary && clientCampaignsSummary.totalCampaigns > 0 && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Client Campaigns</h3>
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      Ad spend managed for client companies — not counted in company profit/loss
+                    </p>
+                  </div>
+                  <span className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 border border-amber-200">
+                    Info only
+                  </span>
+                </div>
+                <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                    <p className="text-[10px] font-semibold uppercase text-slate-400">Total Campaigns</p>
+                    <p className="text-xl font-bold text-slate-900">{clientCampaignsSummary.totalCampaigns}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                    <p className="text-[10px] font-semibold uppercase text-slate-400">Total Ad Spend</p>
+                    <p className="text-xl font-bold text-slate-900">৳{formatFull(clientCampaignsSummary.totalAdSpend)}</p>
+                  </div>
+                </div>
+                {clientCampaignsSummary.byClient.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-slate-200">
+                          <th className="py-2 text-[10px] font-bold uppercase text-slate-400">Client</th>
+                          <th className="py-2 text-[10px] font-bold uppercase text-slate-400">Campaigns</th>
+                          <th className="py-2 text-[10px] font-bold uppercase text-slate-400">Ad Spend</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {clientCampaignsSummary.byClient.map((c) => (
+                          <tr key={c.companyName}>
+                            <td className="py-2 text-sm font-medium text-slate-700">{c.companyName}</td>
+                            <td className="py-2 text-sm text-slate-600">{c.count}</td>
+                            <td className="py-2 text-sm font-mono text-slate-700">৳{formatFull(c.totalBudget)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* --- Row 2: Wide Analytical Charts --- */}
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
