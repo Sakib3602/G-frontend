@@ -120,6 +120,10 @@ const MarketingPendingTask = () => {
   const isTaskOverdue = (task: Task) => task.remainingDate?.isOverdue ?? isOverdue(task);
 
   const getRemainingSummary = (task: Task) => {
+    if (isTaskOverdue(task)) {
+      return getRemainingDate(task.dueDate);
+    }
+
     if (task.remainingDate?.dueTimeWithDayAndHour) {
       return task.remainingDate.dueTimeWithDayAndHour;
     }
@@ -443,10 +447,8 @@ const MarketingPendingTask = () => {
                   
 
                   <p className={`text-sm font-bold ${isUrgent ? "text-red-600" : "text-slate-700"}`}>
-                    Remaining Date: {getRemainingSummary(task)}
+                    {isUrgent ? "Overdue" : "Remaining Date"}: {getRemainingSummary(task)}
                   </p>
-
-                 
 
                   <div className={`grid grid-cols-1 gap-1 text-[11px] ${isUrgent ? "text-red-700" : "text-slate-500"}`}>
                     <div>
